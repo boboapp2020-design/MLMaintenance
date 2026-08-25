@@ -93,6 +93,7 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .compunit{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:9px 12px}
 .compunit.ok{background:var(--good-bg);border-color:#B5E4C8}
 .compunit.miss{background:var(--crit-bg);border-color:#F5B5B5}
+.compunit.part{background:var(--warn-bg);border-color:#F0D9A0}
 .compunit .cn{flex:1;font-size:13px;font-weight:700}
 .compunit .cn span{display:block;font-size:11px;color:var(--mut);font-weight:500}
 .compunit .cs{font-size:16px;font-weight:800}
@@ -540,9 +541,27 @@ function unitsRecordedOn(dateStr){
   ENTRIES.forEach(e=>{ if(e.date===dateStr) set.add(e.taskId.split("-")[0]); });
   return set;
 }
+/* Job ที่ยังต้องบันทึก (เริ่มแล้ว ยังไม่เสร็จ) ของหน่วยงาน ณ สัปดาห์ปัจจุบัน */
+function activeJobsOf(u){
+  return u.jobs.filter(j=>{
+    const started=Math.min.apply(null,j.tasks.map(t=>t.s))<=WNOW;
+    return started && agg(j.tasks,WNOW).act<99.5;
+  });
+}
+/* สถานะการบันทึกวันนี้: none=ไม่บันทึก, partial=ไม่ครบ, full=ครบ (ระดับ Job) */
 function complianceToday(){
-  const rec=unitsRecordedOn(dateISO(new Date()));
-  return DATA.flatMap(s=>s.units.map(u=>({sec:s,u,done:rec.has(u.code)})));
+  const today=dateISO(new Date());
+  const jobsByUnit={};   // code -> Set(jobId ที่บันทึกวันนี้)
+  ENTRIES.forEach(e=>{ if(e.date===today){
+    const code=e.taskId.split("-")[0], jobId=e.taskId.split("-").slice(0,2).join("-");
+    (jobsByUnit[code]=jobsByUnit[code]||new Set()).add(jobId);
+  }});
+  return DATA.flatMap(s=>s.units.map(u=>{
+    const active=activeJobsOf(u).length;
+    const logged=jobsByUnit[u.code]?jobsByUnit[u.code].size:0;
+    const state = logged===0 ? "none" : (logged>=active ? "full" : "partial");
+    return {sec:s,u,done:logged>0,logged,active,state};
+  }));
 }
 
 /* ---- ผลจริง ณ สัปดาห์ y้อนหลัง: สเกลตามรูปทรงแผน ---- */
@@ -699,10 +718,12 @@ function overview(){
   const jobsAll=DATA.flatMap(s=>s.units.flatMap(u=>u.jobs));
   const jobsDone=jobsAll.filter(j=>agg(j.tasks,WNOW).act>=99.5).length;
   const daysLeft=Math.max(0,Math.round((SEASON_END-wkEnd(WNOW))/86400000));
-  const missing=complianceToday().filter(x=>!x.done);
-  const compBanner = missing.length===0 ? "" :
-    `<div class="compbanner">⚠️ <span class="cbnum num">${missing.length}/9</span> ${pk(["หน่วยยังไม่บันทึกวันนี้","ໜ່ວຍຍັງບໍ່ບັນທຶກມື້ນີ້","units not recorded today"])}
-     <span class="cbunits">${missing.map(x=>un(x.u.name)).join(" · ")}</span>
+  const compAll=complianceToday();
+  const noneU=compAll.filter(x=>x.state==="none"), partU=compAll.filter(x=>x.state==="partial");
+  const compBanner = (noneU.length===0 && partU.length===0) ? "" :
+    `<div class="compbanner">⚠️
+     ${noneU.length?`<span class="cbnum num">${noneU.length}</span> ${pk(["ไม่บันทึก","ບໍ່ບັນທຶກ","not recorded"])}: <span class="cbunits">${noneU.map(x=>un(x.u.name)).join(" · ")}</span>`:""}
+     ${partU.length?`<span class="cbnum num" style="background:var(--warn)">${partU.length}</span> ${pk(["บันทึกไม่ครบ","ບັນທຶກບໍ່ຄົບ","partial"])}: <span class="cbunits">${partU.map(x=>un(x.u.name)+" ("+x.logged+"/"+x.active+")").join(" · ")}</span>`:""}
      <a onclick="go('entry')">${pk(["บันทึก ›","ບັນທຶກ ›","Record ›"])}</a></div>`;
   app.innerHTML = pagehead(pk(["ความคืบหน้าของงานซ่อม","ຄວາມຄືບໜ້າຂອງວຽກສ້ອມແປງ","Maintenance Progress"]),
     pk(["ภาพรวม ณ วันที่","ພາບລວມ ນະວັນທີ","As of"])+" "+fmtDate(wkEnd(WNOW))+" · "+pk(["สัปดาห์ที่","ສັບປະດາທີ","Week"])+" "+WNOW+"/"+WEEKS) + compBanner + `
@@ -865,7 +886,7 @@ function unitView(secId, uname){
 function todayISO(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function entryPage(){
   const todays=ENTRIES.filter(e=>e.date===todayISO()).length;
-  const comp=complianceToday(), doneN=comp.filter(x=>x.done).length;
+  const comp=complianceToday(), fullN=comp.filter(x=>x.state==="full").length, partN=comp.filter(x=>x.state==="partial").length, noneN=comp.filter(x=>x.state==="none").length;
   const days=[...Array(7).keys()].map(i=>{const d=new Date();d.setDate(d.getDate()-(6-i));return d;});
   // สรุปวินัยราย 7 วัน + จัดอันดับ "ต้องติดตาม"
   const stat=DATA.flatMap(s=>s.units).map(u=>{
@@ -883,11 +904,16 @@ function entryPage(){
   const compCard = followBox + `
   <div class="card">
     <h2>📋 ${pk(["เช็คการบันทึกประจำวัน (บังคับทุกหน่วย ทุกวัน)","ກວດການບັນທຶກປະຈຳວັນ (ບັງຄັບທຸກໜ່ວຍ ທຸກວັນ)","Daily entry check (mandatory, all units)"])}
-      <span class="thin">· ${pk(["วันนี้บันทึกแล้ว","ມື້ນີ້ບັນທຶກແລ້ວ","recorded today"])} <b style="color:${doneN===9?'var(--good)':'var(--crit)'}">${doneN}/9</b> ${pk(["หน่วย","ໜ່ວຍ","units"])}</span></h2>
+      <span class="thin">· <b style="color:var(--good)">${pk(["ครบ","ຄົບ","full"])} ${fullN}</b> · <b style="color:var(--warn)">${pk(["ไม่ครบ","ບໍ່ຄົບ","partial"])} ${partN}</b> · <b style="color:var(--crit)">${pk(["ไม่บันทึก","ບໍ່ບັນທຶກ","none"])} ${noneN}</b> / 9 ${pk(["หน่วย","ໜ່ວຍ","units"])}</span></h2>
+    <div class="sub">${pk(["\"ครบ\" = บันทึกครบทุก Job ที่ยังทำอยู่ของหน่วยนั้นในวันนี้ · \"ไม่ครบ\" = บันทึกบางงาน · \"ไม่บันทึก\" = ยังไม่ลงข้อมูลวันนี้","\"ຄົບ\" = ບັນທຶກຄົບທຸກ Job ທີ່ຍັງເຮັດ · \"ບໍ່ຄົບ\" = ບັນທຶກບາງງານ","\"Full\" = all active jobs logged today · \"Partial\" = some jobs · \"None\" = nothing today"])}</div>
     <div class="compgrid">
-      ${comp.map(x=>`<div class="compunit ${x.done?'ok':'miss'}">
-        <span class="cn">${un(x.u.name)}<span>${x.u.owner}</span></span>
-        <span class="cs" style="color:${x.done?'var(--good)':'var(--crit)'}">${x.done?'✓':'✗'}</span></div>`).join("")}
+      ${comp.map(x=>{const cl=x.state==="full"?"ok":x.state==="partial"?"part":"miss";
+        const ic=x.state==="full"?"✓":x.state==="partial"?"◐":"✗";
+        const col=x.state==="full"?"var(--good)":x.state==="partial"?"var(--warn)":"var(--crit)";
+        const detail=x.state==="partial"?(pk(["บันทึก","ບັນທຶກ","logged"])+" "+x.logged+"/"+x.active+" job"):(x.state==="full"?(x.active===0?pk(["ไม่มีงานค้าง","ບໍ່ມີງານຄ້າງ","no active jobs"]):pk(["ครบทุกงาน","ຄົບທຸກງານ","all jobs"])):pk(["ยังไม่บันทึก","ຍັງບໍ່ບັນທຶກ","not logged"]));
+        return `<div class="compunit ${cl}">
+        <span class="cn">${un(x.u.name)}<span>${detail}</span></span>
+        <span class="cs" style="color:${col}">${ic}</span></div>`;}).join("")}
     </div>
     <div style="margin-top:14px" class="scrollx"><table class="comptable">
       <tr><th>${pk(["หน่วยงาน","ໜ່ວຍງານ","Unit"])} \\ ${pk(["ย้อนหลัง 7 วัน","ຍ້ອນຫຼັງ 7 ວັນ","last 7 days"])}</th>
