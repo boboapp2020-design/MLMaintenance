@@ -207,9 +207,11 @@ svg text{font-family:inherit}
 /* ---- entry form ---- */
 .formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px;margin-bottom:12px}
 .fld label{display:block;font-size:12px;color:var(--mut);font-weight:700;margin-bottom:5px}
-.fld select,.fld input{width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:10px;
-  font-family:inherit;font-size:14px;background:#fff;color:var(--ink)}
-.fld select:focus,.fld input:focus{outline:2px solid var(--blue);border-color:var(--blue)}
+.fld select,.fld input{width:100%;padding:10px 12px;border:1.5px solid #AEBED4;border-radius:10px;
+  font-family:inherit;font-size:14px;background:#fff;color:var(--ink);transition:border-color .12s,box-shadow .12s}
+.fld select{cursor:pointer}
+.fld select:hover,.fld input:hover{border-color:#7E93B3}
+.fld select:focus,.fld input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.16)}
 .btn{display:inline-flex;align-items:center;gap:8px;border:none;border-radius:10px;padding:10px 22px;
   font-family:inherit;font-size:14.5px;font-weight:700;cursor:pointer;transition:all .15s}
 .btn-p{background:var(--blue);color:#fff}
@@ -793,14 +795,15 @@ function entryPage(){
     </div>
     <div id="taskInfo"></div>
     <div class="formgrid">
+      <div class="fld"><label>📅 ${pk(["วันที่บันทึก (ย้อนหลังได้)","ວັນທີບັນທຶກ (ຍ້ອນຫຼັງໄດ້)","Entry date (back-date allowed)"])}</label><input id="fDate" type="date" value="${todayISO()}" max="${todayISO()}"></div>
       <div class="fld"><label>${pk(["% ความคืบหน้าสะสม (0–100)","% ຄວາມຄືບໜ້າສະສົມ (0–100)","Cumulative % (0–100)"])}</label><input id="fPct" type="number" min="0" max="100" step="5" placeholder="60"></div>
-      <div class="fld"><label>${pk(["man-hr ที่ใช้วันนี้","man-hr ທີ່ໃຊ້ມື້ນີ້","Man-hours today"])}</label><input id="fMh" type="number" min="0" step="1" placeholder="24"></div>
+      <div class="fld"><label>${pk(["man-hr ที่ใช้วันนั้น","man-hr ທີ່ໃຊ້ມື້ນັ້ນ","Man-hours that day"])}</label><input id="fMh" type="number" min="0" step="1" placeholder="24"></div>
       <div class="fld"><label>${pk(["ผู้บันทึก","ຜູ້ບັນທຶກ","Recorded by"])}</label><input id="fBy" type="text"></div>
       <div class="fld"><label>${pk(["หมายเหตุ","ໝາຍເຫດ","Note"])}</label><input id="fNote" type="text"></div>
     </div>
     <div class="saverow">
       <button class="btn-save" onclick="saveEntry()">💾 ${pk(["บันทึกข้อมูล","ບັນທຶກຂໍ້ມູນ","Save entry"])}</button>
-      <span class="small">${pk(["วันที่บันทึก","ວັນທີບັນທຶກ","Date"])}: <b class="num">${todayISO()}</b></span>
+      <span class="small">${pk(["บันทึกลงวันที่ที่เลือกด้านบน","ບັນທຶກລົງວັນທີທີ່ເລືອກ","Saves to the selected date above"])}</span>
     </div>
   </div>
   <div class="card">
@@ -870,7 +873,9 @@ function saveEntry(){
   if(isNaN(pct)||pct<0||pct>100){ alert(pk(["กรุณากรอก % ระหว่าง 0–100","ກະລຸນາປ້ອນ % ລະຫວ່າງ 0–100","Enter % between 0–100"])); return; }
   const floor = latestPctFor(tid);
   if(floor!=null && pct<floor){ alert(pk(["ค่าความคืบหน้าสะสมต้องไม่น้อยกว่าค่าล่าสุด ("+floor+"%) — งานถอยหลังไม่ได้","ຄ່າຄວາມຄືບໜ້າສະສົມຕ້ອງບໍ່ໜ້ອຍກວ່າຄ່າຫຼ້າສຸດ ("+floor+"%)","Cumulative progress cannot be lower than the latest value ("+floor+"%)"])); return; }
-  const entry={date:todayISO(), taskId:tid, pct:pct,
+  let entryDate=document.getElementById("fDate").value || todayISO();
+  if(entryDate>todayISO()){ alert(pk(["เลือกวันที่ในอนาคตไม่ได้","ເລືອກວັນທີໃນອະນາຄົດບໍ່ໄດ້","Cannot select a future date"])); return; }
+  const entry={date:entryDate, taskId:tid, pct:pct,
     mh:parseFloat(document.getElementById("fMh").value)||0,
     by:document.getElementById("fBy").value.trim(),
     note:document.getElementById("fNote").value.trim()};
@@ -925,6 +930,35 @@ function anaPage(){
       <div class="value num" style="font-size:30px;color:${forecast>=99.5?'var(--good)':'var(--crit)'}">${fmt1(forecast)}<span class="unit">%</span></div>
       <div class="note">${pk(["ถ้าคงความเร็วเท่าปัจจุบัน","ຖ້າຄົງຄວາມໄວເທົ່າປັດຈຸບັນ","at current pace"])}</div></div>
   </div>
+  ${(function(){
+    // ประเมินโอกาสทันเป้า 100% ก่อนเปิดหีบ
+    const ratio = paceNeed<=0 ? 99 : paceNow/paceNeed;   // >1 = เร็วพอ
+    let verdict, vcolor, vbg, vicon, vmsg;
+    if(forecast>=100){ verdict=pk(["ทันเป้าแน่นอน","ທັນເປົ້າແນ່ນອນ","On track to finish"]); vcolor="var(--good)"; vbg="var(--good-bg)"; vicon="✅";
+      vmsg=pk(["ด้วยความเร็วปัจจุบันจะถึง 100% ก่อนกำหนด","ດ້ວຍຄວາມໄວປັດຈຸບັນຈະຮອດ 100% ກ່ອນກຳນົດ","At the current pace you will reach 100% before the deadline"]); }
+    else if(forecast>=95){ verdict=pk(["สุ่มเสี่ยง ต้องเร่งเล็กน้อย","ສ່ຽງ ຕ້ອງເລັ່ງໜ້ອຍໜຶ່ງ","Borderline — push a little"]); vcolor="var(--warn)"; vbg="var(--warn-bg)"; vicon="⚠️";
+      vmsg=pk(["ใกล้ทันแต่ยังขาด ต้องเพิ่มความเร็วอีกเล็กน้อยจึงจะถึง 100%","ໃກ້ທັນແຕ່ຍັງຂາດ ຕ້ອງເພີ່ມຄວາມໄວ","Close but short — a small speed-up gets you to 100%"]); }
+    else { verdict=pk(["เสี่ยงไม่ทันเป้า ต้องเร่งด่วน","ສ່ຽງບໍ່ທັນເປົ້າ ຕ້ອງເລັ່ງດ່ວນ","At risk of missing — act now"]); vcolor="var(--crit)"; vbg="var(--crit-bg)"; vicon="⛔";
+      vmsg=pk(["ด้วยความเร็วปัจจุบันจะจบเพียง "+fmt1(forecast)+"% ต่ำกว่าเป้า 100%","ດ້ວຍຄວາມໄວປັດຈຸບັນຈະຈົບພຽງ "+fmt1(forecast)+"%","At the current pace you will only reach "+fmt1(forecast)+"%"]); }
+    const needMh=(f.mh-f.actMh), needMhWk=needMh/wkLeft, haveMhWk=f.actMh/WNOW;
+    return `<div class="card" style="background:${vbg};border:1px solid ${vcolor}33">
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <div style="font-size:34px">${vicon}</div>
+        <div style="flex:1;min-width:220px">
+          <div style="font-size:18px;font-weight:800;color:${vcolor}">${pk(["ประเมินโอกาสทันเป้า:","ປະເມີນໂອກາດທັນເປົ້າ:","Will you hit the target?"])} ${verdict}</div>
+          <div class="small" style="color:var(--ink);margin-top:2px">${vmsg}</div>
+        </div>
+        <div style="text-align:center;padding:0 10px">
+          <div class="num" style="font-size:26px;font-weight:800;color:${vcolor}">${(ratio*100).toFixed(0)}%</div>
+          <div class="small">${pk(["ความเร็วเทียบที่ต้องการ","ຄວາມໄວທຽບທີ່ຕ້ອງການ","of required pace"])}</div>
+        </div>
+      </div>
+      <div class="railbar" style="margin-top:12px"><div class="fill" style="width:${Math.min(100,forecast)}%;background:${vcolor}"></div><div class="mark" style="left:100%"></div></div>
+      <div class="railcap num"><span>${pk(["คาดการณ์จบที่","ຄາດຄະເນຈົບທີ່","projected finish"])} ${fmt1(forecast)}%</span>
+        <span>${pk(["ต้องทำอีก","ຕ້ອງເຮັດອີກ","need"])} ${fmt0(needMhWk)} man-hr/${pk(["สัปดาห์","ສັບປະດາ","wk"])} · ${pk(["ทำได้จริงเฉลี่ย","ເຮັດໄດ້ຈິງສະເລ່ຍ","currently"])} ${fmt0(haveMhWk)}/${pk(["สัปดาห์","ສັບປະດາ","wk"])}</span>
+        <span>${pk(["เป้า","ເປົ້າ","target"])} 100% · ${fmtDate(SEASON_END)}</span></div>
+    </div>`;
+  })()}
   <div class="grid2">
     <div class="card"><h2>📊 Pareto <span class="thin">· ${pk(["หน่วยงานเรียงตามผลต่างจากแผน","ໜ່ວຍງານຮຽງຕາມຜົນຕ່າງຈາກແຜນ","units by variance"])}</span></h2>
       ${rows.map(r=>{const w=Math.abs(r.varc)/maxAbs*100;
