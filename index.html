@@ -208,6 +208,14 @@ tr.clickable:hover td{background:var(--tint)}
 .scrollx{overflow-x:auto}
 .small{font-size:12px;color:var(--mut)}
 .chartwrap{position:relative}
+.chartwrap svg{cursor:zoom-in}
+.modal-ov{position:fixed;inset:0;background:rgba(12,22,40,.6);display:none;align-items:center;justify-content:center;z-index:200;padding:20px}
+.modal-ov.open{display:flex}
+.modal-box{background:var(--card);border-radius:16px;padding:20px 24px 22px;max-width:1040px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.4);position:relative}
+.modal-box h3{margin:0 34px 14px 0;font-size:16px;font-weight:800;color:var(--ink)}
+.modal-close{position:absolute;top:14px;right:16px;width:34px;height:34px;border:none;background:var(--tint);border-radius:9px;cursor:pointer;font-size:17px;color:var(--mut);line-height:1}
+.modal-close:hover{background:var(--tint2);color:var(--ink)}
+.modal-box .chartwrap svg{cursor:default}
 .savepic{position:absolute;top:-2px;right:-2px;width:30px;height:30px;border:1px solid var(--line);background:var(--card);
   border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--mut);box-shadow:var(--shadow);transition:all .15s;z-index:3}
 .savepic:hover{color:var(--blue);border-color:var(--blue);background:var(--tint)}
@@ -232,6 +240,8 @@ svg text{font-family:inherit}
 .btn-o:hover{background:var(--tint)}
 .btn-d{background:none;color:var(--crit);border:none;font-size:13px;cursor:pointer;font-family:inherit}
 .taskinfo{background:var(--tint);border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:12px}
+.deptlock{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid var(--blue);background:var(--tint);border-radius:10px;font-size:14px}
+.deptlock .editlink{margin-left:auto;color:var(--blue);font-size:12px;text-decoration:underline;cursor:pointer}
 details.card>summary{cursor:pointer;list-style:none;font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 details.card>summary::-webkit-details-marker{display:none}
 details.card>summary::marker{content:""}
@@ -275,6 +285,13 @@ details.card>summary::marker{content:""}
     <div id="app"></div>
     <div class="footnote" id="foot"></div>
   </main>
+</div>
+<div class="modal-ov" id="chartModal" onclick="if(event.target===this)closeChartModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeChartModal()" aria-label="close">✕</button>
+    <h3 id="modalTitle"></h3>
+    <div id="modalBody"></div>
+  </div>
 </div>
 
 <script>
@@ -610,7 +627,7 @@ function sCurve(tasks, lineColor="#2563EB", w=720, h=260){
   const xN=X(WNOW), yA=Y(Act[WNOW]);
   const area = path(Act,WNOW)+`L${X(WNOW)},${Y(0)} L${X(0)},${Y(0)} Z`;
   return `<div class="chartwrap"><button class="savepic noprint" title="${pk(["บันทึกกราฟเป็นรูป","ບັນທຶກກຣາຟເປັນຮູບ","Save chart as image"])}" onclick="saveChart(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M4 20h16"/></svg></button>
-  <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto" role="img"
+  <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto" role="img" onclick="openChartModal(this)"
     <text x="${mL-8}" y="10" font-size="10.5" fill="#94A3B8">(%)</text>
     ${g}
     <path d="${area}" fill="${lineColor}" opacity="0.10"/>
@@ -624,6 +641,20 @@ function sCurve(tasks, lineColor="#2563EB", w=720, h=260){
   <div class="legendbar"><span><span class="sw" style="background:${lineColor}"></span>${pk(["ผลจริงสะสม (% ถ่วง mh)","ຜົນຕົວຈິງສະສົມ (% ຖ່ວງ mh)","Cumulative actual (mh-weighted %)"])}</span>
   <span><span class="sw" style="background:none;border-top:3px dashed #94A3B8;height:0"></span>${pk(["แผนสะสมรายสัปดาห์","ແຜນສະສົມລາຍອາທິດ","Weekly plan baseline"])}</span></div></div>`;
 }
+
+/* ============ Popup ขยายกราฟ ============ */
+function openChartModal(svg){
+  const wrap=svg.closest(".chartwrap"); if(!wrap) return;
+  const card=svg.closest(".card"), sec=svg.closest(".secchart");
+  const title = card&&card.querySelector("h2") ? card.querySelector("h2").innerText
+    : (sec&&sec.querySelector(".sctitle") ? sec.querySelector(".sctitle").innerText : "S-Curve");
+  document.getElementById("modalTitle").textContent=title;
+  const clone=wrap.cloneNode(true);
+  const body=document.getElementById("modalBody"); body.innerHTML=""; body.appendChild(clone);
+  document.getElementById("chartModal").classList.add("open");
+}
+function closeChartModal(){ document.getElementById("chartModal").classList.remove("open"); }
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeChartModal(); });
 
 /* ============ บันทึกกราฟเป็นรูป PNG ============ */
 function saveChart(btn){
@@ -881,6 +912,10 @@ function unitView(secId, uname){
 
 /* ============ บันทึกข้อมูล ============ */
 function todayISO(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+/* ล็อกแผนก: เลือกครั้งเดียว แล้วหน้าบันทึกโชว์เฉพาะงานของแผนกนั้น */
+let DEPT=""; try{ DEPT=localStorage.getItem("idash_dept")||""; }catch(e){}
+function unitByCode(code){ return DATA.flatMap(s=>s.units).find(u=>u.code===code); }
+function setDept(code){ DEPT=code||""; try{ code?localStorage.setItem("idash_dept",code):localStorage.removeItem("idash_dept"); }catch(e){} entryPage(); }
 function entryPage(){
   const todays=ENTRIES.filter(e=>e.date===todayISO()).length;
   const comp=complianceToday(), fullN=comp.filter(x=>x.state==="full").length, partN=comp.filter(x=>x.state==="partial").length, noneN=comp.filter(x=>x.state==="none").length;
@@ -929,13 +964,19 @@ function entryPage(){
   <div class="card">
     <h2>📝 ${pk(["ฟอร์มบันทึก","ຟອມບັນທຶກ","Entry form"])} <span class="thin">· ${pk(["วันนี้บันทึกแล้ว","ມື້ນີ້ບັນທຶກແລ້ວ","today"])} ${todays} ${pk(["รายการ","ລາຍການ","records"])}</span></h2>
     <div class="formgrid">
-      <div class="fld"><label>${pk(["หน่วยงาน","ໜ່ວຍງານ","Unit"])}</label>
-        <select id="fUnit" onchange="entryUnitChanged()"><option value="">${pk(["— เลือกหน่วยงาน —","— ເລືອກໜ່ວຍງານ —","— select unit —"])}</option>
+      ${DEPT ? `
+      <div class="fld"><label>${pk(["แผนกของคุณ (ล็อกไว้)","ໜ່ວຍງານຂອງທ່ານ (ລັອກ)","Your unit (locked)"])}</label>
+        <div class="deptlock">🔒 <b>${un(unitByCode(DEPT).name)}</b><span class="editlink" onclick="setDept('')">${pk(["เปลี่ยนแผนก","ປ່ຽນໜ່ວຍງານ","change"])}</span></div></div>
+      <div class="fld"><label>Job</label><select id="fJob" onchange="entryJobChanged()"><option value="">${pk(["— เลือก Job —","— ເລືອກ Job —","— select job —"])}</option>${unitByCode(DEPT).jobs.map(j=>`<option value="${j.id}">${j.id} · ${tr(j.name)}</option>`).join("")}</select></div>
+      <div class="fld"><label>Task</label><select id="fTask" onchange="entryTaskChanged()" disabled><option value="">—</option></select></div>
+      ` : `
+      <div class="fld" style="grid-column:1/-1"><label>${pk(["เลือกแผนกของคุณ (ล็อกไว้เพื่อบันทึกเฉพาะงานของแผนกนี้)","ເລືອກໜ່ວຍງານຂອງທ່ານ (ລັອກໄວ້)","Select your unit (locks to this unit only)"])}</label>
+        <select id="fUnit" onchange="setDept(this.value)"><option value="">${pk(["— เลือกแผนก —","— ເລືອກໜ່ວຍງານ —","— select your unit —"])}</option>
         ${DATA.map(s=>`<optgroup label="${un(s.name)}">${s.units.map(u=>`<option value="${u.code}">${un(u.name)}</option>`).join("")}</optgroup>`).join("")}
         </select></div>
-      <div class="fld"><label>Job</label><select id="fJob" onchange="entryJobChanged()" disabled><option value="">—</option></select></div>
-      <div class="fld"><label>Task</label><select id="fTask" onchange="entryTaskChanged()" disabled><option value="">—</option></select></div>
+      `}
     </div>
+    ${DEPT?"":`<div class="small" style="margin:-4px 0 4px">${pk(["👆 เลือกแผนกก่อน จึงจะเห็นรายการงานของแผนกและกรอกได้","👆 ເລືອກໜ່ວຍງານກ່ອນ","👆 Select your unit first to see its jobs"])}</div>`}
     <div id="taskInfo"></div>
     <div class="formgrid">
       <div class="fld"><label>📅 ${pk(["วันที่บันทึก (ย้อนหลังได้)","ວັນທີບັນທຶກ (ຍ້ອນຫຼັງໄດ້)","Entry date (back-date allowed)"])}</label><input id="fDate" type="date" value="${todayISO()}" max="${todayISO()}"></div>
@@ -996,7 +1037,9 @@ function entryTaskChanged(){
   if(x){ inp.min=floor; inp.value=Math.max(floor, Math.round(x.t.act*100)); inp.dataset.floor=floor; }
 }
 function saveEntry(){
-  const tid=document.getElementById("fTask").value;
+  const tEl=document.getElementById("fTask");
+  if(!tEl){ alert(pk(["กรุณาเลือกแผนกของคุณก่อน","ກະລຸນາເລືອກໜ່ວຍງານກ່ອນ","Please select your unit first"])); return; }
+  const tid=tEl.value;
   const pct=parseFloat(document.getElementById("fPct").value);
   if(!tid){ alert(pk(["กรุณาเลือกหน่วยงาน → Job → Task ให้ครบ","ກະລຸນາເລືອກໜ່ວຍງານ → Job → Task ໃຫ້ຄົບ","Please select Unit → Job → Task"])); return; }
   if(isNaN(pct)||pct<0||pct>100){ alert(pk(["กรุณากรอก % ระหว่าง 0–100","ກະລຸນາປ້ອນ % ລະຫວ່າງ 0–100","Enter % between 0–100"])); return; }
