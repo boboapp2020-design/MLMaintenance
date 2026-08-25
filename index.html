@@ -77,9 +77,11 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .histnote{display:inline-flex;align-items:center;gap:8px;background:var(--warn-bg);color:var(--warn);
   border-radius:10px;padding:6px 14px;font-size:13px;font-weight:700;margin-bottom:14px}
 .histnote a{color:var(--blue);cursor:pointer;text-decoration:underline}
-.compbanner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--crit-bg);color:var(--crit);
-  border:1px solid #F5B5B5;border-radius:12px;padding:10px 16px;font-size:13.5px;font-weight:700;margin-bottom:14px}
-.compbanner a{color:var(--blue);cursor:pointer;text-decoration:underline;font-weight:700}
+.compbanner{display:flex;align-items:baseline;gap:6px 10px;flex-wrap:wrap;background:var(--crit-bg);color:var(--crit);
+  border:1px solid #F5B5B5;border-radius:10px;padding:7px 13px;font-size:12.5px;font-weight:700;margin-bottom:12px;line-height:1.5}
+.compbanner .cbnum{background:var(--crit);color:#fff;border-radius:20px;padding:1px 9px;font-size:12px}
+.compbanner .cbunits{color:#8A2b26;font-weight:600}
+.compbanner a{color:var(--blue);cursor:pointer;text-decoration:underline;font-weight:700;margin-left:auto}
 .compgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px;margin-top:6px}
 .compunit{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:9px 12px}
 .compunit.ok{background:var(--good-bg);border-color:#B5E4C8}
@@ -534,9 +536,9 @@ function overview(){
   const daysLeft=Math.max(0,Math.round((SEASON_END-wkEnd(WNOW))/86400000));
   const missing=complianceToday().filter(x=>!x.done);
   const compBanner = missing.length===0 ? "" :
-    `<div class="compbanner">⚠️ ${pk(["วันนี้ยังมี","ມື້ນີ້ຍັງມີ","Today"])} <b>${missing.length}/9</b> ${pk(["หน่วยงานไม่ได้บันทึกข้อมูล:","ໜ່ວຍງານຍັງບໍ່ບັນທຶກຂໍ້ມູນ:","units have not recorded:"])}
-     ${missing.map(x=>un(x.u.name)).join(" · ")}
-     &nbsp;<a onclick="go('entry')">${pk(["ไปหน้าบันทึก ›","ໄປໜ້າບັນທຶກ ›","Go to entry ›"])}</a></div>`;
+    `<div class="compbanner">⚠️ <span class="cbnum num">${missing.length}/9</span> ${pk(["หน่วยยังไม่บันทึกวันนี้","ໜ່ວຍຍັງບໍ່ບັນທຶກມື້ນີ້","units not recorded today"])}
+     <span class="cbunits">${missing.map(x=>un(x.u.name)).join(" · ")}</span>
+     <a onclick="go('entry')">${pk(["บันทึก ›","ບັນທຶກ ›","Record ›"])}</a></div>`;
   app.innerHTML = pagehead(pk(["ความคืบหน้าของงานซ่อม","ຄວາມຄືບໜ້າຂອງວຽກສ້ອມແປງ","Maintenance Progress"]),
     pk(["ภาพรวม ณ วันที่","ພາບລວມ ນະວັນທີ","As of"])+" "+fmtDate(wkEnd(WNOW))+" · "+pk(["สัปดาห์ที่","ສັບປະດາທີ","Week"])+" "+WNOW+"/"+WEEKS) + compBanner + `
   <div class="kpis">
