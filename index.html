@@ -23,10 +23,10 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .logo img{width:44px;height:44px;object-fit:contain;flex:0 0 44px;border-radius:10px}
 .lname{font-weight:800;font-size:15px;color:#FFFFFF;line-height:1.15;letter-spacing:.3px}
 .lname span{display:block;font-size:10px;letter-spacing:.5px;color:#7FB2E8;font-weight:700}
-.headctl{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.headctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto}
 .langdd{position:relative}
-.lddbtn{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);
-  border-radius:12px;padding:8px 14px;font-size:13.5px;font-weight:800;color:var(--ink);cursor:pointer;
+.lddbtn{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:6px 11px;font-size:12px;font-weight:800;color:var(--ink);cursor:pointer;
   box-shadow:var(--shadow);transition:all .15s;user-select:none}
 .lddbtn:hover{border-color:var(--blue);color:var(--blue)}
 .lddbtn svg{border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
@@ -70,13 +70,13 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .pagehead h1{font-size:21px;margin:0;font-weight:800}
 .pagehead .sub{font-size:13px;color:var(--mut);margin-top:3px}
 .phleft{display:flex;align-items:center;gap:14px;min-width:0}
-.idlogo{display:flex;align-items:center;gap:7px;padding-right:15px;border-right:2px solid var(--line);flex:0 0 auto}
-.idlogo .idw{font-size:22px;font-weight:800;color:#1039D6;letter-spacing:-.5px;line-height:1}
-@media(max-width:600px){.idlogo{padding-right:10px}.idlogo .idw{font-size:18px}}
-.datechip{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);
-  border-radius:12px;padding:7px 12px;font-size:13.5px;font-weight:700;color:var(--ink);box-shadow:var(--shadow)}
-.datechip svg{color:var(--blue)}
-.datechip select{border:none;background:none;font-family:inherit;font-size:13.5px;font-weight:700;color:var(--ink);cursor:pointer;padding:2px}
+.idlogo{display:flex;align-items:center;gap:9px;padding-right:16px;border-right:2px solid var(--line);flex:0 0 auto}
+.idlogo .idw{font-size:24px;font-weight:800;color:#1B4DE4;letter-spacing:-1px;line-height:1;font-family:"Segoe UI","Leelawadee UI",sans-serif}
+@media(max-width:600px){.idlogo{padding-right:11px;gap:7px}.idlogo .idw{font-size:19px}}
+.datechip{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--ink);box-shadow:var(--shadow)}
+.datechip svg{color:var(--blue);width:15px;height:15px}
+.datechip select{border:none;background:none;font-family:inherit;font-size:12px;font-weight:700;color:var(--ink);cursor:pointer;padding:1px}
 .datechip select:focus{outline:2px solid var(--blue);border-radius:6px}
 .histnote{display:inline-flex;align-items:center;gap:8px;background:var(--warn-bg);color:var(--warn);
   border-radius:10px;padding:6px 14px;font-size:13px;font-weight:700;margin-bottom:14px}
@@ -568,11 +568,11 @@ function histBanner(){
     &nbsp;<a onclick="setWeek(${REALWK})">${pk(["กลับสัปดาห์ปัจจุบัน ›","ກັບສັບປະດາປັດຈຸບັນ ›","Back to current ›"])}</a></div>`;
 }
 const IDLOGO = `<div class="idlogo" title="iDash — AI Dashboard Intelligence Platform">
-  <svg width="30" height="26" viewBox="0 0 46 40" aria-label="iDash">
-    <rect x="0"  y="26" width="8" height="14" rx="3" fill="#1039D6"/>
-    <rect x="12" y="17" width="8" height="23" rx="3" fill="#2563EB"/>
-    <rect x="24" y="8"  width="8" height="32" rx="3" fill="#5B8DEF"/>
-    <rect x="36" y="0"  width="8" height="40" rx="3" fill="#A7C4F7"/>
+  <svg width="32" height="28" viewBox="0 0 48 42" aria-label="iDash">
+    <rect x="0"  y="27" width="9" height="15" rx="4.5" fill="#1B4DE4"/>
+    <rect x="13" y="18" width="9" height="24" rx="4.5" fill="#3B82F6"/>
+    <rect x="26" y="9"  width="9" height="33" rx="4.5" fill="#60A5FA"/>
+    <rect x="39" y="0"  width="9" height="42" rx="4.5" fill="#93C5FD"/>
   </svg><span class="idw">iDash</span></div>`;
 function pagehead(title,sub){ return `<div class="pagehead"><div class="phleft">${IDLOGO}<div><h1>${title}</h1><div class="sub">${sub}</div></div></div><div class="headctl">${langChip()}${weekChip()}</div></div>${histBanner()}`; }
 function unitBub(name,sz=22){ return IC(ICONS[UNIT_ICON[name]]||ICONS.gear,sz); }
