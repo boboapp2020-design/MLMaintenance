@@ -767,7 +767,7 @@ function renderLang(){
         "ເກນສະຖານະ (ຜົນຕ່າງຈາກແຜນສະສົມ): 🟢 ຕາມແຜນ ≥ −2 ຈຸດ · 🟡 ສ່ຽງ −2 ຫາ −7 ຈຸດ · 🔴 ຊັກຊ້າ < −7 ຈຸດ · % ຖ່ວງນ້ຳໜັກດ້ວຍ man-hours",
         "Status criteria (variance vs cumulative plan): 🟢 On plan ≥ −2 pts · 🟡 At risk −2 to −7 pts · 🔴 Late < −7 pts · man-hours weighted"]);
 }
-function go(p){ PAGE=p; renderNav(); ({over:overview,jobs:jobsPage,units:unitsPage,entry:entryPage,ana:anaPage,rep:repPage})[p](); window.scrollTo(0,0); }
+function go(p){ PAGE=p; if(p==='entry'){ DEPT=""; SELJOB=null; } renderNav(); ({over:overview,jobs:jobsPage,units:unitsPage,entry:entryPage,ana:anaPage,rep:repPage})[p](); window.scrollTo(0,0); }
 function setWeek(w){ WNOW=parseInt(w); go(PAGE); }
 function weekChip(){
   const opts=[...Array(REALWK).keys()].map(i=>{const w=i+1;
@@ -964,10 +964,10 @@ function unitView(secId, uname){
 /* ============ บันทึกข้อมูล ============ */
 function todayISO(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 /* ล็อกแผนก: เลือกครั้งเดียว แล้วหน้าบันทึกโชว์เฉพาะงานของแผนกนั้น */
-let DEPT=""; try{ DEPT=localStorage.getItem("idash_dept")||""; }catch(e){}
+let DEPT="";  /* เริ่มที่หน้าเลือกแผนกทุกครั้ง (ไม่จำแผนกเดิม) */
 function unitByCode(code){ return DATA.flatMap(s=>s.units).find(u=>u.code===code); }
 let SELJOB=null;
-function setDept(code){ DEPT=code||""; SELJOB=null; try{ code?localStorage.setItem("idash_dept",code):localStorage.removeItem("idash_dept"); }catch(e){} entryPage(); }
+function setDept(code){ DEPT=code||""; SELJOB=null; entryPage(); }
 function selectJob(jid){ SELJOB=jid; document.querySelectorAll('.joblistitem').forEach(function(el){ el.classList.toggle('active', el.getAttribute('onclick').indexOf("'"+jid+"'")>-1); }); var d=document.querySelector('.jobdetail'); if(d){ d.innerHTML=jobDetailHtml(); } else { entryDeptPage(); } }
 /* ===== flow บันทึกแบบไล่ขั้น: เลือกแผนก → Job → Task → ฟอร์ม → ยืนยัน Job ===== */
 function recordedToday(tid){ return ENTRIES.some(e=>e.date===todayISO() && e.taskId===tid); }
@@ -1259,6 +1259,76 @@ function exportEntries(){
   alert(pk(["ดาวน์โหลด CSV แล้ว (และคัดลอกลงคลิปบอร์ด) นำไปวางต่อท้ายแท็บ Daily_Input ได้เลย","ດາວໂຫຼດ CSV ແລ້ວ (ແລະສຳເນົາໃສ່ຄລິບບອດ)","CSV downloaded (and copied to clipboard). Paste into the Daily_Input tab."]));
 }
 
+/* ============ Export Excel (หลายชีต: สรุป + ชีตละแผนก) ============ */
+function xlEsc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function xlC(v,t,st){ const s=st?` ss:StyleID="${st}"`:""; return `<Cell${s}><Data ss:Type="${t}">${xlEsc(v)}</Data></Cell>`; }
+function xlS(v,st){ return xlC(v,"String",st); }
+function xlN(v,st){ return xlC(v,"Number",st); }
+function xlRow(cells){ return `<Row>${cells}</Row>`; }
+function exportExcel(){
+  const SC={good:"stGood",warn:"stWarn",crit:"stCrit"};
+  // ---- ชีตสรุปทั้งโรงงาน ----
+  let sumRows = xlRow(xlS(pk(["สรุปงานซ่อมทั้งโรงงาน · ณ สัปดาห์ "+WNOW+" ("+ (function(){const d=wkEnd(WNOW);return d.getDate()+"/"+(d.getMonth()+1)+"/"+ (LANG==="th"?d.getFullYear()+543:d.getFullYear());})() +")","ສະຫຼຸບ","Factory summary"]),"title"));
+  sumRows += xlRow(["ส่วนงาน","หน่วยงาน","ผู้รับผิดชอบ","% แผนสะสม","% ผลจริง","ผลต่าง(จุด)","สถานะ","man-hr แผน","man-hr ทำได้","Job เสร็จ/ทั้งหมด"].map(h=>xlS(h,"hdr")).join(""));
+  DATA.forEach(s=>s.units.forEach(u=>{
+    const a=agg(unitTasks(u),WNOW), v=a.act-a.plan, st=statusOf(v);
+    const jobs=u.jobs, done=jobs.filter(j=>agg(j.tasks,WNOW).act>=99.5).length;
+    sumRows += xlRow(
+      xlS(un(s.name))+xlS(un(u.name))+xlS(u.owner)+
+      xlN(+a.plan.toFixed(1),"pct")+xlN(+a.act.toFixed(1),"pct")+xlN(+v.toFixed(1),"pct")+
+      xlS(st[0],SC[st[1]])+xlN(Math.round(a.mh))+xlN(Math.round(a.actMh))+xlS(done+"/"+jobs.length)
+    );
+  }));
+  const f=agg(allTasks,WNOW);
+  sumRows += xlRow(xlS("รวมทั้งโรงงาน","sec")+xlS("","sec")+xlS("","sec")+xlN(+f.plan.toFixed(1),"secp")+xlN(+f.act.toFixed(1),"secp")+xlN(+(f.act-f.plan).toFixed(1),"secp")+xlS("","sec")+xlN(Math.round(f.mh),"sec")+xlN(Math.round(f.actMh),"sec")+xlS("","sec"));
+  let sheets = `<Worksheet ss:Name="สรุปทั้งโรงงาน"><Table>${sumRows}</Table></Worksheet>`;
+  // ---- ชีตละแผนก ----
+  DATA.forEach(s=>s.units.forEach(u=>{
+    const a=agg(unitTasks(u),WNOW), v=a.act-a.plan, st=statusOf(v);
+    let rows = xlRow(xlS(un(u.name)+" · "+un(s.name)+" · "+u.owner,"title"));
+    rows += xlRow(xlS(pk(["ความคืบหน้ารวม","ຄວາມຄືບໜ້າ","Progress"],0)+" "+fmt1(a.act)+"% / "+pk(["แผน","ແຜນ","plan"],0)+" "+fmt1(a.plan)+"% · "+st[0],"sub"));
+    rows += xlRow(["รหัส Job","ชื่อ Job","รหัส Task","ชื่อ Task","man-hr","สัปดาห์เริ่ม","สัปดาห์เสร็จ","% แผน","% ผลจริง","สถานะ","บันทึกล่าสุด","ผู้บันทึกล่าสุด"].map(h=>xlS(h,"hdr")).join(""));
+    u.jobs.forEach(j=>{
+      const ja=agg(j.tasks,WNOW), jv=ja.act-ja.plan, jst=statusOf(jv);
+      rows += xlRow(xlS(j.id,"sec")+xlS(tr(j.name),"sec")+xlS("","sec")+xlS(pk(["(รวมงาน)","(ລວມ)","(job total)"],0),"sec")+xlN(Math.round(ja.mh),"sec")+xlS("","sec")+xlS("","sec")+xlN(+ja.plan.toFixed(1),"secp")+xlN(+ja.act.toFixed(1),"secp")+xlS(jst[0],"sec")+xlS("","sec")+xlS("","sec"));
+      j.tasks.forEach(t=>{
+        const tp=t.plan(WNOW)*100, ta=actAt(t,WNOW)*100, tst= ta>=100?["เสร็จ","good"]:statusOf(ta-tp);
+        const le=latestEntryFor(t.id);
+        rows += xlRow(
+          xlS(j.id)+xlS(tr(j.name))+xlS(t.id)+xlS(tr(t.name))+xlN(Math.round(t.mh))+
+          xlN(Math.max(1,Math.round(t.s)))+xlN(Math.min(WEEKS,Math.round(t.e)))+
+          xlN(+tp.toFixed(1),"pct")+xlN(+ta.toFixed(1),"pct")+xlS(tst[0],SC[tst[1]])+
+          xlS(le?le.date:"")+xlS(le?le.by:"")
+        );
+      });
+    });
+    sheets += `<Worksheet ss:Name="${xlEsc(un(u.name).slice(0,31))}"><Table>${rows}</Table></Worksheet>`;
+  }));
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:x="urn:schemas-microsoft-com:office:excel">
+<Styles>
+ <Style ss:ID="Default"><Alignment ss:Vertical="Center"/><Font ss:FontName="Tahoma" ss:Size="10"/></Style>
+ <Style ss:ID="title"><Font ss:Bold="1" ss:Size="13" ss:Color="#1D4ED8"/></Style>
+ <Style ss:ID="sub"><Font ss:Italic="1" ss:Color="#555555"/></Style>
+ <Style ss:ID="hdr"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#2563EB" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+ <Style ss:ID="sec"><Font ss:Bold="1"/><Interior ss:Color="#E3EDFC" ss:Pattern="Solid"/></Style>
+ <Style ss:ID="secp"><Font ss:Bold="1"/><Interior ss:Color="#E3EDFC" ss:Pattern="Solid"/><NumberFormat ss:Format="0.0"/></Style>
+ <Style ss:ID="pct"><NumberFormat ss:Format="0.0"/></Style>
+ <Style ss:ID="stGood"><Font ss:Color="#16A34A" ss:Bold="1"/></Style>
+ <Style ss:ID="stWarn"><Font ss:Color="#D97706" ss:Bold="1"/></Style>
+ <Style ss:ID="stCrit"><Font ss:Color="#DC2626" ss:Bold="1"/></Style>
+</Styles>
+${sheets}
+</Workbook>`;
+  try{
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([xml],{type:"application/vnd.ms-excel;charset=utf-8"}));
+    a.download="iDash_MaintTrack_"+todayISO()+".xls"; document.body.appendChild(a); a.click();
+    setTimeout(()=>{ a.remove(); URL.revokeObjectURL(a.href); },100);
+  }catch(err){ alert("Export error: "+err.message); }
+}
+
 /* ============ การวิเคราะห์ ============ */
 function anaPage(){
   const SCc={good:"#16A34A",warn:"#D97706",crit:"#EF4444"};
@@ -1353,7 +1423,8 @@ function repPage(){
   const PTS=pk(["จุด","ຈຸດ","pts"]);
   app.innerHTML = pagehead(pk(["รายงานประจำสัปดาห์ที่","ລາຍງານປະຈຳສັບປະດາທີ","Weekly Report — Week"])+" "+WNOW,
     pk(["สรุปสำหรับที่ประชุมผู้บริหาร · ข้อมูล ณ","ສະຫຼຸບສຳລັບກອງປະຊຸມຜູ້ບໍລິຫານ · ຂໍ້ມູນ ນະ","Executive summary · as of"])+" "+fmtDate(wkEnd(WNOW))) + `
-  <div class="noprint" style="margin-bottom:14px"><button class="btn btn-p" onclick="window.print()">🖨 ${pk(["พิมพ์ / บันทึก PDF","ພິມ / ບັນທຶກ PDF","Print / Save PDF"])}</button></div>
+  <div class="noprint" style="margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap"><button class="btn btn-p" onclick="window.print()">🖨 ${pk(["พิมพ์ / บันทึก PDF","ພິມ / ບັນທຶກ PDF","Print / Save PDF"])}</button>
+    <button class="btn btn-o" onclick="exportExcel()">📊 ${pk(["Export Excel (ชีตละแผนก)","Export Excel (ຊີດລະໜ່ວຍ)","Export Excel (sheet per unit)"])}</button></div>
   <div class="card"><h2>1. ${pk(["สรุปภาพรวม","ສະຫຼຸບພາບລວມ","Summary"])}</h2>
     <div class="repline"><span class="bullet">•</span><span class="num">${pk(["ความคืบหน้ารวม","ຄວາມຄືບໜ້າລວມ","Overall progress"])} <b>${fmt1(f.act)}%</b> ${pk(["เทียบแผน","ທຽບແຜນ","vs plan"])} ${fmt1(f.plan)}% — <b>${gap>=0?pk(["นำแผน","ນຳແຜນ","ahead"]):pk(["ช้ากว่าแผน","ຊ້າກວ່າແຜນ","behind"])} ${fmt1(Math.abs(gap))} ${PTS} (${fLbl})</b></span></div>
     <div class="repline"><span class="bullet">•</span><span class="num">${pk(["แรงงานสะสม","ແຮງງານສະສົມ","Man-hours"])} <b>${fmt0(f.actMh)}</b> / ${fmt0(f.mh)} man-hr · Job ${pk(["เสร็จ","ສຳເລັດ","done"])} <b>${done.length}/${jobsAll.length}</b></span></div>
