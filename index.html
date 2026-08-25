@@ -66,9 +66,13 @@ body{margin:0;background:var(--bg);color:var(--ink);
 
 /* ---------- main ---------- */
 .main{flex:1 1 0;min-width:0;padding:24px 28px 50px;max-width:1280px}
-.pagehead{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.pagehead{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px}
 .pagehead h1{font-size:21px;margin:0;font-weight:800}
 .pagehead .sub{font-size:13px;color:var(--mut);margin-top:3px}
+.phleft{display:flex;align-items:center;gap:14px;min-width:0}
+.idlogo{display:flex;align-items:center;gap:7px;padding-right:15px;border-right:2px solid var(--line);flex:0 0 auto}
+.idlogo .idw{font-size:22px;font-weight:800;color:#1039D6;letter-spacing:-.5px;line-height:1}
+@media(max-width:600px){.idlogo{padding-right:10px}.idlogo .idw{font-size:18px}}
 .datechip{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);
   border-radius:12px;padding:7px 12px;font-size:13.5px;font-weight:700;color:var(--ink);box-shadow:var(--shadow)}
 .datechip svg{color:var(--blue)}
@@ -563,7 +567,14 @@ function histBanner(){
   return `<div class="histnote">🕓 ${pk(["กำลังดูข้อมูลย้อนหลัง ณ สัปดาห์ที่","ກຳລັງເບິ່ງຂໍ້ມູນຍ້ອນຫຼັງ ນະສັບປະດາທີ","Viewing historical data — week"])} ${WNOW}
     &nbsp;<a onclick="setWeek(${REALWK})">${pk(["กลับสัปดาห์ปัจจุบัน ›","ກັບສັບປະດາປັດຈຸບັນ ›","Back to current ›"])}</a></div>`;
 }
-function pagehead(title,sub){ return `<div class="pagehead"><div><h1>${title}</h1><div class="sub">${sub}</div></div><div class="headctl">${langChip()}${weekChip()}</div></div>${histBanner()}`; }
+const IDLOGO = `<div class="idlogo" title="iDash — AI Dashboard Intelligence Platform">
+  <svg width="30" height="26" viewBox="0 0 46 40" aria-label="iDash">
+    <rect x="0"  y="26" width="8" height="14" rx="3" fill="#1039D6"/>
+    <rect x="12" y="17" width="8" height="23" rx="3" fill="#2563EB"/>
+    <rect x="24" y="8"  width="8" height="32" rx="3" fill="#5B8DEF"/>
+    <rect x="36" y="0"  width="8" height="40" rx="3" fill="#A7C4F7"/>
+  </svg><span class="idw">iDash</span></div>`;
+function pagehead(title,sub){ return `<div class="pagehead"><div class="phleft">${IDLOGO}<div><h1>${title}</h1><div class="sub">${sub}</div></div></div><div class="headctl">${langChip()}${weekChip()}</div></div>${histBanner()}`; }
 function unitBub(name,sz=22){ return IC(ICONS[UNIT_ICON[name]]||ICONS.gear,sz); }
 function riskRows(){
   return DATA.flatMap(s=>s.units.map(u=>({sec:s,u,a:agg(unitTasks(u),WNOW)})))
