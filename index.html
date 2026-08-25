@@ -302,6 +302,59 @@ const NAMES = {
 };
 const un = n => NAMES[n] ? pk(NAMES[n]) : n;
 
+/* คำแปลชื่อ Job และ Task (ขั้นงาน) 3 ภาษา */
+const TR = {
+ // ---- Task phases ----
+ "ถอดชิ้นส่วน / เปิดตรวจภายใน":["ถอดชิ้นส่วน / เปิดตรวจภายใน","ຖອດຊິ້ນສ່ວນ / ເປີດກວດພາຍໃນ","Disassembly / internal inspection"],
+ "ตรวจวัดและประเมินสภาพ (NDT/วัดค่า)":["ตรวจวัดและประเมินสภาพ (NDT/วัดค่า)","ກວດວັດ ແລະ ປະເມີນສະພາບ (NDT)","Inspection & condition assessment (NDT)"],
+ "จัดหาอะไหล่และวัสดุ":["จัดหาอะไหล่และวัสดุ","ຈັດຫາອາໄຫຼ່ ແລະ ວັດສະດຸ","Spare parts & materials procurement"],
+ "ซ่อม/เปลี่ยนชิ้นส่วนหลัก ชุดที่ 1":["ซ่อม/เปลี่ยนชิ้นส่วนหลัก ชุดที่ 1","ສ້ອມ/ປ່ຽນຊິ້ນສ່ວນຫຼັກ ຊຸດ 1","Repair/replace major parts – set 1"],
+ "ซ่อม/เปลี่ยนชิ้นส่วนหลัก ชุดที่ 2":["ซ่อม/เปลี่ยนชิ้นส่วนหลัก ชุดที่ 2","ສ້ອມ/ປ່ຽນຊິ້ນສ່ວນຫຼັກ ຊຸດ 2","Repair/replace major parts – set 2"],
+ "งานเชื่อม/กลึง/ปรับผิว":["งานเชื่อม/กลึง/ปรับผิว","ວຽກເຊື່ອມ/ກຶງ/ປັບຜິວ","Welding / machining / surfacing"],
+ "ประกอบกลับและตั้งศูนย์ (alignment)":["ประกอบกลับและตั้งศูนย์ (alignment)","ປະກອບຄືນ ແລະ ຕັ້ງສູນ (alignment)","Reassembly & alignment"],
+ "ทดสอบเดินเครื่อง (test run)":["ทดสอบเดินเครื่อง (test run)","ທົດສອບເດີນເຄື່ອງ (test run)","Test run"],
+ "ปรับแต่ง / สอบเทียบ":["ปรับแต่ง / สอบเทียบ","ປັບແຕ່ງ / ສອບທຽບ","Tuning / calibration"],
+ "ตรวจรับและปิดงาน (handover)":["ตรวจรับและปิดงาน (handover)","ກວດຮັບ ແລະ ປິດວຽກ (handover)","Acceptance & handover"],
+ // ---- Jobs: prod ----
+ "เปลี่ยนท่อ Calandria หม้อต้มลูกที่ 2":["เปลี่ยนท่อ Calandria หม้อต้มลูกที่ 2","ປ່ຽນທໍ່ Calandria ໝໍ້ຕົ້ມໜ່ວຍ 2","Replace Calandria tubes – Evaporator #2"],
+ "ล้างและซ่อม tube ชุด Evaporator":["ล้างและซ่อม tube ชุด Evaporator","ລ້າງ ແລະ ສ້ອມ tube ຊຸດ Evaporator","Clean & repair evaporator tubes"],
+ "ซ่อมวาล์วไอน้ำและระบบ condensate":["ซ่อมวาล์วไอน้ำและระบบ condensate","ສ້ອມວາລ໌ວໄອນ້ຳ ແລະ ລະບົບ condensate","Repair steam valves & condensate system"],
+ "ทาสี/ซ่อมฉนวนภายนอก":["ทาสี/ซ่อมฉนวนภายนอก","ທາສີ/ສ້ອມສະນວນພາຍນອກ","Painting / external insulation repair"],
+ "ซ่อมใบกวนและเพลา Pan A":["ซ่อมใบกวนและเพลา Pan A","ສ້ອມໃບກວນ ແລະ ເພົາ Pan A","Repair stirrer & shaft – Pan A"],
+ "เปลี่ยน sight glass และวาล์วสุญญากาศ":["เปลี่ยน sight glass และวาล์วสุญญากาศ","ປ່ຽນ sight glass ແລະ ວາລ໌ວສູນຍາກາດ","Replace sight glass & vacuum valves"],
+ "ซ่อมระบบ vacuum และ condenser":["ซ่อมระบบ vacuum และ condenser","ສ້ອມລະບົບ vacuum ແລະ condenser","Repair vacuum system & condenser"],
+ "Overhaul หม้อปั่น Batch 4 เครื่อง":["Overhaul หม้อปั่น Batch 4 เครื่อง","Overhaul ໝໍ້ປັ່ນ Batch 4 ໜ່ວຍ","Overhaul 4 batch centrifugals"],
+ "เปลี่ยนตะแกรง (screen) และ basket":["เปลี่ยนตะแกรง (screen) และ basket","ປ່ຽນຕະແກງ (screen) ແລະ basket","Replace screens & baskets"],
+ "ซ่อมระบบเบรกและ hydraulic":["ซ่อมระบบเบรกและ hydraulic","ສ້ອມລະບົບເບຣກ ແລະ hydraulic","Repair brake & hydraulic system"],
+ "ปรับสมดุล (balancing) rotor":["ปรับสมดุล (balancing) rotor","ປັບສົມດຸນ (balancing) rotor","Rotor balancing"],
+ // ---- Jobs: maint ----
+ "Overhaul มอเตอร์ >100 kW จำนวน 12 ตัว":["Overhaul มอเตอร์ >100 kW จำนวน 12 ตัว","Overhaul ມໍເຕີ >100 kW ຈຳນວນ 12 ໜ່ວຍ","Overhaul 12 motors >100 kW"],
+ "ตรวจซ่อมตู้ MDB/MCC และ breaker":["ตรวจซ่อมตู้ MDB/MCC และ breaker","ກວດສ້ອມຕູ້ MDB/MCC ແລະ breaker","Service MDB/MCC panels & breakers"],
+ "เปลี่ยนสายและรางเคเบิลเสื่อมสภาพ":["เปลี่ยนสายและรางเคเบิลเสื่อมสภาพ","ປ່ຽນສາຍ ແລະ ຮາງເຄເບິນເສື່ອມສະພາບ","Replace worn cables & trays"],
+ "บำรุงรักษาหม้อแปลง 6 ลูก":["บำรุงรักษาหม้อแปลง 6 ลูก","ບຳລຸງຮັກສາໝໍ້ແປງ 6 ໜ່ວຍ","Maintain 6 transformers"],
+ "Overhaul ปั๊มหลัก 18 ตัว":["Overhaul ปั๊มหลัก 18 ตัว","Overhaul ປໍ້າຫຼັກ 18 ໜ່ວຍ","Overhaul 18 main pumps"],
+ "เปลี่ยน bearing/coupling สายพานลำเลียง":["เปลี่ยน bearing/coupling สายพานลำเลียง","ປ່ຽນ bearing/coupling ສາຍພານລຳລຽງ","Replace conveyor bearings/couplings"],
+ "ซ่อม gearbox ชุดขับหลัก":["ซ่อม gearbox ชุดขับหลัก","ສ້ອມ gearbox ຊຸດຂັບຫຼັກ","Repair main drive gearbox"],
+ "งานโครงสร้างและ platform":["งานโครงสร้างและ platform","ວຽກໂຄງສ້າງ ແລະ platform","Structural & platform works"],
+ "สอบเทียบเครื่องมือวัด 250 จุด":["สอบเทียบเครื่องมือวัด 250 จุด","ສອບທຽບເຄື່ອງມືວັດ 250 ຈຸດ","Calibrate 250 instruments"],
+ "เปลี่ยน transmitter/control valve เสื่อม":["เปลี่ยน transmitter/control valve เสื่อม","ປ່ຽນ transmitter/control valve ເສື່ອມ","Replace faulty transmitters/control valves"],
+ "ปรับปรุงระบบ DCS I/O":["ปรับปรุงระบบ DCS I/O","ປັບປຸງລະບົບ DCS I/O","Upgrade DCS I/O system"],
+ // ---- Jobs: power ----
+ "เจียร/เปลี่ยนลูกหีบชุด 1–5":["เจียร/เปลี่ยนลูกหีบชุด 1–5","ເຈຍ/ປ່ຽນລູກຫີບຊຸດ 1–5","Grind/replace mill rolls 1–5"],
+ "Overhaul เกียร์ขับลูกหีบ":["Overhaul เกียร์ขับลูกหีบ","Overhaul ເກຍຂັບລູກຫີບ","Overhaul mill drive gears"],
+ "ซ่อมแท่นและ bearing ลูกหีบ":["ซ่อมแท่นและ bearing ลูกหีบ","ສ້ອມແທ່ນ ແລະ bearing ລູກຫີບ","Repair mill housing & bearings"],
+ "ปรับตั้ง setting ลูกหีบ":["ปรับตั้ง setting ลูกหีบ","ປັບຕັ້ງ setting ລູກຫີບ","Mill setting adjustment"],
+ "เปลี่ยนท่อ water wall Boiler #2":["เปลี่ยนท่อ water wall Boiler #2","ປ່ຽນທໍ່ water wall Boiler #2","Replace water-wall tubes – Boiler #2"],
+ "ซ่อมผนังเตาและ refractory":["ซ่อมผนังเตาและ refractory","ສ້ອມຝາເຕົາ ແລະ refractory","Repair furnace wall & refractory"],
+ "Overhaul พัดลม ID/FD และ air heater":["Overhaul พัดลม ID/FD และ air heater","Overhaul ພັດລົມ ID/FD ແລະ air heater","Overhaul ID/FD fans & air heater"],
+ "ตรวจสอบและทดสอบ safety valve":["ตรวจสอบและทดสอบ safety valve","ກວດສອບ ແລະ ທົດສອບ safety valve","Inspect & test safety valves"],
+ "ซ่อมระบบลำเลียงเถ้าและ dust collector":["ซ่อมระบบลำเลียงเถ้าและ dust collector","ສ້ອມລະບົບລຳລຽງເທົ່າ ແລະ dust collector","Repair ash handling & dust collector"],
+ "Overhaul Turbine-Generator ชุดที่ 1":["Overhaul Turbine-Generator ชุดที่ 1","Overhaul Turbine-Generator ຊຸດ 1","Overhaul Turbine-Generator #1"],
+ "บำรุงรักษาระบบ excitation และ AVR":["บำรุงรักษาระบบ excitation และ AVR","ບຳລຸງຮັກສາລະບົບ excitation ແລະ AVR","Maintain excitation & AVR system"],
+ "ทดสอบ protection relay และ synchronize":["ทดสอบ protection relay และ synchronize","ທົດສອບ protection relay ແລະ synchronize","Test protection relays & synchronizing"],
+};
+const tr = s => TR[s] ? pk(TR[s]) : s;
+
 /* ============ Icons ============ */
 const IC = (p,w=22)=>`<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 const ICONS = {
@@ -730,7 +783,7 @@ function jobsPage(){
   <div class="card"><div class="scrollx"><table>
     <tr><th>Job</th><th>${pk(["หน่วยงาน","ໜ່ວຍງານ","Unit"])}</th><th class="r">${pk(["แผน","ແຜນ","Plan"])}</th><th class="r">${pk(["ผลจริง","ຜົນຕົວຈິງ","Actual"])}</th><th class="r">${pk(["ผลต่าง","ຜົນຕ່າງ","Var"])}</th><th style="width:170px">${pk(["ความคืบหน้า","ຄວາມຄືບໜ້າ","Progress"])}</th><th class="r">man-hr</th><th>${pk(["สถานะ","ສະຖານະ","Status"])}</th></tr>
     ${jobs.map(x=>`<tr class="clickable" onclick='unitView("${x.s.id}","${x.u.name}")'>
-      <td><b>${x.j.name}</b></td><td class="small">${un(x.u.name)}</td>
+      <td><b>${tr(x.j.name)}</b></td><td class="small">${un(x.u.name)}</td>
       <td class="r num small">${fmt1(x.a.plan)}%</td><td class="r num"><b>${fmt1(x.a.act)}%</b></td>
       <td class="r num" style="color:${SCc[x.st[1]]};font-weight:700">${x.varc>=0?"+":"−"}${fmt1(Math.abs(x.varc))}</td>
       <td><div class="tbar"><div class="fill" style="width:${x.a.act}%;background:${SCc[x.st[1]]}"></div><div class="mark" style="left:${x.a.plan}%"></div></div></td>
@@ -772,7 +825,7 @@ function unitView(secId, uname){
     const done=j.tasks.filter(t=>actAt(t,WNOW)>=1).length;
     return `<div class="job b-${jst[1]}" id="job${ji}">
       <div class="jobhead" tabindex="0" onclick='document.getElementById("job${ji}").classList.toggle("open")'>
-        <span class="caret">▶</span><span class="jname">${j.name}</span>
+        <span class="caret">▶</span><span class="jname">${tr(j.name)}</span>
         <span class="jmeta num">${done}/${j.tasks.length} task · ${fmt0(ja.mh)} man-hr</span>
         <span class="jbar"><span class="fill" style="width:${ja.act}%;background:${SCc[jst[1]]}"></span><span class="mark" style="left:${ja.plan}%"></span></span>
         <span class="jpct num" style="color:${SCc[jst[1]]}">${fmt1(ja.act)}%<br><span class="small">${pk(["แผน","ແຜນ","plan"])} ${fmt1(ja.plan)}%</span></span>
@@ -782,7 +835,7 @@ function unitView(secId, uname){
         <tr><th>Task</th><th class="r">man-hr</th><th class="r">${pk(["กำหนด (สัปดาห์)","ກຳນົດ (ສັບປະດາ)","Sched. (wk)"])}</th><th class="r">${pk(["แผน","ແຜນ","Plan"])}</th><th class="r">${pk(["ผลจริง","ຜົນຕົວຈິງ","Actual"])}</th><th style="width:150px">${pk(["ความคืบหน้า","ຄວາມຄືບໜ້າ","Progress"])}</th><th>${pk(["สถานะ","ສະຖານະ","Status"])}</th></tr>
         ${j.tasks.map(t=>{const tp=t.plan(WNOW)*100, ta=actAt(t,WNOW)*100,
           tst= ta>=100?[pk(["เสร็จ ✓","ສຳເລັດ ✓","Done ✓"]),"good"]:statusOf(ta-tp);
-          return `<tr><td>${t.name}</td><td class="r num">${fmt0(t.mh)}</td>
+          return `<tr><td>${tr(t.name)}</td><td class="r num">${fmt0(t.mh)}</td>
           <td class="r num small">${Math.max(1,Math.round(t.s))}–${Math.min(WEEKS,Math.round(t.e))}</td>
           <td class="r num">${fmt1(tp)}%</td><td class="r num"><b>${fmt1(ta)}%</b></td>
           <td><div class="tbar"><div class="fill" style="width:${ta}%;background:${SCc[tst[1]]}"></div><div class="mark" style="left:${tp}%"></div></div></td>
@@ -865,7 +918,7 @@ function entryPage(){
       <tr><th>${pk(["วันที่","ວັນທີ","Date"])}</th><th>Task ID</th><th>${pk(["หน่วยงาน / Task","ໜ່ວຍງານ / Task","Unit / Task"])}</th><th class="r">%</th><th class="r">man-hr</th><th>${pk(["ผู้บันทึก","ຜູ້ບັນທຶກ","By"])}</th><th></th></tr>
       ${ENTRIES.slice().reverse().map((e,ri)=>{const x=TASK_INDEX[e.taskId];
         return `<tr><td class="num small">${e.date}</td><td class="num"><b>${e.taskId}</b></td>
-        <td class="small">${x?un(x.u.name)+" · "+x.t.name:"?"}</td>
+        <td class="small">${x?un(x.u.name)+" · "+tr(x.t.name):"?"}</td>
         <td class="r num"><b>${e.pct}%</b></td><td class="r num">${e.mh||"-"}</td>
         <td class="small">${e.by||"-"}</td>
         <td><button class="btn-d" onclick="delEntry(${ENTRIES.length-1-ri})">${pk(["ลบ","ລຶບ","Del"])}</button></td></tr>`;}).join("")}
@@ -890,7 +943,7 @@ function entryPage(){
 function entryUnitChanged(){
   const code=document.getElementById("fUnit").value, sel=document.getElementById("fJob");
   const u=DATA.flatMap(s=>s.units).find(x=>x.code===code);
-  sel.innerHTML='<option value="">—</option>'+(u?u.jobs.map(j=>`<option value="${j.id}">${j.id} · ${j.name}</option>`).join(""):"");
+  sel.innerHTML='<option value="">—</option>'+(u?u.jobs.map(j=>`<option value="${j.id}">${j.id} · ${tr(j.name)}</option>`).join(""):"");
   sel.disabled=!u;
   const ts=document.getElementById("fTask"); ts.innerHTML='<option value="">—</option>'; ts.disabled=true;
   document.getElementById("taskInfo").innerHTML="";
@@ -898,7 +951,7 @@ function entryUnitChanged(){
 function entryJobChanged(){
   const jid=document.getElementById("fJob").value, sel=document.getElementById("fTask");
   const j=DATA.flatMap(s=>s.units).flatMap(u=>u.jobs).find(x=>x.id===jid);
-  sel.innerHTML='<option value="">—</option>'+(j?j.tasks.map(t=>`<option value="${t.id}">${t.id} · ${t.name}</option>`).join(""):"");
+  sel.innerHTML='<option value="">—</option>'+(j?j.tasks.map(t=>`<option value="${t.id}">${t.id} · ${tr(t.name)}</option>`).join(""):"");
   sel.disabled=!j;
   document.getElementById("taskInfo").innerHTML="";
 }
@@ -912,7 +965,7 @@ function entryTaskChanged(){
   const lastPct = tid ? latestPctFor(tid) : null;
   const floor = lastPct!=null ? lastPct : (x? Math.round(x.t.act*100) : 0);   // ห้ามต่ำกว่าค่านี้
   document.getElementById("taskInfo").innerHTML = x?
-    `<div class="taskinfo num">📌 <b>${x.t.name}</b> · ${pk(["แผน","ແຜນ","plan"])} ${fmt0(x.t.mh)} man-hr · ${pk(["สัปดาห์","ສັບປະດາ","wk"])} ${Math.max(1,Math.round(x.t.s))}–${Math.min(WEEKS,Math.round(x.t.e))} ·
+    `<div class="taskinfo num">📌 <b>${tr(x.t.name)}</b> · ${pk(["แผน","ແຜນ","plan"])} ${fmt0(x.t.mh)} man-hr · ${pk(["สัปดาห์","ສັບປະດາ","wk"])} ${Math.max(1,Math.round(x.t.s))}–${Math.min(WEEKS,Math.round(x.t.e))} ·
      ${pk(["% แผนตอนนี้","% ແຜນຕອນນີ້","plan now"])} <b>${fmt1(x.t.plan(REALWK)*100)}%</b> · ${pk(["% ปัจจุบัน","% ປັດຈຸບັນ","current"])} <b>${fmt1(x.t.act*100)}%</b>
      <br><span style="color:var(--warn)">🔒 ${pk(["กรอกได้ไม่ต่ำกว่า","ປ້ອນໄດ້ບໍ່ຕ່ຳກວ່າ","must be ≥"])} ${floor}% ${pk(["(ความคืบหน้าสะสม ห้ามถอยหลัง)","(ຄວາມຄືບໜ້າສະສົມ ຫ້າມຖອຍຫຼັງ)","(cumulative — cannot go backward)"])}</span></div>`:"";
   if(x){ inp.min=floor; inp.value=Math.max(floor, Math.round(x.t.act*100)); inp.dataset.floor=floor; }
@@ -1019,7 +1072,7 @@ function anaPage(){
     </div>
     <div class="card"><h2>🔻 ${pk(["Top 5 Job ที่ฉุดภาพรวม","Top 5 Job ທີ່ດຶງພາບລວມ","Top 5 dragging jobs"])}</h2>
       ${jobs.map((x,i)=>`<div class="repline"><span class="bullet num">${i+1}.</span>
-        <div style="flex:1"><b style="cursor:pointer;color:var(--blue)" onclick='unitView("${DATA.find(s=>s.units.includes(x.u)).id}","${x.u.name}")'>${x.j.name}</b>
+        <div style="flex:1"><b style="cursor:pointer;color:var(--blue)" onclick='unitView("${DATA.find(s=>s.units.includes(x.u)).id}","${x.u.name}")'>${tr(x.j.name)}</b>
         <div class="small num">${un(x.u.name)} · ${fmt1(x.a.act)}% / ${fmt1(x.a.plan)}% · ${fmt0(x.a.mh)} man-hr</div></div>
         <b class="num" style="color:var(--crit)">−${fmt1(Math.abs(x.varc))}</b></div>`).join("")}
     </div>
@@ -1069,12 +1122,12 @@ function repPage(){
   </div>
   <div class="grid2">
     <div class="card"><h2>4. ${pk(["Job ที่เสร็จสมบูรณ์","Job ທີ່ສຳເລັດ","Completed jobs"])} (${done.length})</h2>
-      ${done.length? done.map(x=>`<div class="repline"><span class="bullet">✓</span><span>${x.j.name} <span class="small">· ${un(x.u.name)}</span></span></div>`).join("")
+      ${done.length? done.map(x=>`<div class="repline"><span class="bullet">✓</span><span>${tr(x.j.name)} <span class="small">· ${un(x.u.name)}</span></span></div>`).join("")
         :`<div class="small">${pk(["ยังไม่มี Job ที่ปิดครบทุก Task","ຍັງບໍ່ມີ Job ທີ່ປິດຄົບທຸກ Task","No fully closed jobs yet"])}</div>`}
     </div>
     <div class="card"><h2>5. ${pk(["Task ครบกำหนดใน 2 สัปดาห์","Task ຄົບກຳນົດໃນ 2 ສັບປະດາ","Tasks due within 2 weeks"])}</h2>
       ${dueSoon.length? dueSoon.map(x=>`<div class="repline"><span class="bullet num">W${Math.min(WEEKS,Math.round(x.t.e))}</span>
-        <span>${x.t.name} <span class="small">· ${x.j.name} · ${un(x.u.name)} · ${fmt1(actAt(x.t,WNOW)*100)}%</span></span></div>`).join("")
+        <span>${tr(x.t.name)} <span class="small">· ${tr(x.j.name)} · ${un(x.u.name)} · ${fmt1(actAt(x.t,WNOW)*100)}%</span></span></div>`).join("")
         :`<div class="small">${pk(["ไม่มี Task ใกล้ครบกำหนด","ບໍ່ມີ Task ໃກ້ຄົບກຳນົດ","None due soon"])}</div>`}
     </div>
   </div>
