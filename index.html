@@ -404,6 +404,32 @@ DATA.forEach(s=>s.units.forEach(u=>u.jobs.forEach((j,ji)=>{
 function loadEntries(){ try{ return JSON.parse(localStorage.getItem("idash_entries")||"[]"); }catch(e){ return []; } }
 function saveEntries(a){ try{ localStorage.setItem("idash_entries",JSON.stringify(a)); }catch(e){} }
 let ENTRIES = loadEntries();
+
+/* ===== เชื่อมต่อ Google Sheet ผ่าน Apps Script Web App ===== */
+let SHEET_API = ""; try{ SHEET_API = localStorage.getItem("idash_api")||""; }catch(e){}
+let SYNC_STATE = SHEET_API ? "connecting" : "off";   // off | connecting | ok | error
+function setSheetApi(url){
+  url=(url||"").trim();
+  SHEET_API=url;
+  try{ url? localStorage.setItem("idash_api",url) : localStorage.removeItem("idash_api"); }catch(e){}
+  SYNC_STATE = url? "connecting":"off";
+  if(url) syncFromSheet(); else { if(PAGE==="entry") entryPage(); }
+}
+async function syncFromSheet(){
+  if(!SHEET_API){ SYNC_STATE="off"; return; }
+  try{
+    const res=await fetch(SHEET_API+(SHEET_API.includes("?")?"&":"?")+"action=list",{method:"GET"});
+    const data=await res.json();
+    if(Array.isArray(data)){
+      ENTRIES=data.map(e=>({date:String(e.date), taskId:String(e.taskId), pct:Number(e.pct), mh:Number(e.mh)||0, by:e.by||"", note:e.note||""}));
+      saveEntries(ENTRIES); applyEntries(); SYNC_STATE="ok"; go(PAGE);
+    } else { SYNC_STATE="error"; if(PAGE==="entry") entryPage(); }
+  }catch(err){ SYNC_STATE="error"; if(PAGE==="entry") entryPage(); }
+}
+function pushToSheet(entry){
+  if(!SHEET_API) return;
+  fetch(SHEET_API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(entry)}).catch(()=>{});
+}
 function applyEntries(){
   Object.values(TASK_INDEX).forEach(x=>{ x.t.act = x.t.mockAct; });
   const latest = {};
@@ -791,6 +817,20 @@ function entryPage(){
         <td><button class="btn-d" onclick="delEntry(${ENTRIES.length-1-ri})">${pk(["ลบ","ລຶບ","Del"])}</button></td></tr>`;}).join("")}
     </table></div>`}
   </div>
+  <div class="card">
+    <h2>🔗 ${pk(["เชื่อมต่อ Google Sheet","ເຊື່ອມຕໍ່ Google Sheet","Google Sheet connection"])}
+      <span class="thin">· ${SYNC_STATE==="ok"?`<span style="color:var(--good)">✓ ${pk(["เชื่อมต่อแล้ว ข้อมูลรวมทุกเครื่อง","ເຊື່ອມຕໍ່ແລ້ວ","Connected — synced across devices"])}</span>`
+        :SYNC_STATE==="connecting"?`<span style="color:var(--warn)">${pk(["กำลังเชื่อมต่อ…","ກຳລັງເຊື່ອມຕໍ່…","connecting…"])}</span>`
+        :SYNC_STATE==="error"?`<span style="color:var(--crit)">✗ ${pk(["เชื่อมต่อไม่สำเร็จ ตรวจ URL","ເຊື່ອມຕໍ່ບໍ່ສຳເລັດ","connection failed — check URL"])}</span>`
+        :`<span style="color:var(--mut)">${pk(["ยังไม่เชื่อม — บันทึกเก็บในเครื่องนี้เท่านั้น","ຍັງບໍ່ເຊື່ອມ — ບັນທຶກໃນເຄື່ອງນີ້ເທົ່ານັ້ນ","not connected — saved on this device only"])}</span>`}</span></h2>
+    <div class="formgrid" style="grid-template-columns:1fr auto auto">
+      <div class="fld"><label>${pk(["URL ของ Apps Script Web App","URL ຂອງ Apps Script Web App","Apps Script Web App URL"])}</label>
+        <input id="apiUrl" type="text" placeholder="https://script.google.com/macros/s/.../exec" value="${SHEET_API}"></div>
+      <div class="fld" style="align-self:end"><button class="btn btn-p" onclick="setSheetApi(document.getElementById('apiUrl').value)">${pk(["เชื่อมต่อ","ເຊື່ອມຕໍ່","Connect"])}</button></div>
+      ${SHEET_API?`<div class="fld" style="align-self:end"><button class="btn btn-o" onclick="setSheetApi('')">${pk(["ยกเลิก","ຍົກເລີກ","Disconnect"])}</button></div>`:""}
+    </div>
+    <div class="small">${pk(["วิธีตั้งค่า: เปิด Google Sheet → Extensions → Apps Script → วางโค้ดที่ให้ไว้ → Deploy เป็น Web App (Anyone) → คัดลอก URL มาวางที่นี่ · เมื่อเชื่อมแล้ว ทุกเครื่องจะเห็นข้อมูลชุดเดียวกันและกันแก้ทับ","ວິທີຕັ້ງຄ່າ: ເປີດ Google Sheet → Extensions → Apps Script → ວາງໂຄ້ດ → Deploy Web App → ສຳເນົາ URL","Setup: Google Sheet → Extensions → Apps Script → paste the code → Deploy as Web App (Anyone) → paste the URL here"])}</div>
+  </div>
   <div id="entryToast"></div>`;
 }
 function entryUnitChanged(){
@@ -830,11 +870,12 @@ function saveEntry(){
   if(isNaN(pct)||pct<0||pct>100){ alert(pk(["กรุณากรอก % ระหว่าง 0–100","ກະລຸນາປ້ອນ % ລະຫວ່າງ 0–100","Enter % between 0–100"])); return; }
   const floor = latestPctFor(tid);
   if(floor!=null && pct<floor){ alert(pk(["ค่าความคืบหน้าสะสมต้องไม่น้อยกว่าค่าล่าสุด ("+floor+"%) — งานถอยหลังไม่ได้","ຄ່າຄວາມຄືບໜ້າສະສົມຕ້ອງບໍ່ໜ້ອຍກວ່າຄ່າຫຼ້າສຸດ ("+floor+"%)","Cumulative progress cannot be lower than the latest value ("+floor+"%)"])); return; }
-  ENTRIES.push({date:todayISO(), taskId:tid, pct:pct,
+  const entry={date:todayISO(), taskId:tid, pct:pct,
     mh:parseFloat(document.getElementById("fMh").value)||0,
     by:document.getElementById("fBy").value.trim(),
-    note:document.getElementById("fNote").value.trim()});
-  saveEntries(ENTRIES); applyEntries(); entryPage();
+    note:document.getElementById("fNote").value.trim()};
+  ENTRIES.push(entry);
+  saveEntries(ENTRIES); applyEntries(); pushToSheet(entry); entryPage();
   const t=document.getElementById("entryToast");
   t.innerHTML=`<div class="toast">✓ ${pk(["บันทึกแล้ว — dashboard อัปเดตทันที","ບັນທຶກແລ້ວ — dashboard ອັບເດດທັນທີ","Saved — dashboard updated"])}</div>`;
   setTimeout(()=>{ t.innerHTML=""; },2500);
@@ -970,4 +1011,5 @@ function repPage(){
 }
 
 renderLang(); renderNav(); overview();
+if(SHEET_API) syncFromSheet();
 </script>
