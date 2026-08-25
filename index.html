@@ -206,6 +206,10 @@ tr.clickable:hover td{background:var(--tint)}
 .tbar .mark{position:absolute;top:-3px;width:3px;height:17px;background:var(--ink);border-radius:2px}
 .scrollx{overflow-x:auto}
 .small{font-size:12px;color:var(--mut)}
+.chartwrap{position:relative}
+.savepic{position:absolute;top:-2px;right:-2px;width:30px;height:30px;border:1px solid var(--line);background:var(--card);
+  border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--mut);box-shadow:var(--shadow);transition:all .15s;z-index:3}
+.savepic:hover{color:var(--blue);border-color:var(--blue);background:var(--tint)}
 .legendbar{display:flex;gap:20px;flex-wrap:wrap;font-size:12.5px;color:var(--mut);margin-top:8px;align-items:center}
 .legendbar .sw{display:inline-block;width:18px;height:4px;border-radius:2px;vertical-align:middle;margin-right:6px}
 .footnote{text-align:center;font-size:12px;color:var(--mut);margin-top:20px;line-height:1.9}
@@ -514,7 +518,8 @@ function sCurve(tasks, lineColor="#2563EB", w=720, h=260){
   months.forEach((m,i)=>{ const wk=i*35/8+35/16; g+=`<text x="${X(wk)}" y="${h-9}" font-size="11" fill="#64748B" text-anchor="middle">${m}</text>`; });
   const xN=X(WNOW), yA=Y(Act[WNOW]);
   const area = path(Act,WNOW)+`L${X(WNOW)},${Y(0)} L${X(0)},${Y(0)} Z`;
-  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto" role="img">
+  return `<div class="chartwrap"><button class="savepic noprint" title="${pk(["บันทึกกราฟเป็นรูป","ບັນທຶກກຣາຟເປັນຮູບ","Save chart as image"])}" onclick="saveChart(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M4 20h16"/></svg></button>
+  <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto" role="img"
     <text x="${mL-8}" y="10" font-size="10.5" fill="#94A3B8">(%)</text>
     ${g}
     <path d="${area}" fill="${lineColor}" opacity="0.10"/>
@@ -526,7 +531,32 @@ function sCurve(tasks, lineColor="#2563EB", w=720, h=260){
     <text x="${xN-10}" y="${yA-12}" font-size="15" fill="#1E2A3A" text-anchor="end" font-weight="800">${fmt1(Act[WNOW])}%</text>
   </svg>
   <div class="legendbar"><span><span class="sw" style="background:${lineColor}"></span>${pk(["ผลจริงสะสม (% ถ่วง mh)","ຜົນຕົວຈິງສະສົມ (% ຖ່ວງ mh)","Cumulative actual (mh-weighted %)"])}</span>
-  <span><span class="sw" style="background:none;border-top:3px dashed #94A3B8;height:0"></span>${pk(["แผนสะสมรายสัปดาห์","ແຜນສະສົມລາຍສັບປະດາ","Weekly plan baseline"])}</span></div>`;
+  <span><span class="sw" style="background:none;border-top:3px dashed #94A3B8;height:0"></span>${pk(["แผนสะสมรายสัปดาห์","ແຜນສະສົມລາຍອາທິດ","Weekly plan baseline"])}</span></div></div>`;
+}
+
+/* ============ บันทึกกราฟเป็นรูป PNG ============ */
+function saveChart(btn){
+  const wrap=btn.closest(".chartwrap"); if(!wrap) return;
+  const svg=wrap.querySelector("svg"); if(!svg) return;
+  const vb=svg.viewBox.baseVal, w=(vb&&vb.width)||720, h=(vb&&vb.height)||260, scale=2.5;
+  let name=(btn.closest(".card")&&btn.closest(".card").querySelector("h2")?btn.closest(".card").querySelector("h2").innerText:(btn.closest(".secchart")&&btn.closest(".secchart").querySelector(".sctitle")?btn.closest(".secchart").querySelector(".sctitle").innerText:"chart"));
+  name=("iDash_"+name).replace(/[^\w฀-໿.-]+/g,"_").slice(0,60);
+  const xml=new XMLSerializer().serializeToString(svg);
+  const src="data:image/svg+xml;base64,"+btoa(unescape(encodeURIComponent(xml)));
+  const img=new Image();
+  img.onload=function(){
+    const c=document.createElement("canvas"); c.width=w*scale; c.height=h*scale;
+    const ctx=c.getContext("2d");
+    ctx.fillStyle="#ffffff"; ctx.fillRect(0,0,c.width,c.height);
+    ctx.drawImage(img,0,0,c.width,c.height);
+    c.toBlob(function(blob){
+      const url=URL.createObjectURL(blob), a=document.createElement("a");
+      a.href=url; a.download=name+".png"; document.body.appendChild(a); a.click();
+      setTimeout(function(){ a.remove(); URL.revokeObjectURL(url); },100);
+    },"image/png");
+  };
+  img.onerror=function(){ alert(pk(["บันทึกรูปไม่สำเร็จ ลองใหม่อีกครั้ง","ບັນທຶກຮູບບໍ່ສຳເລັດ","Could not save image"])); };
+  img.src=src;
 }
 
 /* ============ shell ============ */
