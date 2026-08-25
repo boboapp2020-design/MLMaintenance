@@ -415,7 +415,8 @@ function saveEntries(a){ try{ localStorage.setItem("idash_entries",JSON.stringif
 let ENTRIES = loadEntries();
 
 /* ===== เชื่อมต่อ Google Sheet ผ่าน Apps Script Web App ===== */
-let SHEET_API = ""; try{ SHEET_API = localStorage.getItem("idash_api")||""; }catch(e){}
+const SHEET_API_DEFAULT = "https://script.google.com/macros/s/AKfycbyMO9a9oj-0SmXC4-ley3zHj-4KDZQ6_ue-faTs57RmZpkamm2bTh24cBtsneu3xR5kIg/exec";
+let SHEET_API = SHEET_API_DEFAULT; try{ const saved=localStorage.getItem("idash_api"); if(saved!==null) SHEET_API=saved; }catch(e){}
 let SYNC_STATE = SHEET_API ? "connecting" : "off";   // off | connecting | ok | error
 function setSheetApi(url){
   url=(url||"").trim();
@@ -424,13 +425,19 @@ function setSheetApi(url){
   SYNC_STATE = url? "connecting":"off";
   if(url) syncFromSheet(); else { if(PAGE==="entry") entryPage(); }
 }
+function normDate(d){
+  if(typeof d==="string" && /^\d{4}-\d{2}-\d{2}/.test(d)) return d.slice(0,10);
+  const dt=new Date(d);
+  if(!isNaN(dt.getTime())) return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
+  return String(d);
+}
 async function syncFromSheet(){
   if(!SHEET_API){ SYNC_STATE="off"; return; }
   try{
     const res=await fetch(SHEET_API+(SHEET_API.includes("?")?"&":"?")+"action=list",{method:"GET"});
     const data=await res.json();
     if(Array.isArray(data)){
-      ENTRIES=data.map(e=>({date:String(e.date), taskId:String(e.taskId), pct:Number(e.pct), mh:Number(e.mh)||0, by:e.by||"", note:e.note||""}));
+      ENTRIES=data.map(e=>({date:normDate(e.date), taskId:String(e.taskId), pct:Number(e.pct), mh:Number(e.mh)||0, by:e.by||"", note:e.note||""}));
       saveEntries(ENTRIES); applyEntries(); SYNC_STATE="ok"; go(PAGE);
     } else { SYNC_STATE="error"; if(PAGE==="entry") entryPage(); }
   }catch(err){ SYNC_STATE="error"; if(PAGE==="entry") entryPage(); }
