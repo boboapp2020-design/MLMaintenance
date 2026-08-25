@@ -260,7 +260,13 @@ svg text{font-family:inherit}
 .taskrow{display:flex;align-items:center;gap:12px;padding:10px 4px;border-top:1px dashed var(--line)}
 .taskrow:first-child{border-top:none}
 .taskrow.rec{background:var(--good-bg);border-radius:8px;padding-left:10px;padding-right:10px;border-top-color:transparent}
-.taskrow .tk-nm{flex:1;font-size:13.5px;font-weight:600}
+.taskrow .tk-main{flex:1;min-width:0}
+.taskrow .tk-nm{display:block;font-size:13.5px;font-weight:600;margin-bottom:5px}
+.taskrow .tk-gauge{height:9px;background:var(--tint2);border-radius:5px;position:relative;max-width:420px}
+.taskrow .tk-gauge .tk-fill{position:absolute;left:0;top:0;bottom:0;border-radius:5px;transition:width .4s}
+.taskrow .tk-gauge .tk-mark{position:absolute;top:-3px;width:2px;height:15px;background:var(--ink);border-radius:1px}
+.taskrow .tk-pctline{font-size:11.5px;color:var(--mut);margin-top:4px}
+.taskrow .tk-ctl{flex:0 0 auto;text-align:right;white-space:nowrap}
 .btnsm{padding:6px 14px !important;font-size:13px !important;border-radius:9px !important}
 .jconfirm{margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .entrysplit{display:grid;grid-template-columns:310px 1fr;gap:16px;align-items:start}
@@ -1018,12 +1024,17 @@ function jobDetailHtml(){
     const ja=agg(j.tasks,WNOW);
     right=`<h3>${tr(j.name)}</h3>
       <div class="jd-sub num">${j.id} · ${pk(["วันนี้บันทึก","ມື້ນີ້ບັນທຶກ","today"])} ${doneToday}/${act.length} task · ${pk(["รวม","ລວມ","total"])} ${fmt1(ja.act)}% / ${pk(["แผน","ແຜນ","plan"])} ${fmt1(ja.plan)}%</div>
-      ${j.tasks.map(t=>{ const rec=recordedToday(t.id), done=actAt(t,WNOW)>=1, cur=fmt1(actAt(t,WNOW)*100);
+      ${j.tasks.map(t=>{ const rec=recordedToday(t.id), done=actAt(t,WNOW)>=1, ta=actAt(t,WNOW)*100, tp=t.plan(WNOW)*100, cur=fmt1(ta);
+        const cc=done?"#16A34A":(statusOf(ta-tp)[1]==="good"?"#16A34A":statusOf(ta-tp)[1]==="warn"?"#D97706":"#EF4444");
         return `<div class="taskrow ${rec?'rec':''}">
-          <span class="tk-nm">${tr(t.name)} <span class="small num">· ${cur}%${done?" ✓":""}</span></span>
-          ${done ? `<span class="chip c-good">${pk(["เสร็จแล้ว","ສຳເລັດ","Done"])}</span>`
-            : rec ? `<span class="chip c-good">✓ ${pk(["บันทึกวันนี้","ບັນທຶກມື້ນີ້","logged today"])}</span> <button class="btn btn-o btnsm" onclick="openTaskForm('${t.id}')">${pk(["แก้ไข","ແກ້ໄຂ","edit"])}</button>`
-            : `<button class="btn btn-p btnsm" onclick="openTaskForm('${t.id}')">✍ ${pk(["บันทึก","ບັນທຶກ","Record"])}</button>`}
+          <div class="tk-main">
+            <span class="tk-nm">${tr(t.name)}</span>
+            <div class="tk-gauge"><div class="tk-fill" style="width:${ta}%;background:${cc}"></div><div class="tk-mark" style="left:${tp}%"></div></div>
+            <div class="tk-pctline num"><b style="color:${cc}">${cur}%</b> / ${pk(["แผน","ແຜນ","plan"])} ${fmt1(tp)}%${done?" · ✓":""}</div>
+          </div>
+          <div class="tk-ctl">${done ? `<span class="chip c-good">${pk(["เสร็จแล้ว","ສຳເລັດ","Done"])}</span>`
+            : rec ? `<span class="chip c-good">✓ ${pk(["บันทึกวันนี้","ບັນທຶກມື້ນີ້","logged today"])}</span><br><button class="btn btn-o btnsm" style="margin-top:6px" onclick="openTaskForm('${t.id}')">${pk(["แก้ไข","ແກ້ໄຂ","edit"])}</button>`
+            : `<button class="btn btn-p btnsm" onclick="openTaskForm('${t.id}')">✍ ${pk(["บันทึก","ບັນທຶກ","Record"])}</button>`}</div>
         </div>`;}).join("")}
       <div class="jconfirm">
         <button class="btn ${allDone&&!conf?'btn-p':'btn-o'}" ${(!allDone||conf)?'disabled style="opacity:.5;cursor:default"':''} onclick="confirmJob('${j.id}')">
