@@ -1,0 +1,939 @@
+<title>iDash MaintTrack</title>
+<style>
+:root{
+  --bg:#F3F7FC; --card:#FFFFFF; --line:#E4EAF2; --tint:#EFF5FF; --tint2:#E3EDFC;
+  --ink:#1E2A3A; --mut:#64748B;
+  --blue:#2563EB; --blue-dark:#1D4ED8; --blue-soft:#DBEAFE;
+  --good:#16A34A; --good-bg:#DCFCE7;
+  --warn:#D97706; --warn-bg:#FEF3C7;
+  --crit:#EF4444; --crit-bg:#FEE2E2;
+  --shadow:0 2px 12px rgba(30,42,58,.06);
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Segoe UI","Leelawadee UI","Noto Sans Thai","Noto Sans Lao",Tahoma,sans-serif;font-size:14.5px;line-height:1.55}
+.num{font-variant-numeric:tabular-nums}
+.layout{display:flex;min-height:100vh;align-items:stretch}
+
+/* ---------- sidebar (dark navy) ---------- */
+.side{flex:0 0 208px;width:208px;background:linear-gradient(180deg,#0D2246 0%,#0A1830 60%,#081326 100%);
+  display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow:hidden}
+.logo{display:flex;align-items:center;gap:10px;padding:20px 16px 12px}
+.logo img{width:44px;height:44px;object-fit:contain;flex:0 0 44px;border-radius:10px}
+.lname{font-weight:800;font-size:15px;color:#FFFFFF;line-height:1.15;letter-spacing:.3px}
+.lname span{display:block;font-size:10px;letter-spacing:.5px;color:#7FB2E8;font-weight:700}
+.headctl{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.langdd{position:relative}
+.lddbtn{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);
+  border-radius:12px;padding:8px 14px;font-size:13.5px;font-weight:800;color:var(--ink);cursor:pointer;
+  box-shadow:var(--shadow);transition:all .15s;user-select:none}
+.lddbtn:hover{border-color:var(--blue);color:var(--blue)}
+.lddbtn svg{border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.lddbtn .dd{color:var(--mut);font-size:10px}
+.lddmenu{position:absolute;top:calc(100% + 6px);right:0;background:var(--card);border:1px solid var(--line);
+  border-radius:12px;box-shadow:0 8px 24px rgba(30,42,58,.14);padding:6px;display:none;z-index:60;min-width:170px}
+.langdd.open .lddmenu{display:block}
+.lditem{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;cursor:pointer;
+  font-size:13.5px;font-weight:700;color:var(--ink);white-space:nowrap}
+.lditem svg{border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.lditem:hover{background:var(--tint);color:var(--blue)}
+.lditem .chk{margin-left:auto;color:var(--blue);font-weight:800}
+.navi{padding:2px 12px;display:flex;flex-direction:column;gap:4px;position:relative;z-index:2}
+.nitem{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;cursor:pointer;
+  color:#9FB0CC;font-weight:600;font-size:14px;border-left:4px solid transparent;transition:all .15s}
+.nitem svg{flex:0 0 18px}
+.nitem:hover{background:rgba(255,255,255,.07);color:#FFFFFF}
+.nitem.active{background:linear-gradient(90deg,rgba(59,130,246,.42),rgba(59,130,246,.14));color:#FFFFFF;border-left-color:#4D8DFF}
+.sidefill{flex:1 1 0;min-height:0;position:relative;overflow:hidden}
+.sidefill img{position:absolute;left:0;right:0;bottom:0;top:0;width:100%;height:100%;object-fit:cover;object-position:center bottom;filter:brightness(.75) saturate(1.1)}
+.sidefill::before{content:"";position:absolute;left:0;right:0;top:0;height:70px;background:linear-gradient(to bottom,#0A1830,transparent);z-index:1}
+.sidefill::after{content:"";position:absolute;left:0;right:0;top:0;bottom:0;background:linear-gradient(180deg,rgba(10,24,48,.72),rgba(10,24,48,.28) 45%,rgba(8,19,38,.55));z-index:1}
+.adminchip{display:flex;align-items:center;gap:10px;padding:13px 16px;border-top:1px solid rgba(255,255,255,.14);
+  color:#FFFFFF;position:relative;z-index:2;background:rgba(8,19,38,.72)}
+.adminchip .av{flex:0 0 34px;height:34px;border-radius:50%;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;color:#CFDCF0}
+.adminchip .nm{flex:1;font-size:13.5px;font-weight:700;line-height:1.25}
+.adminchip .nm span{display:block;font-size:11px;color:#9FB0CC;font-weight:500}
+.adminchip .arr{color:#9FB0CC;font-size:15px}
+@media(max-width:860px){
+  .layout{flex-direction:column}
+  .side{position:static;height:auto;width:auto;flex:none;flex-direction:row;align-items:center;flex-wrap:wrap;padding-right:10px}
+  .navi{flex-direction:row;flex-wrap:wrap;padding:6px}
+  .nitem{border-left:none;padding:7px 10px}
+  .sidefill,.adminchip{display:none}
+  .langsw{padding:6px}
+}
+
+/* ---------- main ---------- */
+.main{flex:1 1 0;min-width:0;padding:24px 28px 50px;max-width:1280px}
+.pagehead{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.pagehead h1{font-size:21px;margin:0;font-weight:800}
+.pagehead .sub{font-size:13px;color:var(--mut);margin-top:3px}
+.datechip{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);
+  border-radius:12px;padding:7px 12px;font-size:13.5px;font-weight:700;color:var(--ink);box-shadow:var(--shadow)}
+.datechip svg{color:var(--blue)}
+.datechip select{border:none;background:none;font-family:inherit;font-size:13.5px;font-weight:700;color:var(--ink);cursor:pointer;padding:2px}
+.datechip select:focus{outline:2px solid var(--blue);border-radius:6px}
+.histnote{display:inline-flex;align-items:center;gap:8px;background:var(--warn-bg);color:var(--warn);
+  border-radius:10px;padding:6px 14px;font-size:13px;font-weight:700;margin-bottom:14px}
+.histnote a{color:var(--blue);cursor:pointer;text-decoration:underline}
+.compbanner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--crit-bg);color:var(--crit);
+  border:1px solid #F5B5B5;border-radius:12px;padding:10px 16px;font-size:13.5px;font-weight:700;margin-bottom:14px}
+.compbanner a{color:var(--blue);cursor:pointer;text-decoration:underline;font-weight:700}
+.compgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px;margin-top:6px}
+.compunit{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+.compunit.ok{background:var(--good-bg);border-color:#B5E4C8}
+.compunit.miss{background:var(--crit-bg);border-color:#F5B5B5}
+.compunit .cn{flex:1;font-size:13px;font-weight:700}
+.compunit .cn span{display:block;font-size:11px;color:var(--mut);font-weight:500}
+.compunit .cs{font-size:16px;font-weight:800}
+.comptable td,.comptable th{text-align:center;padding:6px 4px}
+.comptable td:first-child,.comptable th:first-child{text-align:left}
+
+.backbtn{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1.5px solid var(--blue);
+  color:var(--blue);font-weight:700;font-size:14px;border-radius:10px;padding:7px 16px;cursor:pointer;
+  box-shadow:var(--shadow);transition:all .15s;font-family:inherit;margin-bottom:14px}
+.backbtn:hover{background:var(--blue);color:#fff}
+
+/* ---------- KPI cards ---------- */
+.kpis{display:grid;grid-template-columns:1.35fr 1fr 1fr 1fr 1fr;gap:14px;margin-bottom:16px}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--card);border-radius:16px;padding:16px 18px 14px;box-shadow:var(--shadow)}
+.kpi .label{font-size:12.5px;color:var(--mut);font-weight:600}
+.kpi .value{font-size:34px;font-weight:800;line-height:1.1;margin:6px 0 4px;letter-spacing:-.5px}
+.kpi .value .unit{font-size:14px;font-weight:600;color:var(--mut);margin-left:3px}
+.kpi .note{font-size:12px;color:var(--mut)}
+.kpi .icrow{display:flex;align-items:center;gap:12px;margin-top:2px}
+.icbub{flex:0 0 46px;height:46px;border-radius:50%;background:var(--tint);display:flex;align-items:center;justify-content:center;color:var(--blue)}
+.kpi.hero{display:flex;gap:14px;align-items:center;justify-content:space-between}
+.kpi.hero .value{font-size:46px;color:var(--blue-dark)}
+.chip{display:inline-block;border-radius:20px;padding:2px 11px;font-size:12px;font-weight:700;white-space:nowrap}
+.c-good{background:var(--good-bg);color:var(--good)}
+.c-warn{background:var(--warn-bg);color:var(--warn)}
+.c-crit{background:var(--crit-bg);color:var(--crit)}
+
+/* ---------- cards ---------- */
+.card{background:var(--card);border-radius:16px;padding:18px 22px;box-shadow:var(--shadow);margin-bottom:16px}
+.card h2{font-size:14px;margin:0 0 4px;font-weight:800;letter-spacing:.6px;color:var(--ink)}
+.card h2 .thin{color:var(--mut);font-weight:600}
+.card .sub{font-size:12px;color:var(--mut);margin-bottom:10px}
+.grid2{display:grid;grid-template-columns:3fr 2fr;gap:16px}
+@media(max-width:960px){.grid2{grid-template-columns:1fr}}
+
+.railbar{position:relative;height:8px;background:var(--tint2);border-radius:4px;margin:12px 0 8px}
+.railbar .fill{position:absolute;left:0;top:0;bottom:0;background:var(--blue);border-radius:4px}
+.railbar .mark{position:absolute;top:-4px;width:3px;height:16px;background:var(--ink);border-radius:2px}
+.railcap{display:flex;justify-content:space-between;font-size:12px;color:var(--mut)}
+
+.risk{display:flex;gap:14px;align-items:center;padding:12px 2px;border-top:1px solid var(--line)}
+.risk:first-of-type{border-top:none}
+.risk .rank{flex:0 0 26px;font-size:24px;font-weight:800;color:var(--blue);text-align:center}
+.risk .t{flex:1;font-size:12.5px;color:var(--mut)}
+.risk .t .nm{font-weight:800;font-size:14.5px;color:var(--ink);cursor:pointer}
+.risk .t .nm:hover{color:var(--blue)}
+.risk .ic{flex:0 0 46px;height:46px;border-radius:50%;background:var(--tint);display:flex;align-items:center;justify-content:center;color:var(--blue)}
+.seeall{font-size:12.5px;color:var(--blue);font-weight:700;cursor:pointer;float:right}
+.seeall:hover{text-decoration:underline}
+
+.sechead{display:flex;align-items:center;gap:10px;margin:16px 0 4px;font-weight:800;font-size:14px}
+.sechead:first-of-type{margin-top:2px}
+.sechead .swatch{width:11px;height:11px;border-radius:3px}
+.sechead .spct{margin-left:auto;font-size:13px;color:var(--mut);font-weight:600}
+.secsplit{display:grid;grid-template-columns:5fr 6fr;gap:26px;align-items:center;margin-top:6px}
+@media(max-width:860px){.secsplit{grid-template-columns:1fr;gap:8px}}
+.sctitle{font-size:11.5px;color:var(--mut);font-weight:700;letter-spacing:.4px;margin-bottom:2px}
+.urow{display:flex;align-items:center;gap:14px;padding:9px 4px;cursor:pointer;border-radius:10px}
+.urow:hover{background:var(--tint)}
+.urow .uic{flex:0 0 36px;height:36px;border-radius:50%;background:var(--tint);display:flex;align-items:center;justify-content:center;color:var(--blue)}
+.urow .nm{flex:0 0 140px;font-size:14px;font-weight:700}
+.urow .bar{flex:1;height:16px;background:var(--tint2);border-radius:5px;position:relative}
+.urow .bar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:5px}
+.urow .bar .mark{position:absolute;top:-4px;width:3px;height:24px;background:var(--ink);border-radius:2px}
+.urow .pct{flex:0 0 60px;text-align:right;font-size:16px;font-weight:800}
+.urow .st{flex:0 0 84px;text-align:center}
+@media(max-width:700px){.urow .nm{flex-basis:105px}.urow .st,.urow .uic{display:none}}
+
+.job{background:var(--card);border-radius:14px;box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;border-left:5px solid var(--line)}
+.job.b-good{border-left-color:var(--good)} .job.b-warn{border-left-color:var(--warn)} .job.b-crit{border-left-color:var(--crit)}
+.jobhead{display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:13px 18px;cursor:pointer}
+.jobhead:hover{background:var(--tint)}
+.jname{flex:1 1 260px;font-size:14.5px;font-weight:700}
+.jmeta{font-size:12px;color:var(--mut)}
+.jbar{flex:1 1 130px;max-width:190px;height:12px;background:var(--tint2);border-radius:5px;position:relative}
+.jbar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:5px}
+.jbar .mark{position:absolute;top:-3px;width:3px;height:18px;background:var(--ink);border-radius:2px}
+.jpct{flex:0 0 108px;text-align:right;font-size:16px;font-weight:800}
+.jpct .small{font-size:11.5px;color:var(--mut);font-weight:600}
+.jobbody{display:none;border-top:1px solid var(--line);padding:6px 18px 16px}
+.job.open .jobbody{display:block}
+.caret{color:var(--mut);font-size:10px;transition:transform .15s}
+.job.open .caret{transform:rotate(90deg)}
+
+table{width:100%;border-collapse:collapse}
+th{font-size:11.5px;color:var(--mut);text-align:left;font-weight:700;padding:9px 8px;border-bottom:2px solid var(--line)}
+td{padding:9px 8px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+th.r,td.r{text-align:right}
+tr.clickable{cursor:pointer}
+tr.clickable:hover td{background:var(--tint)}
+.tbar{height:11px;background:var(--tint2);border-radius:4px;position:relative;min-width:100px}
+.tbar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+.tbar .mark{position:absolute;top:-3px;width:3px;height:17px;background:var(--ink);border-radius:2px}
+.scrollx{overflow-x:auto}
+.small{font-size:12px;color:var(--mut)}
+.legendbar{display:flex;gap:20px;flex-wrap:wrap;font-size:12.5px;color:var(--mut);margin-top:8px;align-items:center}
+.legendbar .sw{display:inline-block;width:18px;height:4px;border-radius:2px;vertical-align:middle;margin-right:6px}
+.footnote{text-align:center;font-size:12px;color:var(--mut);margin-top:20px;line-height:1.9}
+svg text{font-family:inherit}
+
+/* ---- entry form ---- */
+.formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px;margin-bottom:12px}
+.fld label{display:block;font-size:12px;color:var(--mut);font-weight:700;margin-bottom:5px}
+.fld select,.fld input{width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:10px;
+  font-family:inherit;font-size:14px;background:#fff;color:var(--ink)}
+.fld select:focus,.fld input:focus{outline:2px solid var(--blue);border-color:var(--blue)}
+.btn{display:inline-flex;align-items:center;gap:8px;border:none;border-radius:10px;padding:10px 22px;
+  font-family:inherit;font-size:14.5px;font-weight:700;cursor:pointer;transition:all .15s}
+.btn-p{background:var(--blue);color:#fff}
+.btn-p:hover{background:var(--blue-dark)}
+.btn-o{background:var(--card);color:var(--blue);border:1.5px solid var(--blue)}
+.btn-o:hover{background:var(--tint)}
+.btn-d{background:none;color:var(--crit);border:none;font-size:13px;cursor:pointer;font-family:inherit}
+.taskinfo{background:var(--tint);border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:12px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--good);color:#fff;
+  padding:11px 26px;border-radius:12px;font-weight:700;box-shadow:0 4px 18px rgba(0,0,0,.2);z-index:99}
+
+/* ---- analysis / report ---- */
+.prow{display:flex;align-items:center;gap:12px;padding:7px 0}
+.prow .pl{flex:0 0 160px;font-size:13.5px;font-weight:600;text-align:right}
+.prow .pb{flex:1;height:18px;background:var(--tint2);border-radius:5px;position:relative}
+.prow .pb .pf{position:absolute;left:0;top:0;bottom:0;border-radius:5px}
+.prow .pv{flex:0 0 86px;font-size:14px;font-weight:800}
+.repline{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.repline:last-child{border-bottom:none}
+.repline .bullet{color:var(--blue);font-weight:800}
+@media print{
+  .side,.datechip,.backbtn,.seeall,.noprint,.histnote{display:none !important}
+  .layout{display:block} .main{padding:0;max-width:none}
+  body{background:#fff} html{background:#fff}
+  .card,.kpi{box-shadow:none;border:1px solid #D8DEE6;break-inside:avoid}
+}
+.backbtn:focus-visible,.urow:focus-visible,.jobhead:focus-visible,.nitem:focus-visible,.lbtn:focus-visible{outline:2.5px solid var(--blue);outline-offset:2px}
+</style>
+
+<div class="layout">
+  <aside class="side">
+    <div class="logo">
+      <img src="data:image/png;base64,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" alt="MITR LAO">
+      <div class="lname">MITR LAO<span id="logoSub">น้ำตาลมิตรลาว</span></div>
+    </div>
+    <nav class="navi" id="navi"></nav>
+    <div class="sidefill"><img src="data:image/jpeg;base64,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" alt="factory"></div>
+    <div class="adminchip">
+      <span class="av"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8.5" r="3.5"/><path d="M4.5 20c.8-3.6 3.9-5.5 7.5-5.5s6.7 1.9 7.5 5.5"/></svg></span>
+      <span class="nm">Admin<span id="adminSub">ผู้ดูแลระบบ</span></span>
+      <span class="arr">›</span>
+    </div>
+  </aside>
+  <main class="main">
+    <div id="app"></div>
+    <div class="footnote" id="foot"></div>
+  </main>
+</div>
+
+<script>
+/* ============ i18n ============ */
+let LANG = "th";
+try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
+const LI = ()=>({th:0,lo:1,en:2}[LANG]);
+const pk = a => a[LI()];
+function setLang(l){ LANG=l; try{localStorage.setItem("idash_lang",l);}catch(e){} renderLang(); go(PAGE); }
+const MON = [
+ ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."],
+ ["ມ.ກ.","ກ.ພ.","ມ.ນ.","ເມ.ສ.","ພ.ພ.","ມິ.ຖ.","ກ.ລ.","ສ.ຫ.","ກ.ຍ.","ຕ.ລ.","ພ.ຈ.","ທ.ວ."],
+ ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]];
+function fmtDate(d){ const m=MON[LI()][d.getMonth()], y=LANG==="th"?d.getFullYear()+543:d.getFullYear();
+  return LANG==="en" ? m+" "+d.getDate()+", "+y : d.getDate()+" "+m+" "+y; }
+/* ชื่อหน่วยงาน/ส่วนงาน 3 ภาษา (ชื่อ Job/Task และชื่อบุคคล คงภาษาไทยตามข้อมูลจริง) */
+const NAMES = {
+ "ส่วนกระบวนการผลิต":["ส่วนกระบวนการผลิต","ພາກຂະບວນການຜະລິດ","Process Section"],
+ "ส่วนซ่อมบำรุง":["ส่วนซ่อมบำรุง","ພາກສ້ອມບຳລຸງ","Maintenance Section"],
+ "ส่วนต้นกำลัง":["ส่วนต้นกำลัง","ພາກຕົ້ນກຳລັງ","Power House Section"],
+ "หม้อต้ม":["หม้อต้ม","ໝໍ້ຕົ້ມ","Evaporator"],
+ "หม้อเคี่ยว":["หม้อเคี่ยว","ໝໍ້ຄ່ຽວ","Vacuum Pan"],
+ "หม้อปั่น":["หม้อปั่น","ໝໍ້ປັ່ນ","Centrifugal"],
+ "ซ่อมบำรุงไฟฟ้า":["ซ่อมบำรุงไฟฟ้า","ສ້ອມບຳລຸງໄຟຟ້າ","Electrical Maint."],
+ "ซ่อมบำรุงเครื่องกล":["ซ่อมบำรุงเครื่องกล","ສ້ອມບຳລຸງກົນຈັກ","Mechanical Maint."],
+ "เครื่องมือควบคุม":["เครื่องมือควบคุม","ເຄື່ອງມືຄວບຄຸມ","Instrumentation"],
+ "ลูกหีบ":["ลูกหีบ","ລູກຫີບ","Mill"],
+ "หม้อไอน้ำ":["หม้อไอน้ำ","ໝໍ້ໄອນ້ຳ","Boiler"],
+ "ไฟฟ้าผลิต":["ไฟฟ้าผลิต","ໄຟຟ້າຜະລິດ","Power Generation"],
+};
+const un = n => NAMES[n] ? pk(NAMES[n]) : n;
+
+/* ============ Icons ============ */
+const IC = (p,w=22)=>`<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+const ICONS = {
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  edit:'<path d="M4 20l4.5-1L20 7.5 16.5 4 5 15.5z"/><path d="M13.5 7l3.5 3.5"/>',
+  wrench:'<path d="M14.7 6.3a4.5 4.5 0 0 0-6 5.7L3 17.7 6.3 21l5.7-5.7a4.5 4.5 0 0 0 5.7-6L14 13l-3-3z"/>',
+  units:'<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 2.5-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M16 15c3 0 5 1.8 5 4.5"/>',
+  chart:'<circle cx="12" cy="12" r="9"/><path d="M12 3v9l6.5 4"/>',
+  report:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/>',
+  people:'<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 2.5-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.4"/><path d="M16 15c3 0 5 1.8 5 4.5"/>',
+  check:'<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12.5l3 3 5-6"/>',
+  alert:'<path d="M12 3L2.5 20h19L12 3z"/><path d="M12 10v4M12 17.2v.3"/>',
+  cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4M8 14h3M13 14h3M8 17.5h3"/>',
+  boiler:'<rect x="6" y="7" width="12" height="13" rx="2"/><path d="M9 7V5m6 2V5M9 12h6M9 15.5h6"/>',
+  pan:'<path d="M4 10h16l-1.5 8a2 2 0 0 1-2 1.6h-9A2 2 0 0 1 5.5 18z"/><path d="M9 6c0-1.5 6-1.5 6 0"/>',
+  fan:'<circle cx="12" cy="12" r="2"/><path d="M12 10c0-4 6-5 6-1.5 0 2-3 2.5-6 1.5zM14 13c3.5 2 1.5 7-1.5 5.5-1.7-.8-1-3.7 1.5-5.5zM10 13c-3.5 2-6-2.5-3-4 1.8-1 3.4 1.6 3 4z"/>',
+  bolt:'<path d="M13 2L5 13h5l-1 9 8-11h-5z"/>',
+  slider:'<path d="M4 7h10M18 7h2M4 12h4M12 12h8M4 17h13M20 17h0"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18.5" cy="17" r="2"/>',
+  roller:'<circle cx="8" cy="9" r="4"/><circle cx="16" cy="9" r="4"/><circle cx="12" cy="17" r="4"/>',
+  steam:'<rect x="5" y="9" width="14" height="11" rx="2"/><path d="M8 6c0-1.5 1.5-1.5 1.5-3M12.5 6c0-1.5 1.5-1.5 1.5-3M17 6c0-1.5 1.5-1.5 1.5-3M8 13h8M8 16.5h8"/>',
+  plug:'<path d="M9 3v5M15 3v5M6 8h12l-1 5a5 5 0 0 1-10 0z"/><path d="M12 18v3"/>',
+};
+const UNIT_ICON = {"หม้อต้ม":"boiler","หม้อเคี่ยว":"pan","หม้อปั่น":"fan","ซ่อมบำรุงไฟฟ้า":"bolt","ซ่อมบำรุงเครื่องกล":"gear","เครื่องมือควบคุม":"slider","ลูกหีบ":"roller","หม้อไอน้ำ":"steam","ไฟฟ้าผลิต":"plug"};
+
+/* ============ Mock data ============ */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const rng = mulberry32(20690824);
+/* ฤดูซ่อม: 15 เม.ย. 2569 – 10 พ.ย. 2569 = 30 สัปดาห์ · วันนี้ 24 ส.ค. = สัปดาห์ 19 */
+const WEEKS = 30, REALWK = 19;
+const SEASON_START = new Date(2026,3,15), SEASON_END = new Date(2026,10,10);
+let WNOW = REALWK;   // สัปดาห์ที่กำลังดู (เปลี่ยนได้จากตัวเลือกวันที่)
+
+const PHASES = [
+  ["ถอดชิ้นส่วน / เปิดตรวจภายใน", .06],
+  ["ตรวจวัดและประเมินสภาพ (NDT/วัดค่า)", .07],
+  ["จัดหาอะไหล่และวัสดุ", .08],
+  ["ซ่อม/เปลี่ยนชิ้นส่วนหลัก ชุดที่ 1", .18],
+  ["ซ่อม/เปลี่ยนชิ้นส่วนหลัก ชุดที่ 2", .16],
+  ["งานเชื่อม/กลึง/ปรับผิว", .12],
+  ["ประกอบกลับและตั้งศูนย์ (alignment)", .12],
+  ["ทดสอบเดินเครื่อง (test run)", .08],
+  ["ปรับแต่ง / สอบเทียบ", .07],
+  ["ตรวจรับและปิดงาน (handover)", .06],
+];
+
+const MODEL = [
+ {id:"prod", name:"ส่วนกระบวนการผลิต", color:"#0E9F6E", units:[
+   {name:"หม้อต้ม", code:"EVP", owner:"หน.หน่วยหม้อต้ม", lag:0.5, jobs:[
+     ["เปลี่ยนท่อ Calandria หม้อต้มลูกที่ 2",1900],["ล้างและซ่อม tube ชุด Evaporator",1400],
+     ["ซ่อมวาล์วไอน้ำและระบบ condensate",800],["ทาสี/ซ่อมฉนวนภายนอก",500]]},
+   {name:"หม้อเคี่ยว", code:"PAN", owner:"หน.หน่วยหม้อเคี่ยว", lag:-0.5, jobs:[
+     ["ซ่อมใบกวนและเพลา Pan A",1200],["เปลี่ยน sight glass และวาล์วสุญญากาศ",600],
+     ["ซ่อมระบบ vacuum และ condenser",1000]]},
+   {name:"หม้อปั่น", code:"CFG", owner:"หน.หน่วยหม้อปั่น", lag:1.5, jobs:[
+     ["Overhaul หม้อปั่น Batch 4 เครื่อง",1600],["เปลี่ยนตะแกรง (screen) และ basket",700],
+     ["ซ่อมระบบเบรกและ hydraulic",550],["ปรับสมดุล (balancing) rotor",450]]},
+ ]},
+ {id:"maint", name:"ส่วนซ่อมบำรุง", color:"#2563EB", units:[
+   {name:"ซ่อมบำรุงไฟฟ้า", code:"ELE", owner:"หน.ซ่อมบำรุงไฟฟ้า", lag:2.5, jobs:[
+     ["Overhaul มอเตอร์ >100 kW จำนวน 12 ตัว",1800],["ตรวจซ่อมตู้ MDB/MCC และ breaker",1100],
+     ["เปลี่ยนสายและรางเคเบิลเสื่อมสภาพ",900],["บำรุงรักษาหม้อแปลง 6 ลูก",700]]},
+   {name:"ซ่อมบำรุงเครื่องกล", code:"MEC", owner:"หน.ซ่อมบำรุงเครื่องกล", lag:0, jobs:[
+     ["Overhaul ปั๊มหลัก 18 ตัว",1500],["เปลี่ยน bearing/coupling สายพานลำเลียง",1200],
+     ["ซ่อม gearbox ชุดขับหลัก",1000],["งานโครงสร้างและ platform",600]]},
+   {name:"เครื่องมือควบคุม", code:"INS", owner:"หน.เครื่องมือควบคุม", lag:1, jobs:[
+     ["สอบเทียบเครื่องมือวัด 250 จุด",900],["เปลี่ยน transmitter/control valve เสื่อม",800],
+     ["ปรับปรุงระบบ DCS I/O",700]]},
+ ]},
+ {id:"power", name:"ส่วนต้นกำลัง", color:"#D97706", units:[
+   {name:"ลูกหีบ", code:"MIL", owner:"หน.หน่วยลูกหีบ", lag:-1, jobs:[
+     ["เจียร/เปลี่ยนลูกหีบชุด 1–5",2200],["Overhaul เกียร์ขับลูกหีบ",1400],
+     ["ซ่อมแท่นและ bearing ลูกหีบ",900],["ปรับตั้ง setting ลูกหีบ",400]]},
+   {name:"หม้อไอน้ำ", code:"BLR", owner:"หน.หน่วยหม้อไอน้ำ", lag:3.5, jobs:[
+     ["เปลี่ยนท่อ water wall Boiler #2",2400],["ซ่อมผนังเตาและ refractory",1300],
+     ["Overhaul พัดลม ID/FD และ air heater",1000],["ตรวจสอบและทดสอบ safety valve",500],
+     ["ซ่อมระบบลำเลียงเถ้าและ dust collector",700]]},
+   {name:"ไฟฟ้าผลิต", code:"GEN", owner:"หน.หน่วยไฟฟ้าผลิต", lag:0, jobs:[
+     ["Overhaul Turbine-Generator ชุดที่ 1",2000],["บำรุงรักษาระบบ excitation และ AVR",700],
+     ["ทดสอบ protection relay และ synchronize",600]]},
+ ]},
+];
+
+let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
+  const jobs = u.jobs.map(([jname, jmh], ji) => {
+    const nT = 5 + Math.floor(rng()*6);
+    const idx = Array.from({length:nT},(_,i)=>Math.round(i*(PHASES.length-1)/(nT-1)));
+    const wsum = idx.reduce((s,i)=>s+PHASES[i][1],0);
+    const jStart = 1 + Math.floor(rng()*6) + ji*4;
+    const jEnd = Math.min(WEEKS, jStart + 16 + Math.floor(rng()*10));
+    const span = jEnd - jStart;
+    const tasks = idx.map((pi,ti)=>{
+      const mh = Math.round(jmh*PHASES[pi][1]/wsum);
+      const s = jStart + span*ti/nT, e = jStart + span*(ti+1)/nT + span*0.15;
+      const lagT = u.lag + (rng()-0.5)*2;
+      const plan = w => Math.max(0, Math.min(1,(w-s)/(e-s)));
+      let act = Math.max(0, Math.min(1, plan(REALWK - lagT)));
+      act = Math.round(act*20)/20;
+      return {name:PHASES[pi][0], mh, s, e, plan, act};
+    });
+    if(jEnd <= REALWK+2 && u.lag <= 1.5){ tasks.forEach(t=>t.act=1); }
+    return {name:jname, tasks, mh:tasks.reduce((a,t)=>a+t.mh,0)};
+  });
+  return {...u, jobs};
+})}));
+
+/* ---- Task IDs + บันทึกจริง ---- */
+const TASK_INDEX = {};
+DATA.forEach(s=>s.units.forEach(u=>u.jobs.forEach((j,ji)=>{
+  j.id = u.code+"-J"+(ji+1);
+  j.tasks.forEach((t,ti)=>{ t.id = j.id+"-T"+(ti+1); t.mockAct = t.act; TASK_INDEX[t.id] = {t,u,j,secId:DATA.find(x=>x.units.includes(u)).id}; });
+})));
+function loadEntries(){ try{ return JSON.parse(localStorage.getItem("idash_entries")||"[]"); }catch(e){ return []; } }
+function saveEntries(a){ try{ localStorage.setItem("idash_entries",JSON.stringify(a)); }catch(e){} }
+let ENTRIES = loadEntries();
+function applyEntries(){
+  Object.values(TASK_INDEX).forEach(x=>{ x.t.act = x.t.mockAct; });
+  const latest = {};
+  ENTRIES.forEach(en=>{ if(!latest[en.taskId] || en.date >= latest[en.taskId].date) latest[en.taskId]=en; });
+  Object.entries(latest).forEach(([tid,en])=>{ if(TASK_INDEX[tid]) TASK_INDEX[tid].t.act = Math.max(0,Math.min(1,en.pct/100)); });
+}
+applyEntries();
+
+/* ---- การเช็คการบันทึกรายวัน (compliance) ---- */
+function dateISO(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function unitsRecordedOn(dateStr){
+  const set=new Set();
+  ENTRIES.forEach(e=>{ if(e.date===dateStr) set.add(e.taskId.split("-")[0]); });
+  return set;
+}
+function complianceToday(){
+  const rec=unitsRecordedOn(dateISO(new Date()));
+  return DATA.flatMap(s=>s.units.map(u=>({sec:s,u,done:rec.has(u.code)})));
+}
+
+/* ---- ผลจริง ณ สัปดาห์ y้อนหลัง: สเกลตามรูปทรงแผน ---- */
+function actAt(t,w){
+  if(w>=REALWK) return t.act;
+  const p0=t.plan(REALWK);
+  if(p0<=0) return 0;
+  return Math.min(t.act, t.act*Math.min(1, t.plan(w)/p0));
+}
+const sum = a => a.reduce((x,y)=>x+y,0);
+function agg(tasks, w){ const mh=sum(tasks.map(t=>t.mh));
+  return {mh, plan:sum(tasks.map(t=>t.mh*t.plan(w)))/mh*100, act:sum(tasks.map(t=>t.mh*actAt(t,w)))/mh*100,
+          actMh:sum(tasks.map(t=>t.mh*actAt(t,w)))}; }
+const unitTasks = u=>u.jobs.flatMap(j=>j.tasks),
+      secTasks = s=>s.units.flatMap(unitTasks), allTasks = DATA.flatMap(secTasks);
+const CFG={warn:2,crit:7};
+function statusOf(v){ return v>=-CFG.warn?[pk(["ตามแผน","ຕາມແຜນ","On plan"]),"good"]:v>=-CFG.crit?[pk(["เสี่ยง","ສ່ຽງ","At risk"]),"warn"]:[pk(["ล่าช้า","ຊັກຊ້າ","Late"]),"crit"]; }
+const fmt1 = x=>x.toLocaleString("th-TH",{maximumFractionDigits:1,minimumFractionDigits:1});
+const fmt0 = x=>Math.round(x).toLocaleString("th-TH");
+function wkEnd(w){ return new Date(2026,3,15+w*7-1); }
+
+/* ============ charts ============ */
+function donut(pct, color="#2563EB", size=92){
+  const r=38, c=2*Math.PI*r, off=c*(1-pct/100);
+  return `<svg width="${size}" height="${size}" viewBox="0 0 92 92">
+    <circle cx="46" cy="46" r="${r}" fill="none" stroke="#E3EDFC" stroke-width="9"/>
+    <circle cx="46" cy="46" r="${r}" fill="none" stroke="${color}" stroke-width="9" stroke-linecap="round"
+      stroke-dasharray="${c}" stroke-dashoffset="${off}" transform="rotate(-90 46 46)"/>
+    <g transform="translate(28,35)" fill="#AFC1DE">
+      <rect x="0" y="12" width="36" height="10" rx="1"/>
+      <rect x="3" y="5" width="5" height="17" rx="1.5"/>
+      <rect x="11" y="0" width="5" height="22" rx="1.5"/>
+      <path d="M20 22 V9 l6 -3 v16 z"/>
+      <rect x="28" y="7" width="6" height="15" rx="1"/>
+    </g>
+  </svg>`;
+}
+function sCurve(tasks, lineColor="#2563EB", w=720, h=260){
+  const P=[...Array(WEEKS+1).keys()].map(i=>agg(tasks,i).plan);
+  const Act=[...Array(WNOW+1).keys()].map(wk=>agg(tasks,wk).act);
+  const mL=42,mR=16,mT=18,mB=32, iw=w-mL-mR, ih=h-mT-mB;
+  const X=wk=>mL+iw*wk/WEEKS, Y=v=>mT+ih*(1-v/100);
+  const path=(arr,n)=>arr.slice(0,n+1).map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+","+Y(v).toFixed(1)).join(" ");
+  const months=MON[LI()].slice(3,11);
+  let g="";
+  for(let v=0;v<=100;v+=25) g+=`<line x1="${mL}" x2="${w-mR}" y1="${Y(v)}" y2="${Y(v)}" stroke="#EAF0F8" stroke-width="1"/>
+      <text x="${mL-8}" y="${Y(v)+4}" font-size="11" fill="#64748B" text-anchor="end">${v}</text>`;
+  months.forEach((m,i)=>{ const wk=i*35/8+35/16; g+=`<text x="${X(wk)}" y="${h-9}" font-size="11" fill="#64748B" text-anchor="middle">${m}</text>`; });
+  const xN=X(WNOW), yA=Y(Act[WNOW]);
+  const area = path(Act,WNOW)+`L${X(WNOW)},${Y(0)} L${X(0)},${Y(0)} Z`;
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto" role="img">
+    <text x="${mL-8}" y="10" font-size="10.5" fill="#94A3B8">(%)</text>
+    ${g}
+    <path d="${area}" fill="${lineColor}" opacity="0.10"/>
+    <line x1="${xN}" x2="${xN}" y1="${mT}" y2="${mT+ih}" stroke="#94A3B8" stroke-width="1.3" stroke-dasharray="3 4"/>
+    <text x="${xN+7}" y="${mT+13}" font-size="11" fill="#64748B">${pk(["สัปดาห์","ສັບປະດາ","Week"])} ${WNOW}</text>
+    <path d="${path(P,WEEKS)}" fill="none" stroke="#94A3B8" stroke-width="2" stroke-dasharray="6 5"/>
+    <path d="${path(Act,WNOW)}" fill="none" stroke="${lineColor}" stroke-width="3"/>
+    <circle cx="${xN}" cy="${yA}" r="5" fill="${lineColor}"/>
+    <text x="${xN-10}" y="${yA-12}" font-size="15" fill="#1E2A3A" text-anchor="end" font-weight="800">${fmt1(Act[WNOW])}%</text>
+  </svg>
+  <div class="legendbar"><span><span class="sw" style="background:${lineColor}"></span>${pk(["ผลจริงสะสม (% ถ่วง mh)","ຜົນຕົວຈິງສະສົມ (% ຖ່ວງ mh)","Cumulative actual (mh-weighted %)"])}</span>
+  <span><span class="sw" style="background:none;border-top:3px dashed #94A3B8;height:0"></span>${pk(["แผนสะสมรายสัปดาห์","ແຜນສະສົມລາຍສັບປະດາ","Weekly plan baseline"])}</span></div>`;
+}
+
+/* ============ shell ============ */
+const app=document.getElementById("app"), navi=document.getElementById("navi");
+let PAGE="over";
+const NAV=[["over",["ภาพรวม","ພາບລວມ","Overview"],"grid"],["units",["หน่วยงาน","ໜ່ວຍງານ","Units"],"units"],
+ ["jobs",["งานซ่อม","ວຽກສ້ອມແປງ","Jobs"],"wrench"],["ana",["การวิเคราะห์","ການວິເຄາະ","Analytics"],"chart"],
+ ["entry",["บันทึกข้อมูล","ບັນທຶກຂໍ້ມູນ","Data Entry"],"edit"],["rep",["รายงาน","ລາຍງານ","Report"],"report"]];
+function renderNav(){
+  navi.innerHTML=NAV.map(([id,t,ic])=>`<div class="nitem ${PAGE===id?'active':''}" tabindex="0" onclick="go('${id}')">${IC(ICONS[ic],18)}${pk(t)}</div>`).join("");
+}
+const FLAGS = {
+  th:'<svg width="20" height="13" viewBox="0 0 24 16"><rect width="24" height="16" fill="#A51931"/><rect y="2.7" width="24" height="10.6" fill="#F4F5F8"/><rect y="5.3" width="24" height="5.4" fill="#2D2A4A"/></svg>',
+  lo:'<svg width="20" height="13" viewBox="0 0 24 16"><rect width="24" height="16" fill="#CE1126"/><rect y="4" width="24" height="8" fill="#002868"/><circle cx="12" cy="8" r="3" fill="#fff"/></svg>',
+  en:'<svg width="20" height="13" viewBox="0 0 24 16"><rect width="24" height="16" fill="#012169"/><path d="M0 0 L24 16 M24 0 L0 16" stroke="#fff" stroke-width="3.2"/><path d="M0 0 L24 16 M24 0 L0 16" stroke="#C8102E" stroke-width="1.4"/><rect x="9.4" width="5.2" height="16" fill="#fff"/><rect y="5.4" width="24" height="5.2" fill="#fff"/><rect x="10.7" width="2.6" height="16" fill="#C8102E"/><rect y="6.7" width="24" height="2.6" fill="#C8102E"/></svg>'
+};
+const LANG_META={th:["TH","ไทย"],lo:["LA","ລາວ"],en:["EN","English (UK)"]};
+function langChip(){
+  return `<div class="langdd" id="langdd">
+    <div class="lddbtn" tabindex="0" onclick="toggleLangDD(event)">${FLAGS[LANG]}${LANG_META[LANG][0]}<span class="dd">▼</span></div>
+    <div class="lddmenu">${Object.keys(LANG_META).map(l=>
+      `<div class="lditem" tabindex="0" onclick="setLang('${l}')">${FLAGS[l]}${LANG_META[l][1]}${LANG===l?'<span class="chk">✓</span>':''}</div>`).join("")}
+    </div></div>`;
+}
+function toggleLangDD(ev){ ev.stopPropagation(); document.getElementById("langdd").classList.toggle("open"); }
+document.addEventListener("click",()=>{ const d=document.getElementById("langdd"); if(d) d.classList.remove("open"); });
+function renderLang(){
+  document.getElementById("logoSub").textContent=pk(["น้ำตาลมิตรลาว","ນ້ຳຕານມິດລາວ","Mitr Lao Sugar"]);
+  document.getElementById("adminSub").textContent=pk(["ผู้ดูแลระบบ","ຜູ້ດູແລລະບົບ","Administrator"]);
+  document.getElementById("foot").innerHTML=
+    pk(["หมายเหตุ: ข้อมูลอัปเดตล่าสุดจากระบบ PM/CMMS เวลา 18:00 น. · <b>ข้อมูลจำลองเพื่อสาธิต</b>",
+        "ໝາຍເຫດ: ຂໍ້ມູນອັບເດດຫຼ້າສຸດຈາກລະບົບ PM/CMMS ເວລາ 18:00 · <b>ຂໍ້ມູນຈຳລອງເພື່ອສາທິດ</b>",
+        "Note: Data last updated from PM/CMMS at 18:00 · <b>Mock data for demo</b>"])+"<br>"+
+    pk(["เกณฑ์สถานะ (ผลต่างจากแผนสะสม): 🟢 ตามแผน ≥ −2 จุด · 🟡 เสี่ยง −2 ถึง −7 จุด · 🔴 ล่าช้า < −7 จุด · % ถ่วงน้ำหนักด้วย man-hours",
+        "ເກນສະຖານະ (ຜົນຕ່າງຈາກແຜນສະສົມ): 🟢 ຕາມແຜນ ≥ −2 ຈຸດ · 🟡 ສ່ຽງ −2 ຫາ −7 ຈຸດ · 🔴 ຊັກຊ້າ < −7 ຈຸດ · % ຖ່ວງນ້ຳໜັກດ້ວຍ man-hours",
+        "Status criteria (variance vs cumulative plan): 🟢 On plan ≥ −2 pts · 🟡 At risk −2 to −7 pts · 🔴 Late < −7 pts · man-hours weighted"]);
+}
+function go(p){ PAGE=p; renderNav(); ({over:overview,jobs:jobsPage,units:unitsPage,entry:entryPage,ana:anaPage,rep:repPage})[p](); window.scrollTo(0,0); }
+function setWeek(w){ WNOW=parseInt(w); go(PAGE); }
+function weekChip(){
+  const opts=[...Array(REALWK).keys()].map(i=>{const w=i+1;
+    return `<option value="${w}" ${w===WNOW?"selected":""}>${pk(["สัปดาห์","ສັບປະດາ","Week"])} ${w} · ${fmtDate(wkEnd(w))}</option>`;}).join("");
+  return `<div class="datechip">${IC(ICONS.cal,18)}<span class="num">15 ${MON[LI()][3]} ${LANG==="th"?2569:2026} –</span>
+    <select id="wkSel" onchange="setWeek(this.value)" title="${pk(["เลือกดูข้อมูลย้อนหลัง","ເລືອກເບິ່ງຂໍ້ມູນຍ້ອນຫຼັງ","View historical data"])}">${opts}</select></div>`;
+}
+function histBanner(){
+  if(WNOW>=REALWK) return "";
+  return `<div class="histnote">🕓 ${pk(["กำลังดูข้อมูลย้อนหลัง ณ สัปดาห์ที่","ກຳລັງເບິ່ງຂໍ້ມູນຍ້ອນຫຼັງ ນະສັບປະດາທີ","Viewing historical data — week"])} ${WNOW}
+    &nbsp;<a onclick="setWeek(${REALWK})">${pk(["กลับสัปดาห์ปัจจุบัน ›","ກັບສັບປະດາປັດຈຸບັນ ›","Back to current ›"])}</a></div>`;
+}
+function pagehead(title,sub){ return `<div class="pagehead"><div><h1>${title}</h1><div class="sub">${sub}</div></div><div class="headctl">${langChip()}${weekChip()}</div></div>${histBanner()}`; }
+function unitBub(name,sz=22){ return IC(ICONS[UNIT_ICON[name]]||ICONS.gear,sz); }
+function riskRows(){
+  return DATA.flatMap(s=>s.units.map(u=>({sec:s,u,a:agg(unitTasks(u),WNOW)})))
+    .map(x=>({...x,varc:x.a.act-x.a.plan,st:statusOf(x.a.act-x.a.plan)}));
+}
+
+/* ============ ภาพรวม ============ */
+function overview(){
+  const SCc={good:"#16A34A",warn:"#D97706",crit:"#EF4444"};
+  const f=agg(allTasks,WNOW), varc=f.act-f.plan, [fLbl,fTone]=statusOf(varc);
+  const rows=riskRows();
+  const late=rows.filter(r=>r.st[1]==="crit"), risk=rows.filter(r=>r.st[1]==="warn");
+  const jobsAll=DATA.flatMap(s=>s.units.flatMap(u=>u.jobs));
+  const jobsDone=jobsAll.filter(j=>agg(j.tasks,WNOW).act>=99.5).length;
+  const daysLeft=Math.max(0,Math.round((SEASON_END-wkEnd(WNOW))/86400000));
+  const missing=complianceToday().filter(x=>!x.done);
+  const compBanner = missing.length===0 ? "" :
+    `<div class="compbanner">⚠️ ${pk(["วันนี้ยังมี","ມື້ນີ້ຍັງມີ","Today"])} <b>${missing.length}/9</b> ${pk(["หน่วยงานไม่ได้บันทึกข้อมูล:","ໜ່ວຍງານຍັງບໍ່ບັນທຶກຂໍ້ມູນ:","units have not recorded:"])}
+     ${missing.map(x=>un(x.u.name)).join(" · ")}
+     &nbsp;<a onclick="go('entry')">${pk(["ไปหน้าบันทึก ›","ໄປໜ້າບັນທຶກ ›","Go to entry ›"])}</a></div>`;
+  app.innerHTML = pagehead(pk(["ความคืบหน้าของงานซ่อม","ຄວາມຄືບໜ້າຂອງວຽກສ້ອມແປງ","Maintenance Progress"]),
+    pk(["ภาพรวม ณ วันที่","ພາບລວມ ນະວັນທີ","As of"])+" "+fmtDate(wkEnd(WNOW))+" · "+pk(["สัปดาห์ที่","ສັບປະດາທີ","Week"])+" "+WNOW+"/"+WEEKS) + compBanner + `
+  <div class="kpis">
+    <div class="kpi hero">
+      <div>
+        <div class="label">${pk(["ความคืบหน้ารวมทั้งโรงงาน","ຄວາມຄືບໜ້າລວມທັງໂຮງງານ","Factory-wide progress"])}</div>
+        <div class="value num" style="color:${SCc[fTone]}">${fmt1(f.act)}<span class="unit">%</span></div>
+        <div class="note num"><span class="chip c-${fTone}">${varc>=0?"▲":"▼"} ${fmt1(Math.abs(varc))} ${pk(["จุด เทียบแผน","ຈຸດ ທຽບແຜນ","pts vs plan"])} (${fmt1(f.plan)}%) — ${fLbl}</span></div>
+      </div>
+      ${donut(f.act, SCc[fTone])}
+    </div>
+    <div class="kpi"><div class="label">${pk(["แรงงานสะสม","ແຮງງານສະສົມ","Man-hours used"])}</div>
+      <div class="icrow"><span class="icbub">${IC(ICONS.people)}</span>
+        <div><div class="value num" style="font-size:28px;margin:0">${fmt0(f.actMh)}</div><div class="small">man-hr</div></div></div>
+      <div class="note num" style="margin-top:6px">${pk(["จากแผนทั้งฤดูกาล","ຈາກແຜນທັງລະດູການ","of season plan"])} ${fmt0(f.mh)}</div></div>
+    <div class="kpi"><div class="label">${pk(["JOB เสร็จ","JOB ສຳເລັດ","Jobs done"])}</div>
+      <div class="icrow"><span class="icbub">${IC(ICONS.check)}</span>
+        <div><div class="value num" style="font-size:28px;margin:0">${jobsDone} <span class="unit">/ ${jobsAll.length}</span></div></div></div>
+      <div class="note" style="margin-top:6px">${pk(["ครบทุก Task จึงนับ","ນັບເມື່ອຄົບທຸກ Task","All tasks closed"])}</div></div>
+    <div class="kpi"><div class="label">${pk(["หน่วยล่าช้า · เสี่ยง","ໜ່ວຍຊັກຊ້າ · ສ່ຽງ","Late · at-risk units"])}</div>
+      <div class="icrow"><span class="icbub" style="background:var(--warn-bg);color:var(--warn)">${IC(ICONS.alert)}</span>
+        <div><div class="value num" style="font-size:28px;margin:0"><span style="color:var(--crit)">${late.length}</span> <span class="unit">· ${risk.length}</span></div></div></div>
+      <div class="note" style="margin-top:6px">${pk(["จาก 9 หน่วยงาน","ຈາກ 9 ໜ່ວຍງານ","of 9 units"])}</div></div>
+    <div class="kpi"><div class="label">${pk(["ก่อนเปิดหีบ","ກ່ອນເປີດຫີບ","To crushing start"])}</div>
+      <div class="icrow"><span class="icbub">${IC(ICONS.cal)}</span>
+        <div><div class="value num" style="font-size:28px;margin:0">${daysLeft} <span class="unit">${pk(["วัน","ວັນ","days"])}</span></div></div></div>
+      <div class="note num" style="margin-top:6px">${pk(["ถึง","ຮອດ","until"])} ${fmtDate(SEASON_END)}</div></div>
+  </div>
+
+  <div class="card">
+    <h2>${pk(["ความคืบหน้าเทียบแผน","ຄວາມຄືບໜ້າທຽບແຜນ","Progress vs plan"])}</h2>
+    <div class="railbar"><div class="fill" style="width:${f.act}%"></div><div class="mark" style="left:${f.plan}%"></div></div>
+    <div class="railcap num"><span>15 ${MON[LI()][3]} ${LANG==="th"?2569:2026}</span>
+    <span>${pk(["ผลจริง","ຜົນຕົວຈິງ","Actual"])} ${fmt1(f.act)}% · ${pk(["ขีดดำ = แผน","ຂີດດຳ = ແຜນ","tick = plan"])} ${fmt1(f.plan)}%</span>
+    <span>100% · ${fmtDate(SEASON_END)}</span></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card"><h2>S-CURVE <span class="thin">· ${pk(["แผนเทียบผลจริง รายสัปดาห์","ແຜນທຽບຜົນຕົວຈິງ ລາຍສັບປະດາ","Plan vs actual, weekly"])}</span></h2>
+      ${sCurve(allTasks)}</div>
+    <div class="card"><span class="seeall" onclick="go('units')">${pk(["ดูทั้งหมด →","ເບິ່ງທັງໝົດ →","View all →"])}</span>
+      <h2>${pk(["หน่วยงานที่เสี่ยงล่าช้า","ໜ່ວຍງານທີ່ສ່ຽງຊັກຊ້າ","Units at risk"])}</h2>
+      ${[...late,...risk].sort((a,b)=>a.varc-b.varc).slice(0,4).map((r,i)=>`
+        <div class="risk">
+          <div class="rank num">${i+1}</div>
+          <div class="t"><span class="nm" onclick='unitView("${r.sec.id}","${r.u.name}")'>${un(r.u.name)}</span>
+            <span class="chip c-${r.st[1]} num">${r.st[0]} ${fmt1(Math.abs(r.varc))} ${pk(["จุด","ຈຸດ","pts"])}</span><br>
+            <span class="num">${pk(["ผลจริง","ຜົນຕົວຈິງ","Actual"])} ${fmt1(r.a.act)}% · ${pk(["แผน","ແຜນ","Plan"])} ${fmt1(r.a.plan)}%</span><br>
+            ${r.u.owner} · ${un(r.sec.name)}</div>
+          <div class="ic">${unitBub(r.u.name)}</div>
+        </div>`).join("")||`<div class="small">${pk(["ทุกหน่วยตามแผน","ທຸກໜ່ວຍຕາມແຜນ","All units on plan"])}</div>`}
+    </div>
+  </div>`;
+}
+
+/* ============ หน่วยงาน ============ */
+function unitsPage(){
+  app.innerHTML = pagehead(pk(["หน่วยงานทั้ง 9 หน่วย · แยกตามส่วนงาน","ໜ່ວຍງານທັງ 9 ໜ່ວຍ · ແຍກຕາມພາກ","All 9 Units by Section"]),
+    pk(["แต่ละส่วนมี S-Curve ของตัวเอง · สีแถบ = สถานะ · ขีดดำ = แผนสะสม · คลิกเพื่อเจาะราย Job","ແຕ່ລະພາກມີ S-Curve ຂອງຕົນເອງ · ສີແຖບ = ສະຖານະ · ຂີດດຳ = ແຜນສະສົມ · ຄລິກເພື່ອເຈາະ Job","Each section has its own S-curve · bar color = status · tick = plan · click to drill down"]))
+  + DATA.map(s=>{ const sa=agg(secTasks(s),WNOW), sv=sa.act-sa.plan, sst=statusOf(sv);
+    return `<div class="card">
+      <div class="sechead" style="margin-top:0">
+        <span class="swatch" style="background:${s.color}"></span>${un(s.name)}
+        <span class="chip c-${sst[1]}" style="margin-left:10px">${sst[0]}</span>
+        <span class="spct num">${pk(["เฉลี่ย","ສະເລ່ຍ","Avg"])} ${fmt1(sa.act)}% / ${pk(["แผน","ແຜນ","plan"])} ${fmt1(sa.plan)}%</span>
+      </div>
+      <div class="secsplit">
+        <div class="secchart"><div class="sctitle">S-CURVE · ${un(s.name)}</div>
+          ${sCurve(secTasks(s), s.color, 560, 214)}</div>
+        <div class="secbars">
+          ${s.units.map(u=>{const ua=agg(unitTasks(u),WNOW), uv=ua.act-ua.plan, ust=statusOf(uv);
+            const SCc={good:"#16A34A",warn:"#D97706",crit:"#EF4444"}[ust[1]];
+            return `<div class="urow" tabindex="0" onclick='unitView("${s.id}","${u.name}")'>
+              <span class="uic">${unitBub(u.name,18)}</span>
+              <span class="nm">${un(u.name)}</span>
+              <span class="bar"><span class="fill" style="width:${ua.act}%;background:${SCc}"></span>
+                <span class="mark" style="left:${ua.plan}%"></span></span>
+              <span class="pct num" style="color:${SCc}">${fmt1(ua.act)}%</span>
+              <span class="st"><span class="chip c-${ust[1]}">${ust[0]}</span></span>
+            </div>`;}).join("")}
+        </div>
+      </div>
+    </div>`;}).join("");
+}
+
+/* ============ งานซ่อม ============ */
+function jobsPage(){
+  const SCc={good:"#16A34A",warn:"#D97706",crit:"#EF4444"};
+  const jobs=DATA.flatMap(s=>s.units.flatMap(u=>u.jobs.map(j=>({s,u,j,a:agg(j.tasks,WNOW)}))))
+    .map(x=>({...x,varc:x.a.act-x.a.plan,st:statusOf(x.a.act-x.a.plan)})).sort((a,b)=>a.varc-b.varc);
+  app.innerHTML = pagehead(pk(["งานซ่อมทั้งหมด","ວຽກສ້ອມແປງທັງໝົດ","All Jobs"])+" · "+jobs.length+" Job",
+    pk(["เรียงจากล่าช้าที่สุด · คลิกแถวเพื่อไปหน้าหน่วยงาน","ຮຽງຈາກຊັກຊ້າທີ່ສຸດ · ຄລິກແຖວເພື່ອໄປໜ້າໜ່ວຍງານ","Sorted worst-first · click a row to drill down"])) + `
+  <div class="card"><div class="scrollx"><table>
+    <tr><th>Job</th><th>${pk(["หน่วยงาน","ໜ່ວຍງານ","Unit"])}</th><th class="r">${pk(["แผน","ແຜນ","Plan"])}</th><th class="r">${pk(["ผลจริง","ຜົນຕົວຈິງ","Actual"])}</th><th class="r">${pk(["ผลต่าง","ຜົນຕ່າງ","Var"])}</th><th style="width:170px">${pk(["ความคืบหน้า","ຄວາມຄືບໜ້າ","Progress"])}</th><th class="r">man-hr</th><th>${pk(["สถานะ","ສະຖານະ","Status"])}</th></tr>
+    ${jobs.map(x=>`<tr class="clickable" onclick='unitView("${x.s.id}","${x.u.name}")'>
+      <td><b>${x.j.name}</b></td><td class="small">${un(x.u.name)}</td>
+      <td class="r num small">${fmt1(x.a.plan)}%</td><td class="r num"><b>${fmt1(x.a.act)}%</b></td>
+      <td class="r num" style="color:${SCc[x.st[1]]};font-weight:700">${x.varc>=0?"+":"−"}${fmt1(Math.abs(x.varc))}</td>
+      <td><div class="tbar"><div class="fill" style="width:${x.a.act}%;background:${SCc[x.st[1]]}"></div><div class="mark" style="left:${x.a.plan}%"></div></div></td>
+      <td class="r num small">${fmt0(x.a.mh)}</td>
+      <td><span class="chip c-${x.st[1]}">${x.st[0]}</span></td></tr>`).join("")}
+  </table></div></div>`;
+}
+
+/* ============ เจาะรายหน่วย ============ */
+function unitView(secId, uname){
+  const SCc={good:"#16A34A",warn:"#D97706",crit:"#EF4444"};
+  const s=DATA.find(x=>x.id===secId), u=s.units.find(x=>x.name===uname);
+  const a=agg(unitTasks(u),WNOW), v=a.act-a.plan, [stL,stC]=statusOf(v);
+  const backTo = PAGE;
+  app.innerHTML=`
+  <button class="backbtn" onclick="go('${backTo}')">← ${pk(["กลับ","ກັບຄືນ","Back"])}</button>
+  ${pagehead(un(u.name)+" — Job / Task", un(s.name)+" · "+u.owner+" · "+pk(["สัปดาห์ที่","ສັບປະດາທີ","week"])+" "+WNOW)}
+  <div class="kpis" style="grid-template-columns:1.35fr 1fr 1fr 1fr">
+    <div class="kpi hero">
+      <div>
+        <div class="label">${pk(["ความคืบหน้า","ຄວາມຄືບໜ້າ","Progress"])} — ${un(u.name)}</div>
+        <div class="value num" style="color:${SCc[stC]}">${fmt1(a.act)}<span class="unit">%</span></div>
+        <div class="note num"><span class="chip c-${stC}">${v>=0?"▲":"▼"} ${fmt1(Math.abs(v))} ${pk(["จุด เทียบแผน","ຈຸດ ທຽບແຜນ","pts vs plan"])} (${fmt1(a.plan)}%) — ${stL}</span></div>
+      </div>
+      ${donut(a.act, SCc[stC])}
+    </div>
+    <div class="kpi"><div class="label">${pk(["สถานะ","ສະຖານະ","Status"])}</div>
+      <div class="value"><span class="chip c-${stC}" style="font-size:17px;padding:5px 18px">${stL}</span></div>
+      <div class="note">${u.owner}</div></div>
+    <div class="kpi"><div class="label">${pk(["แรงงานสะสม","ແຮງງານສະສົມ","Man-hours used"])}</div>
+      <div class="value num" style="font-size:28px">${fmt0(a.actMh)}<span class="unit">man-hr</span></div>
+      <div class="note num">${pk(["แผนทั้งฤดู","ແຜນທັງລະດູ","Season plan"])} ${fmt0(a.mh)}</div></div>
+    <div class="kpi"><div class="label">${pk(["ขอบเขตงาน","ຂອບເຂດວຽກ","Scope"])}</div>
+      <div class="value num" style="font-size:28px">${u.jobs.length}<span class="unit">job · ${unitTasks(u).length} task</span></div>
+      <div class="note">${pk(["คลิก Job เพื่อดู Task","ຄລິກ Job ເພື່ອເບິ່ງ Task","Click a job to see tasks"])}</div></div>
+  </div>
+  <div class="card"><h2>S-CURVE <span class="thin">· ${un(u.name)}</span></h2>${sCurve(unitTasks(u))}</div>
+  ${u.jobs.map((j,ji)=>{const ja=agg(j.tasks,WNOW), jv=ja.act-ja.plan, jst=statusOf(jv);
+    const done=j.tasks.filter(t=>actAt(t,WNOW)>=1).length;
+    return `<div class="job b-${jst[1]}" id="job${ji}">
+      <div class="jobhead" tabindex="0" onclick='document.getElementById("job${ji}").classList.toggle("open")'>
+        <span class="caret">▶</span><span class="jname">${j.name}</span>
+        <span class="jmeta num">${done}/${j.tasks.length} task · ${fmt0(ja.mh)} man-hr</span>
+        <span class="jbar"><span class="fill" style="width:${ja.act}%;background:${SCc[jst[1]]}"></span><span class="mark" style="left:${ja.plan}%"></span></span>
+        <span class="jpct num" style="color:${SCc[jst[1]]}">${fmt1(ja.act)}%<br><span class="small">${pk(["แผน","ແຜນ","plan"])} ${fmt1(ja.plan)}%</span></span>
+        <span class="chip c-${jst[1]}">${jst[0]}</span>
+      </div>
+      <div class="jobbody"><div class="scrollx"><table>
+        <tr><th>Task</th><th class="r">man-hr</th><th class="r">${pk(["กำหนด (สัปดาห์)","ກຳນົດ (ສັບປະດາ)","Sched. (wk)"])}</th><th class="r">${pk(["แผน","ແຜນ","Plan"])}</th><th class="r">${pk(["ผลจริง","ຜົນຕົວຈິງ","Actual"])}</th><th style="width:150px">${pk(["ความคืบหน้า","ຄວາມຄືບໜ້າ","Progress"])}</th><th>${pk(["สถานะ","ສະຖານະ","Status"])}</th></tr>
+        ${j.tasks.map(t=>{const tp=t.plan(WNOW)*100, ta=actAt(t,WNOW)*100,
+          tst= ta>=100?[pk(["เสร็จ ✓","ສຳເລັດ ✓","Done ✓"]),"good"]:statusOf(ta-tp);
+          return `<tr><td>${t.name}</td><td class="r num">${fmt0(t.mh)}</td>
+          <td class="r num small">${Math.max(1,Math.round(t.s))}–${Math.min(WEEKS,Math.round(t.e))}</td>
+          <td class="r num">${fmt1(tp)}%</td><td class="r num"><b>${fmt1(ta)}%</b></td>
+          <td><div class="tbar"><div class="fill" style="width:${ta}%;background:${SCc[tst[1]]}"></div><div class="mark" style="left:${tp}%"></div></div></td>
+          <td><span class="chip c-${tst[1]}">${tst[0]}</span></td></tr>`;}).join("")}
+      </table></div></div></div>`;}).join("")}
+  <div style="margin-top:16px"><button class="backbtn" onclick="go('${backTo}')">← ${pk(["กลับ","ກັບຄືນ","Back"])}</button></div>`;
+  window.scrollTo(0,0);
+}
+
+/* ============ บันทึกข้อมูล ============ */
+function todayISO(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function entryPage(){
+  const todays=ENTRIES.filter(e=>e.date===todayISO()).length;
+  const comp=complianceToday(), doneN=comp.filter(x=>x.done).length;
+  const days=[...Array(7).keys()].map(i=>{const d=new Date();d.setDate(d.getDate()-(6-i));return d;});
+  const compCard = `
+  <div class="card">
+    <h2>📋 ${pk(["เช็คการบันทึกประจำวัน (บังคับทุกหน่วย ทุกวัน)","ກວດການບັນທຶກປະຈຳວັນ (ບັງຄັບທຸກໜ່ວຍ ທຸກວັນ)","Daily entry check (mandatory, all units)"])}
+      <span class="thin">· ${pk(["วันนี้บันทึกแล้ว","ມື້ນີ້ບັນທຶກແລ້ວ","recorded today"])} <b style="color:${doneN===9?'var(--good)':'var(--crit)'}">${doneN}/9</b> ${pk(["หน่วย","ໜ່ວຍ","units"])}</span></h2>
+    <div class="compgrid">
+      ${comp.map(x=>`<div class="compunit ${x.done?'ok':'miss'}">
+        <span class="cn">${un(x.u.name)}<span>${x.u.owner}</span></span>
+        <span class="cs" style="color:${x.done?'var(--good)':'var(--crit)'}">${x.done?'✓':'✗'}</span></div>`).join("")}
+    </div>
+    <div style="margin-top:14px" class="scrollx"><table class="comptable">
+      <tr><th>${pk(["หน่วยงาน","ໜ່ວຍງານ","Unit"])} \\ ${pk(["ย้อนหลัง 7 วัน","ຍ້ອນຫຼັງ 7 ວັນ","last 7 days"])}</th>
+        ${days.map(d=>`<th class="num">${d.getDate()}/${d.getMonth()+1}</th>`).join("")}<th>${pk(["% บันทึก","% ບັນທຶກ","% logged"])}</th></tr>
+      ${DATA.flatMap(s=>s.units).map(u=>{
+        const marks=days.map(d=>unitsRecordedOn(dateISO(d)).has(u.code));
+        const pct=Math.round(marks.filter(Boolean).length/7*100);
+        return `<tr><td><b>${un(u.name)}</b></td>
+          ${marks.map(m=>`<td style="color:${m?'var(--good)':'var(--crit)'};font-weight:800">${m?'✓':'·'}</td>`).join("")}
+          <td class="num" style="font-weight:800;color:${pct>=80?'var(--good)':pct>=50?'var(--warn)':'var(--crit)'}">${pct}%</td></tr>`;}).join("")}
+    </table></div>
+    <div class="small" style="margin-top:8px">${pk(["นับว่า \"บันทึกแล้ว\" เมื่อหน่วยงานนั้นมีการบันทึกอย่างน้อย 1 Task ในวันนั้น · หน่วยที่ ✗ จะถูกแจ้งเตือนบนหน้าภาพรวมให้ผู้บริหารเห็น","ນັບວ່າ \"ບັນທຶກແລ້ວ\" ເມື່ອໜ່ວຍງານມີການບັນທຶກຢ່າງໜ້ອຍ 1 Task ໃນມື້ນັ້ນ · ໜ່ວຍທີ່ ✗ ຈະຖືກແຈ້ງເຕືອນໜ້າພາບລວມ","A unit counts as \"recorded\" with ≥1 task entry that day · units marked ✗ are flagged on the executive overview"])}</div>
+  </div>`;
+  app.innerHTML = pagehead(pk(["บันทึก % งานซ่อมประจำวัน","ບັນທຶກ % ວຽກສ້ອມແປງປະຈຳວັນ","Daily Progress Entry"]),
+    pk(["เลือกหน่วยงาน → Job → Task แล้วกรอกความคืบหน้าสะสม · ข้อมูลแทนที่ข้อมูลจำลองทันที","ເລືອກໜ່ວຍງານ → Job → Task ແລ້ວປ້ອນຄວາມຄືບໜ້າສະສົມ · ຂໍ້ມູນແທນທີ່ຂໍ້ມູນຈຳລອງທັນທີ","Pick Unit → Job → Task and enter cumulative progress · overrides mock data instantly"])) + compCard + `
+  <div class="card">
+    <h2>📝 ${pk(["ฟอร์มบันทึก","ຟອມບັນທຶກ","Entry form"])} <span class="thin">· ${pk(["วันนี้บันทึกแล้ว","ມື້ນີ້ບັນທຶກແລ້ວ","today"])} ${todays} ${pk(["รายการ","ລາຍການ","records"])}</span></h2>
+    <div class="formgrid">
+      <div class="fld"><label>${pk(["หน่วยงาน","ໜ່ວຍງານ","Unit"])}</label>
+        <select id="fUnit" onchange="entryUnitChanged()"><option value="">${pk(["— เลือกหน่วยงาน —","— ເລືອກໜ່ວຍງານ —","— select unit —"])}</option>
+        ${DATA.map(s=>`<optgroup label="${un(s.name)}">${s.units.map(u=>`<option value="${u.code}">${un(u.name)}</option>`).join("")}</optgroup>`).join("")}
+        </select></div>
+      <div class="fld"><label>Job</label><select id="fJob" onchange="entryJobChanged()" disabled><option value="">—</option></select></div>
+      <div class="fld"><label>Task</label><select id="fTask" onchange="entryTaskChanged()" disabled><option value="">—</option></select></div>
+    </div>
+    <div id="taskInfo"></div>
+    <div class="formgrid">
+      <div class="fld"><label>${pk(["% ความคืบหน้าสะสม (0–100)","% ຄວາມຄືບໜ້າສະສົມ (0–100)","Cumulative % (0–100)"])}</label><input id="fPct" type="number" min="0" max="100" step="5" placeholder="60"></div>
+      <div class="fld"><label>${pk(["man-hr ที่ใช้วันนี้","man-hr ທີ່ໃຊ້ມື້ນີ້","Man-hours today"])}</label><input id="fMh" type="number" min="0" step="1" placeholder="24"></div>
+      <div class="fld"><label>${pk(["ผู้บันทึก","ຜູ້ບັນທຶກ","Recorded by"])}</label><input id="fBy" type="text"></div>
+      <div class="fld"><label>${pk(["หมายเหตุ","ໝາຍເຫດ","Note"])}</label><input id="fNote" type="text"></div>
+    </div>
+    <button class="btn btn-p" onclick="saveEntry()">💾 ${pk(["บันทึกข้อมูล","ບັນທຶກຂໍ້ມູນ","Save"])}</button>
+    <span class="small" style="margin-left:12px">${pk(["วันที่บันทึก","ວັນທີບັນທຶກ","Date"])}: <b class="num">${todayISO()}</b></span>
+  </div>
+  <div class="card">
+    <span class="seeall" onclick="exportEntries()">⬇ ${pk(["Export CSV ลง Google Sheet","Export CSV ລົງ Google Sheet","Export CSV for Google Sheet"])}</span>
+    <h2>${pk(["รายการที่บันทึกไว้","ລາຍການທີ່ບັນທຶກໄວ້","Saved records"])} <span class="thin">· ${ENTRIES.length}</span></h2>
+    ${ENTRIES.length===0 ? `<div class="small" style="padding:8px 0">${pk(["ยังไม่มีการบันทึก — dashboard แสดงข้อมูลจำลอง","ຍັງບໍ່ມີການບັນທຶກ — dashboard ສະແດງຂໍ້ມູນຈຳລອງ","No records yet — dashboard shows mock data"])}</div>` : `
+    <div class="scrollx"><table>
+      <tr><th>${pk(["วันที่","ວັນທີ","Date"])}</th><th>Task ID</th><th>${pk(["หน่วยงาน / Task","ໜ່ວຍງານ / Task","Unit / Task"])}</th><th class="r">%</th><th class="r">man-hr</th><th>${pk(["ผู้บันทึก","ຜູ້ບັນທຶກ","By"])}</th><th></th></tr>
+      ${ENTRIES.slice().reverse().map((e,ri)=>{const x=TASK_INDEX[e.taskId];
+        return `<tr><td class="num small">${e.date}</td><td class="num"><b>${e.taskId}</b></td>
+        <td class="small">${x?un(x.u.name)+" · "+x.t.name:"?"}</td>
+        <td class="r num"><b>${e.pct}%</b></td><td class="r num">${e.mh||"-"}</td>
+        <td class="small">${e.by||"-"}</td>
+        <td><button class="btn-d" onclick="delEntry(${ENTRIES.length-1-ri})">${pk(["ลบ","ລຶບ","Del"])}</button></td></tr>`;}).join("")}
+    </table></div>`}
+  </div>
+  <div id="entryToast"></div>`;
+}
+function entryUnitChanged(){
+  const code=document.getElementById("fUnit").value, sel=document.getElementById("fJob");
+  const u=DATA.flatMap(s=>s.units).find(x=>x.code===code);
+  sel.innerHTML='<option value="">—</option>'+(u?u.jobs.map(j=>`<option value="${j.id}">${j.id} · ${j.name}</option>`).join(""):"");
+  sel.disabled=!u;
+  const ts=document.getElementById("fTask"); ts.innerHTML='<option value="">—</option>'; ts.disabled=true;
+  document.getElementById("taskInfo").innerHTML="";
+}
+function entryJobChanged(){
+  const jid=document.getElementById("fJob").value, sel=document.getElementById("fTask");
+  const j=DATA.flatMap(s=>s.units).flatMap(u=>u.jobs).find(x=>x.id===jid);
+  sel.innerHTML='<option value="">—</option>'+(j?j.tasks.map(t=>`<option value="${t.id}">${t.id} · ${t.name}</option>`).join(""):"");
+  sel.disabled=!j;
+  document.getElementById("taskInfo").innerHTML="";
+}
+function latestPctFor(tid){
+  let last=null;
+  ENTRIES.forEach(e=>{ if(e.taskId===tid && (!last || e.date>=last.date)) last=e; });
+  return last ? last.pct : null;
+}
+function entryTaskChanged(){
+  const tid=document.getElementById("fTask").value, x=TASK_INDEX[tid], inp=document.getElementById("fPct");
+  const lastPct = tid ? latestPctFor(tid) : null;
+  const floor = lastPct!=null ? lastPct : (x? Math.round(x.t.act*100) : 0);   // ห้ามต่ำกว่าค่านี้
+  document.getElementById("taskInfo").innerHTML = x?
+    `<div class="taskinfo num">📌 <b>${x.t.name}</b> · ${pk(["แผน","ແຜນ","plan"])} ${fmt0(x.t.mh)} man-hr · ${pk(["สัปดาห์","ສັບປະດາ","wk"])} ${Math.max(1,Math.round(x.t.s))}–${Math.min(WEEKS,Math.round(x.t.e))} ·
+     ${pk(["% แผนตอนนี้","% ແຜນຕອນນີ້","plan now"])} <b>${fmt1(x.t.plan(REALWK)*100)}%</b> · ${pk(["% ปัจจุบัน","% ປັດຈຸບັນ","current"])} <b>${fmt1(x.t.act*100)}%</b>
+     <br><span style="color:var(--warn)">🔒 ${pk(["กรอกได้ไม่ต่ำกว่า","ປ້ອນໄດ້ບໍ່ຕ່ຳກວ່າ","must be ≥"])} ${floor}% ${pk(["(ความคืบหน้าสะสม ห้ามถอยหลัง)","(ຄວາມຄືບໜ້າສະສົມ ຫ້າມຖອຍຫຼັງ)","(cumulative — cannot go backward)"])}</span></div>`:"";
+  if(x){ inp.min=floor; inp.value=Math.max(floor, Math.round(x.t.act*100)); inp.dataset.floor=floor; }
+}
+function saveEntry(){
+  const tid=document.getElementById("fTask").value;
+  const pct=parseFloat(document.getElementById("fPct").value);
+  if(!tid){ alert(pk(["กรุณาเลือกหน่วยงาน → Job → Task ให้ครบ","ກະລຸນາເລືອກໜ່ວຍງານ → Job → Task ໃຫ້ຄົບ","Please select Unit → Job → Task"])); return; }
+  if(isNaN(pct)||pct<0||pct>100){ alert(pk(["กรุณากรอก % ระหว่าง 0–100","ກະລຸນາປ້ອນ % ລະຫວ່າງ 0–100","Enter % between 0–100"])); return; }
+  const floor = latestPctFor(tid);
+  if(floor!=null && pct<floor){ alert(pk(["ค่าความคืบหน้าสะสมต้องไม่น้อยกว่าค่าล่าสุด ("+floor+"%) — งานถอยหลังไม่ได้","ຄ່າຄວາມຄືບໜ້າສະສົມຕ້ອງບໍ່ໜ້ອຍກວ່າຄ່າຫຼ້າສຸດ ("+floor+"%)","Cumulative progress cannot be lower than the latest value ("+floor+"%)"])); return; }
+  ENTRIES.push({date:todayISO(), taskId:tid, pct:pct,
+    mh:parseFloat(document.getElementById("fMh").value)||0,
+    by:document.getElementById("fBy").value.trim(),
+    note:document.getElementById("fNote").value.trim()});
+  saveEntries(ENTRIES); applyEntries(); entryPage();
+  const t=document.getElementById("entryToast");
+  t.innerHTML=`<div class="toast">✓ ${pk(["บันทึกแล้ว — dashboard อัปเดตทันที","ບັນທຶກແລ້ວ — dashboard ອັບເດດທັນທີ","Saved — dashboard updated"])}</div>`;
+  setTimeout(()=>{ t.innerHTML=""; },2500);
+}
+function delEntry(i){
+  if(!confirm(pk(["ลบรายการนี้?","ລຶບລາຍການນີ້?","Delete this record?"]))) return;
+  ENTRIES.splice(i,1); saveEntries(ENTRIES); applyEntries(); entryPage();
+}
+function exportEntries(){
+  if(ENTRIES.length===0){ alert(pk(["ยังไม่มีข้อมูลให้ export","ຍັງບໍ່ມີຂໍ້ມູນ","No data to export"])); return; }
+  const head="วันที่,รหัส Task,% ความคืบหน้าสะสม (0-100),man-hr ที่ใช้วันนี้,ผู้บันทึก,หมายเหตุ";
+  const csv="﻿"+head+"\n"+ENTRIES.map(e=>[e.date,e.taskId,e.pct,e.mh,'"'+(e.by||"").replace(/"/g,'""')+'"','"'+(e.note||"").replace(/"/g,'""')+'"'].join(",")).join("\n");
+  try{
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+    a.download="Daily_Input_"+todayISO()+".csv"; document.body.appendChild(a); a.click(); a.remove();
+  }catch(err){}
+  navigator.clipboard && navigator.clipboard.writeText(csv.replace("﻿",""));
+  alert(pk(["ดาวน์โหลด CSV แล้ว (และคัดลอกลงคลิปบอร์ด) นำไปวางต่อท้ายแท็บ Daily_Input ได้เลย","ດາວໂຫຼດ CSV ແລ້ວ (ແລະສຳເນົາໃສ່ຄລິບບອດ)","CSV downloaded (and copied to clipboard). Paste into the Daily_Input tab."]));
+}
+
+/* ============ การวิเคราะห์ ============ */
+function anaPage(){
+  const SCc={good:"#16A34A",warn:"#D97706",crit:"#EF4444"};
+  const f=agg(allTasks,WNOW), gap=f.act-f.plan;
+  const wkLeft=WEEKS-WNOW;
+  const paceNow=f.act/WNOW, paceNeed=(100-f.act)/wkLeft;
+  const forecast=Math.min(100,f.act+paceNow*wkLeft);
+  const rows=riskRows().sort((a,b)=>a.varc-b.varc);
+  const jobs=DATA.flatMap(s=>s.units.flatMap(u=>u.jobs.map(j=>({u,j,a:agg(j.tasks,WNOW)}))))
+    .map(x=>({...x,varc:x.a.act-x.a.plan})).sort((a,b)=>a.varc-b.varc).slice(0,5);
+  const maxAbs=Math.max(...rows.map(r=>Math.abs(r.varc)),1);
+  const PTS=pk(["จุด","ຈຸດ","pts"]), WKU=pk(["% / สัปดาห์","% / ສັບປະດາ","% / week"]);
+  app.innerHTML = pagehead(pk(["การวิเคราะห์ · แนวโน้มและคาดการณ์","ການວິເຄາະ · ແນວໂນ້ມ ແລະ ຄາດຄະເນ","Analytics · Trend & Forecast"]),
+    pk(["วิเคราะห์จากข้อมูลสะสมถึงสัปดาห์ที่","ວິເຄາະຈາກຂໍ້ມູນສະສົມຮອດສັບປະດາທີ","Based on data through week"])+" "+WNOW+" · "+pk(["เหลือ","ເຫຼືອ","remaining"])+" "+wkLeft+" "+pk(["สัปดาห์","ສັບປະດາ","weeks"])) + `
+  <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
+    <div class="kpi"><div class="label">${pk(["ห่างจากแผนสะสม","ຫ່າງຈາກແຜນສະສົມ","Gap vs plan"])}</div>
+      <div class="value num" style="color:${gap<0?'var(--crit)':'var(--good)'};font-size:30px">${gap>=0?"+":"−"}${fmt1(Math.abs(gap))}<span class="unit">${PTS}</span></div>
+      <div class="note num">${pk(["ผลจริง","ຜົນຕົວຈິງ","Actual"])} ${fmt1(f.act)}% / ${pk(["แผน","ແຜນ","plan"])} ${fmt1(f.plan)}%</div></div>
+    <div class="kpi"><div class="label">${pk(["ความเร็วเฉลี่ยปัจจุบัน","ຄວາມໄວສະເລ່ຍປັດຈຸບັນ","Current pace"])}</div>
+      <div class="value num" style="font-size:30px">${fmt1(paceNow)}<span class="unit">${WKU}</span></div>
+      <div class="note num">${pk(["จาก","ຈາກ","over"])} ${WNOW} ${pk(["สัปดาห์ที่ผ่านมา","ສັບປະດາຜ່ານມາ","weeks"])}</div></div>
+    <div class="kpi"><div class="label">${pk(["ความเร็วที่ต้องทำ","ຄວາມໄວທີ່ຕ້ອງເຮັດ","Required pace"])}</div>
+      <div class="value num" style="font-size:30px;color:${paceNeed>paceNow?'var(--warn)':'var(--good)'}">${fmt1(paceNeed)}<span class="unit">${WKU}</span></div>
+      <div class="note num">${pk(["เพื่อครบ 100% (ต้องเร่งขึ้น","ເພື່ອຄົບ 100% (ຕ້ອງເລັ່ງຂຶ້ນ","for 100% (speed up"])} ${fmt1(Math.max(0,(paceNeed/Math.max(paceNow,.01)-1)*100))}%)</div></div>
+    <div class="kpi"><div class="label">${pk(["คาดการณ์ ณ วันเปิดหีบ","ຄາດຄະເນ ນະວັນເປີດຫີບ","Forecast at start"])}</div>
+      <div class="value num" style="font-size:30px;color:${forecast>=99.5?'var(--good)':'var(--crit)'}">${fmt1(forecast)}<span class="unit">%</span></div>
+      <div class="note">${pk(["ถ้าคงความเร็วเท่าปัจจุบัน","ຖ້າຄົງຄວາມໄວເທົ່າປັດຈຸບັນ","at current pace"])}</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h2>📊 Pareto <span class="thin">· ${pk(["หน่วยงานเรียงตามผลต่างจากแผน","ໜ່ວຍງານຮຽງຕາມຜົນຕ່າງຈາກແຜນ","units by variance"])}</span></h2>
+      ${rows.map(r=>{const w=Math.abs(r.varc)/maxAbs*100;
+        return `<div class="prow"><span class="pl">${un(r.u.name)}</span>
+        <span class="pb"><span class="pf" style="width:${w}%;background:${SCc[r.st[1]]}"></span></span>
+        <span class="pv num" style="color:${SCc[r.st[1]]}">${r.varc>=0?"+":"−"}${fmt1(Math.abs(r.varc))}</span></div>`;}).join("")}
+    </div>
+    <div class="card"><h2>🔻 ${pk(["Top 5 Job ที่ฉุดภาพรวม","Top 5 Job ທີ່ດຶງພາບລວມ","Top 5 dragging jobs"])}</h2>
+      ${jobs.map((x,i)=>`<div class="repline"><span class="bullet num">${i+1}.</span>
+        <div style="flex:1"><b style="cursor:pointer;color:var(--blue)" onclick='unitView("${DATA.find(s=>s.units.includes(x.u)).id}","${x.u.name}")'>${x.j.name}</b>
+        <div class="small num">${un(x.u.name)} · ${fmt1(x.a.act)}% / ${fmt1(x.a.plan)}% · ${fmt0(x.a.mh)} man-hr</div></div>
+        <b class="num" style="color:var(--crit)">−${fmt1(Math.abs(x.varc))}</b></div>`).join("")}
+    </div>
+  </div>
+  <div class="card"><h2>⚖️ ${pk(["ภาระงานที่เหลือ แยกตามส่วนงาน","ພາລະວຽກທີ່ເຫຼືອ ແຍກຕາມພາກ","Remaining workload by section"])}</h2>
+    ${DATA.map(s=>{const a=agg(secTasks(s),WNOW); const left=a.mh-a.actMh;
+      const maxLeft=Math.max(...DATA.map(x=>{const b=agg(secTasks(x),WNOW);return b.mh-b.actMh;}),1);
+      return `<div class="prow"><span class="pl">${un(s.name)}</span>
+      <span class="pb"><span class="pf" style="width:${left/maxLeft*100}%;background:${s.color}"></span></span>
+      <span class="pv num">${fmt0(left)} <span class="small">man-hr</span></span></div>`;}).join("")}
+    <div class="small num" style="margin-top:8px">${pk(["รวมคงเหลือ","ລວມເຫຼືອ","Total remaining"])} ${fmt0(f.mh-f.actMh)} man-hr · ${fmt0((f.mh-f.actMh)/wkLeft)} man-hr/${pk(["สัปดาห์","ສັບປະດາ","week"])}</div>
+  </div>`;
+}
+
+/* ============ รายงาน ============ */
+function repPage(){
+  const f=agg(allTasks,WNOW), gap=f.act-f.plan, [fLbl]=statusOf(gap);
+  const SCc={good:"#16A34A",warn:"#D97706",crit:"#EF4444"};
+  const rows=riskRows();
+  const late=rows.filter(r=>r.st[1]==="crit"), risk=rows.filter(r=>r.st[1]==="warn");
+  const jobsAll=DATA.flatMap(s=>s.units.flatMap(u=>u.jobs.map(j=>({u,j,a:agg(j.tasks,WNOW)}))));
+  const done=jobsAll.filter(x=>x.a.act>=99.5);
+  const dueSoon=DATA.flatMap(s=>s.units.flatMap(u=>u.jobs.flatMap(j=>j.tasks.filter(t=>t.e<=WNOW+2&&actAt(t,WNOW)<1).map(t=>({u,j,t})))))
+    .sort((a,b)=>a.t.e-b.t.e).slice(0,8);
+  const PTS=pk(["จุด","ຈຸດ","pts"]);
+  app.innerHTML = pagehead(pk(["รายงานประจำสัปดาห์ที่","ລາຍງານປະຈຳສັບປະດາທີ","Weekly Report — Week"])+" "+WNOW,
+    pk(["สรุปสำหรับที่ประชุมผู้บริหาร · ข้อมูล ณ","ສະຫຼຸບສຳລັບກອງປະຊຸມຜູ້ບໍລິຫານ · ຂໍ້ມູນ ນະ","Executive summary · as of"])+" "+fmtDate(wkEnd(WNOW))) + `
+  <div class="noprint" style="margin-bottom:14px"><button class="btn btn-p" onclick="window.print()">🖨 ${pk(["พิมพ์ / บันทึก PDF","ພິມ / ບັນທຶກ PDF","Print / Save PDF"])}</button></div>
+  <div class="card"><h2>1. ${pk(["สรุปภาพรวม","ສະຫຼຸບພາບລວມ","Summary"])}</h2>
+    <div class="repline"><span class="bullet">•</span><span class="num">${pk(["ความคืบหน้ารวม","ຄວາມຄືບໜ້າລວມ","Overall progress"])} <b>${fmt1(f.act)}%</b> ${pk(["เทียบแผน","ທຽບແຜນ","vs plan"])} ${fmt1(f.plan)}% — <b>${gap>=0?pk(["นำแผน","ນຳແຜນ","ahead"]):pk(["ช้ากว่าแผน","ຊ້າກວ່າແຜນ","behind"])} ${fmt1(Math.abs(gap))} ${PTS} (${fLbl})</b></span></div>
+    <div class="repline"><span class="bullet">•</span><span class="num">${pk(["แรงงานสะสม","ແຮງງານສະສົມ","Man-hours"])} <b>${fmt0(f.actMh)}</b> / ${fmt0(f.mh)} man-hr · Job ${pk(["เสร็จ","ສຳເລັດ","done"])} <b>${done.length}/${jobsAll.length}</b></span></div>
+    <div class="repline"><span class="bullet">•</span><span class="num">${pk(["หน่วยล่าช้า","ໜ່ວຍຊັກຊ້າ","Late units"])} <b style="color:var(--crit)">${late.length}</b> · ${pk(["เสี่ยง","ສ່ຽງ","at-risk"])} <b style="color:var(--warn)">${risk.length}</b> / 9 · ${pk(["เหลือ","ເຫຼືອ","remaining"])} <b>${WEEKS-WNOW} ${pk(["สัปดาห์","ສັບປະດາ","weeks"])}</b></span></div>
+  </div>
+  <div class="card"><h2>2. ${pk(["สถานะรายหน่วยงาน","ສະຖານະລາຍໜ່ວຍງານ","Status by unit"])}</h2>
+    <div class="scrollx"><table>
+      <tr><th>${pk(["หน่วยงาน","ໜ່ວຍງານ","Unit"])}</th><th class="r">${pk(["แผน","ແຜນ","Plan"])}</th><th class="r">${pk(["ผลจริง","ຜົນຕົວຈິງ","Actual"])}</th><th class="r">${pk(["ผลต่าง","ຜົນຕ່າງ","Var"])}</th><th>${pk(["สถานะ","ສະຖານະ","Status"])}</th><th>${pk(["ผู้รับผิดชอบ","ຜູ້ຮັບຜິດຊອບ","Owner"])}</th></tr>
+      ${rows.sort((a,b)=>a.varc-b.varc).map(r=>`<tr>
+        <td><b>${un(r.u.name)}</b></td>
+        <td class="r num">${fmt1(r.a.plan)}%</td><td class="r num"><b>${fmt1(r.a.act)}%</b></td>
+        <td class="r num" style="color:${SCc[r.st[1]]};font-weight:700">${r.varc>=0?"+":"−"}${fmt1(Math.abs(r.varc))}</td>
+        <td><span class="chip c-${r.st[1]}">${r.st[0]}</span></td><td class="small">${r.u.owner}</td></tr>`).join("")}
+    </table></div></div>
+  <div class="card"><h2>3. ${pk(["ประเด็นสั่งการ","ປະເດັນສັ່ງການ","Action items"])}</h2>
+    ${[...late,...risk].sort((a,b)=>a.varc-b.varc).map((r,i)=>`<div class="repline"><span class="bullet num">${i+1}.</span>
+      <span><b>${un(r.u.name)}</b> ${r.st[0]} ${fmt1(Math.abs(r.varc))} ${PTS} — ${pk(["มอบ","ມອບ","assign"])} ${r.u.owner} ${pk(["เสนอแผนเร่งรัด (เพิ่มแรงงาน/OT/จ้างเหมา) ภายในสัปดาห์นี้","ສະເໜີແຜນເລັ່ງລັດ (ເພີ່ມແຮງງານ/OT/ຈ້າງເໝົາ) ພາຍໃນສັບປະດານີ້","to propose a recovery plan (crew/OT/subcontract) this week"])}</span></div>`).join("")
+      ||`<div class="small">${pk(["ไม่มีหน่วยงานล่าช้าหรือเสี่ยง","ບໍ່ມີໜ່ວຍງານຊັກຊ້າ ຫຼື ສ່ຽງ","No late or at-risk units"])}</div>`}
+  </div>
+  <div class="grid2">
+    <div class="card"><h2>4. ${pk(["Job ที่เสร็จสมบูรณ์","Job ທີ່ສຳເລັດ","Completed jobs"])} (${done.length})</h2>
+      ${done.length? done.map(x=>`<div class="repline"><span class="bullet">✓</span><span>${x.j.name} <span class="small">· ${un(x.u.name)}</span></span></div>`).join("")
+        :`<div class="small">${pk(["ยังไม่มี Job ที่ปิดครบทุก Task","ຍັງບໍ່ມີ Job ທີ່ປິດຄົບທຸກ Task","No fully closed jobs yet"])}</div>`}
+    </div>
+    <div class="card"><h2>5. ${pk(["Task ครบกำหนดใน 2 สัปดาห์","Task ຄົບກຳນົດໃນ 2 ສັບປະດາ","Tasks due within 2 weeks"])}</h2>
+      ${dueSoon.length? dueSoon.map(x=>`<div class="repline"><span class="bullet num">W${Math.min(WEEKS,Math.round(x.t.e))}</span>
+        <span>${x.t.name} <span class="small">· ${x.j.name} · ${un(x.u.name)} · ${fmt1(actAt(x.t,WNOW)*100)}%</span></span></div>`).join("")
+        :`<div class="small">${pk(["ไม่มี Task ใกล้ครบกำหนด","ບໍ່ມີ Task ໃກ້ຄົບກຳນົດ","None due soon"])}</div>`}
+    </div>
+  </div>
+  <div class="card"><h2>6. ${pk(["วินัยการบันทึกข้อมูลรายวัน (7 วันล่าสุด)","ວິໄນການບັນທຶກຂໍ້ມູນລາຍວັນ (7 ວັນຫຼ້າສຸດ)","Daily entry compliance (last 7 days)"])}</h2>
+    ${(function(){
+      const days7=[...Array(7).keys()].map(i=>{const d=new Date();d.setDate(d.getDate()-(6-i));return d;});
+      const rows7=DATA.flatMap(s=>s.units).map(u=>{
+        const n=days7.filter(d=>unitsRecordedOn(dateISO(d)).has(u.code)).length;
+        return {u,n,pct:Math.round(n/7*100)};
+      }).sort((a,b)=>a.pct-b.pct);
+      const missToday=complianceToday().filter(x=>!x.done);
+      return (missToday.length? `<div class="repline"><span class="bullet" style="color:var(--crit)">⚠</span>
+        <span><b>${pk(["วันนี้ยังไม่บันทึก:","ມື້ນີ້ຍັງບໍ່ບັນທຶກ:","Not recorded today:"])}</b> ${missToday.map(x=>un(x.u.name)+" ("+x.u.owner+")").join(" · ")}</span></div>`:
+        `<div class="repline"><span class="bullet" style="color:var(--good)">✓</span><span>${pk(["วันนี้บันทึกครบทั้ง 9 หน่วย","ມື້ນີ້ບັນທຶກຄົບ 9 ໜ່ວຍ","All 9 units recorded today"])}</span></div>`)
+      + rows7.map(x=>`<div class="repline"><span class="bullet num" style="color:${x.pct>=80?'var(--good)':x.pct>=50?'var(--warn)':'var(--crit)'}">${x.pct}%</span>
+        <span>${un(x.u.name)} <span class="small">· ${x.n}/7 ${pk(["วัน","ວັນ","days"])} · ${x.u.owner}</span></span></div>`).join("");
+    })()}
+  </div>`;
+}
+
+renderLang(); renderNav(); overview();
+</script>
