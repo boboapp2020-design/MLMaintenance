@@ -243,6 +243,11 @@ svg text{font-family:inherit}
 .deptlock{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid var(--blue);background:var(--tint);border-radius:10px;font-size:14px}
 .deptlock .editlink{margin-left:auto;color:var(--blue);font-size:12px;text-decoration:underline;cursor:pointer}
 .deptgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-top:8px}
+.deptsections{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:10px}
+@media(max-width:820px){.deptsections{grid-template-columns:1fr}}
+.deptcol{display:flex;flex-direction:column;gap:10px}
+.deptcolhd{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13.5px;padding:2px 2px 6px;border-bottom:2px solid var(--line);margin-bottom:2px}
+.deptcolhd .swatch{width:11px;height:11px;border-radius:3px}
 .deptcard{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid var(--line);border-radius:12px;cursor:pointer;transition:all .15s;background:var(--card)}
 .deptcard:hover{border-color:var(--blue);background:var(--tint);transform:translateY(-1px);box-shadow:var(--shadow)}
 .deptcard .dc-ic{flex:0 0 42px;height:42px;border-radius:10px;background:var(--tint2);display:flex;align-items:center;justify-content:center;color:var(--blue)}
@@ -983,19 +988,21 @@ function entryPage(){ if(!DEPT) entryPickerPage(); else entryDeptPage(); }
 /* หน้าเลือกแผนก */
 function entryPickerPage(){
   const comp=complianceToday();
-  const cards=DATA.flatMap(s=>s.units).map(u=>{
-    const c=comp.find(x=>x.u.code===u.code);
-    const col=c.state==="full"?"var(--good)":c.state==="partial"?"var(--warn)":"var(--crit)";
-    const ic=c.state==="full"?"✓":c.state==="partial"?"◐":"✗";
-    return `<div class="deptcard" tabindex="0" onclick="setDept('${u.code}')">
-      <div class="dc-ic">${unitBub(u.name,20)}</div>
-      <div class="dc-nm">${un(u.name)}<span>${u.owner}</span></div>
-      <div class="dc-st" style="color:${col}">${ic}</div></div>`;}).join("");
+  const cols=DATA.map(s=>{
+    const items=s.units.map(u=>{
+      const c=comp.find(x=>x.u.code===u.code);
+      const col=c.state==="full"?"var(--good)":c.state==="partial"?"var(--warn)":"var(--crit)";
+      const ic=c.state==="full"?"✓":c.state==="partial"?"◐":"✗";
+      return `<div class="deptcard" tabindex="0" onclick="setDept('${u.code}')">
+        <div class="dc-ic">${unitBub(u.name,20)}</div>
+        <div class="dc-nm">${un(u.name)}<span>${u.owner}</span></div>
+        <div class="dc-st" style="color:${col}">${ic}</div></div>`;}).join("");
+    return `<div class="deptcol"><div class="deptcolhd"><span class="swatch" style="background:${s.color}"></span>${un(s.name)}</div>${items}</div>`;}).join("");
   app.innerHTML = pagehead(pk(["บันทึก % งานซ่อมประจำวัน","ບັນທຶກ % ວຽກສ້ອມແປງປະຈຳວັນ","Daily Progress Entry"]),
     pk(["เลือกแผนกของคุณเพื่อเข้าไปบันทึกงาน","ເລືອກໜ່ວຍງານຂອງທ່ານເພື່ອບັນທຶກ","Choose your unit to start recording"])) + `
   <div class="card"><h2>👇 ${pk(["เลือกแผนกของคุณ","ເລືອກໜ່ວຍງານຂອງທ່ານ","Select your unit"])}</h2>
     <div class="sub">${pk(["กดแผนกของคุณ เพื่อเข้าหน้าบันทึกงานของแผนกนั้น (✓ ครบ · ◐ ไม่ครบ · ✗ ยังไม่บันทึกวันนี้)","ກົດໜ່ວຍງານ (✓ ຄົບ · ◐ ບໍ່ຄົບ · ✗ ຍັງບໍ່ບັນທຶກ)","Tap your unit (✓ full · ◐ partial · ✗ none today)"])}</div>
-    <div class="deptgrid">${cards}</div>
+    <div class="deptsections">${cols}</div>
   </div>`;
 }
 
