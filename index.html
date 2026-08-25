@@ -242,6 +242,21 @@ svg text{font-family:inherit}
 .taskinfo{background:var(--tint);border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:12px}
 .deptlock{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid var(--blue);background:var(--tint);border-radius:10px;font-size:14px}
 .deptlock .editlink{margin-left:auto;color:var(--blue);font-size:12px;text-decoration:underline;cursor:pointer}
+.deptgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-top:8px}
+.deptcard{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid var(--line);border-radius:12px;cursor:pointer;transition:all .15s;background:var(--card)}
+.deptcard:hover{border-color:var(--blue);background:var(--tint);transform:translateY(-1px);box-shadow:var(--shadow)}
+.deptcard .dc-ic{flex:0 0 42px;height:42px;border-radius:10px;background:var(--tint2);display:flex;align-items:center;justify-content:center;color:var(--blue)}
+.deptcard .dc-nm{flex:1;font-weight:700;font-size:14.5px;line-height:1.3}
+.deptcard .dc-nm span{display:block;font-size:11.5px;color:var(--mut);font-weight:500}
+.deptcard .dc-st{font-size:20px;font-weight:800}
+.deptbar{display:flex;align-items:center;gap:8px;background:var(--tint);border:1.5px solid var(--blue);border-radius:12px;padding:11px 16px;margin-bottom:14px;font-size:14px}
+.deptbar .editlink{margin-left:auto;color:var(--blue);font-size:12.5px;text-decoration:underline;cursor:pointer}
+.taskrow{display:flex;align-items:center;gap:12px;padding:10px 4px;border-top:1px dashed var(--line)}
+.taskrow:first-child{border-top:none}
+.taskrow.rec{background:var(--good-bg);border-radius:8px;padding-left:10px;padding-right:10px;border-top-color:transparent}
+.taskrow .tk-nm{flex:1;font-size:13.5px;font-weight:600}
+.btnsm{padding:6px 14px !important;font-size:13px !important;border-radius:9px !important}
+.jconfirm{margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 details.card>summary{cursor:pointer;list-style:none;font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 details.card>summary::-webkit-details-marker{display:none}
 details.card>summary::marker{content:""}
@@ -291,6 +306,13 @@ details.card>summary::marker{content:""}
     <button class="modal-close" onclick="closeChartModal()" aria-label="close">✕</button>
     <h3 id="modalTitle"></h3>
     <div id="modalBody"></div>
+  </div>
+</div>
+<div class="modal-ov" id="taskModal" onclick="if(event.target===this)closeTaskForm()">
+  <div class="modal-box" style="max-width:560px">
+    <button class="modal-close" onclick="closeTaskForm()" aria-label="close">✕</button>
+    <h3 id="taskModalTitle"></h3>
+    <div id="taskModalBody"></div>
   </div>
 </div>
 
@@ -916,7 +938,120 @@ function todayISO(){ const d=new Date(); return d.getFullYear()+"-"+String(d.get
 let DEPT=""; try{ DEPT=localStorage.getItem("idash_dept")||""; }catch(e){}
 function unitByCode(code){ return DATA.flatMap(s=>s.units).find(u=>u.code===code); }
 function setDept(code){ DEPT=code||""; try{ code?localStorage.setItem("idash_dept",code):localStorage.removeItem("idash_dept"); }catch(e){} entryPage(); }
-function entryPage(){
+/* ===== flow บันทึกแบบไล่ขั้น: เลือกแผนก → Job → Task → ฟอร์ม → ยืนยัน Job ===== */
+function recordedToday(tid){ return ENTRIES.some(e=>e.date===todayISO() && e.taskId===tid); }
+function jobActiveTasks(j){ return j.tasks.filter(t=> t.s<=WNOW && actAt(t,WNOW)<1 ); }
+let JOBCONF={}; try{ JOBCONF=JSON.parse(localStorage.getItem("idash_jobconf")||"{}"); }catch(e){}
+function jobConfKey(jid){ return todayISO()+"|"+jid; }
+function isJobConfirmed(jid){ return !!JOBCONF[jobConfKey(jid)]; }
+function confirmJob(jid){
+  const j=DATA.flatMap(s=>s.units).flatMap(u=>u.jobs).find(x=>x.id===jid);
+  const act=jobActiveTasks(j), done=act.filter(t=>recordedToday(t.id)).length;
+  if(act.length>0 && done<act.length){ alert(pk(["ยังบันทึกไม่ครบทุก Task ของงานนี้","ຍັງບັນທຶກບໍ່ຄົບທຸກ Task","Not all tasks recorded yet"])); return; }
+  JOBCONF[jobConfKey(jid)]=true; try{ localStorage.setItem("idash_jobconf",JSON.stringify(JOBCONF)); }catch(e){}
+  entryDeptPage();
+  const t=document.getElementById("entryToast"); if(t){ t.innerHTML=`<div class="toast">✓ ${pk(["ยืนยัน Job แล้ว","ຢືນຢັນ Job ແລ້ວ","Job confirmed"])}</div>`; setTimeout(()=>t.innerHTML="",2500); }
+}
+
+function entryPage(){ if(!DEPT) entryPickerPage(); else entryDeptPage(); }
+
+/* หน้าเลือกแผนก */
+function entryPickerPage(){
+  const comp=complianceToday();
+  const cards=DATA.flatMap(s=>s.units).map(u=>{
+    const c=comp.find(x=>x.u.code===u.code);
+    const col=c.state==="full"?"var(--good)":c.state==="partial"?"var(--warn)":"var(--crit)";
+    const ic=c.state==="full"?"✓":c.state==="partial"?"◐":"✗";
+    return `<div class="deptcard" tabindex="0" onclick="setDept('${u.code}')">
+      <div class="dc-ic">${unitBub(u.name,20)}</div>
+      <div class="dc-nm">${un(u.name)}<span>${u.owner}</span></div>
+      <div class="dc-st" style="color:${col}">${ic}</div></div>`;}).join("");
+  app.innerHTML = pagehead(pk(["บันทึก % งานซ่อมประจำวัน","ບັນທຶກ % ວຽກສ້ອມແປງປະຈຳວັນ","Daily Progress Entry"]),
+    pk(["เลือกแผนกของคุณเพื่อเข้าไปบันทึกงาน","ເລືອກໜ່ວຍງານຂອງທ່ານເພື່ອບັນທຶກ","Choose your unit to start recording"])) + `
+  <div class="card"><h2>👇 ${pk(["เลือกแผนกของคุณ","ເລືອກໜ່ວຍງານຂອງທ່ານ","Select your unit"])}</h2>
+    <div class="sub">${pk(["กดแผนกของคุณ เพื่อเข้าหน้าบันทึกงานของแผนกนั้น (✓ ครบ · ◐ ไม่ครบ · ✗ ยังไม่บันทึกวันนี้)","ກົດໜ່ວຍງານ (✓ ຄົບ · ◐ ບໍ່ຄົບ · ✗ ຍັງບໍ່ບັນທຶກ)","Tap your unit (✓ full · ◐ partial · ✗ none today)"])}</div>
+    <div class="deptgrid">${cards}</div>
+  </div>`;
+}
+
+/* หน้าแผนกของตน: รายการ Job → Task → บันทึก → ยืนยัน */
+function entryDeptPage(){
+  const u=unitByCode(DEPT); if(!u){ setDept(""); return; }
+  const secId=DATA.find(s=>s.units.includes(u)).id;
+  const allTasksToday=unitTasks(u).filter(t=>recordedToday(t.id)).length;
+  const totalActive=activeTasksOf(u).length;
+  app.innerHTML = pagehead(un(u.name)+" — "+pk(["บันทึกงาน","ບັນທຶກງານ","Record work"]),
+    un(DATA.find(s=>s.units.includes(u)).name)+" · "+u.owner) + `
+  <div class="deptbar">🔒 ${pk(["แผนก","ໜ່ວຍງານ","Unit"])} <b>${un(u.name)}</b> · ${pk(["บันทึกวันนี้","ບັນທຶກມື້ນີ້","today"])} <b>${allTasksToday}/${totalActive}</b> task
+    <span class="editlink" onclick="setDept('')">${pk(["เปลี่ยนแผนก","ປ່ຽນໜ່ວຍງານ","change unit"])}</span></div>
+  ${u.jobs.map((j,ji)=>{
+    const act=jobActiveTasks(j), doneToday=act.filter(t=>recordedToday(t.id)).length;
+    const conf=isJobConfirmed(j.id), allDone=act.length>0 && doneToday>=act.length;
+    const ja=agg(j.tasks,WNOW);
+    const chip = conf?`<span class="chip c-good">${pk(["ยืนยันแล้ว ✓","ຢືນຢັນ ✓","Confirmed ✓"])}</span>`
+      : allDone?`<span class="chip c-warn">${pk(["รอยืนยัน","ລໍຢືນຢັນ","Ready to confirm"])}</span>`
+      : doneToday>0?`<span class="chip c-warn">${pk(["บันทึกบางส่วน","ບັນທຶກບາງສ່ວນ","Partial"])}</span>`
+      : `<span class="chip c-crit">${pk(["ยังไม่บันทึก","ຍັງບໍ່ບັນທຶກ","Not started"])}</span>`;
+    return `<div class="job b-${statusOf(ja.act-ja.plan)[1]}" id="ej${ji}">
+      <div class="jobhead" tabindex="0" onclick="document.getElementById('ej${ji}').classList.toggle('open')">
+        <span class="caret">▶</span><span class="jname">${tr(j.name)}</span>
+        <span class="jmeta num">${pk(["วันนี้","ມື້ນີ້","today"])} ${doneToday}/${act.length} task · ${pk(["รวม","ລວມ","total"])} ${fmt1(ja.act)}%</span>
+        ${chip}
+      </div>
+      <div class="jobbody">
+        ${j.tasks.map(t=>{ const rec=recordedToday(t.id), done=actAt(t,WNOW)>=1, cur=fmt1(actAt(t,WNOW)*100);
+          return `<div class="taskrow ${rec?'rec':''}">
+            <span class="tk-nm">${tr(t.name)} <span class="small num">· ${cur}%${done?" ✓":""}</span></span>
+            ${done ? `<span class="chip c-good">${pk(["เสร็จแล้ว","ສຳເລັດ","Done"])}</span>`
+              : rec ? `<span class="chip c-good">✓ ${pk(["บันทึกวันนี้","ບັນທຶກມື້ນີ້","logged today"])}</span> <button class="btn btn-o btnsm" onclick="openTaskForm('${t.id}')">${pk(["แก้ไข","ແກ້ໄຂ","edit"])}</button>`
+              : `<button class="btn btn-p btnsm" onclick="openTaskForm('${t.id}')">✍ ${pk(["บันทึก","ບັນທຶກ","Record"])}</button>`}
+          </div>`;}).join("")}
+        <div class="jconfirm">
+          <button class="btn ${allDone&&!conf?'btn-p':'btn-o'}" ${(!allDone||conf)?'disabled style=\"opacity:.5;cursor:default\"':''} onclick="confirmJob('${j.id}')">
+            ${conf?`✓ ${pk(["ยืนยัน Job แล้ว","ຢືນຢັນ Job ແລ້ວ","Job confirmed"])}`:`✓ ${pk(["ยืนยัน Job นี้","ຢືນຢັນ Job ນີ້","Confirm this job"])}`}</button>
+          ${!allDone&&!conf?`<span class="small">${pk(["ต้องบันทึกครบทุก Task ก่อน","ຕ້ອງບັນທຶກຄົບກ່ອນ","record all tasks first"])} (${doneToday}/${act.length})</span>`:""}
+        </div>
+      </div>
+    </div>`;}).join("")}
+  <div id="entryToast"></div>`;
+}
+
+/* ฟอร์มกรอก Task (modal) */
+function openTaskForm(tid){
+  const x=TASK_INDEX[tid]; if(!x) return;
+  const floor=latestPctFor(tid), cur=Math.round(x.t.act*100), fl=floor!=null?floor:0;
+  document.getElementById("taskModalTitle").textContent=tr(x.t.name);
+  document.getElementById("taskModalBody").innerHTML=`
+    <div class="taskinfo num">📌 ${pk(["แผน","ແຜນ","plan"])} ${fmt0(x.t.mh)} man-hr · ${pk(["สัปดาห์","ສັບປະດາ","wk"])} ${Math.max(1,Math.round(x.t.s))}–${Math.min(WEEKS,Math.round(x.t.e))} · ${pk(["% แผนตอนนี้","% ແຜນ","plan now"])} <b>${fmt1(x.t.plan(REALWK)*100)}%</b> · ${pk(["% ปัจจุบัน","% ປັດຈຸບັນ","current"])} <b>${cur}%</b>
+    <br><span style="color:var(--warn)">🔒 ${pk(["กรอกได้ไม่ต่ำกว่า","ປ້ອນໄດ້ບໍ່ຕ່ຳກວ່າ","must be ≥"])} ${fl}%</span></div>
+    <input type="hidden" id="tfTid" value="${tid}">
+    <div class="formgrid">
+      <div class="fld"><label>📅 ${pk(["วันที่บันทึก","ວັນທີ","Date"])}</label><input id="tfDate" type="date" value="${todayISO()}" max="${todayISO()}"></div>
+      <div class="fld"><label>${pk(["% ความคืบหน้าสะสม","% ຄວາມຄືບໜ້າ","Cumulative %"])}</label><input id="tfPct" type="number" min="${fl}" max="100" step="5" value="${Math.max(fl,cur)}"></div>
+      <div class="fld"><label>${pk(["man-hr วันนั้น","man-hr","Man-hours"])}</label><input id="tfMh" type="number" min="0" step="1" placeholder="24"></div>
+      <div class="fld"><label>${pk(["ผู้บันทึก","ຜູ້ບັນທຶກ","By"])}</label><input id="tfBy" type="text"></div>
+    </div>
+    <div class="fld" style="margin-bottom:12px"><label>${pk(["หมายเหตุ","ໝາຍເຫດ","Note"])}</label><input id="tfNote" type="text"></div>
+    <button class="btn-save" onclick="saveTaskForm()">💾 ${pk(["บันทึก Task นี้","ບັນທຶກ Task ນີ້","Save this task"])}</button>`;
+  document.getElementById("taskModal").classList.add("open");
+}
+function closeTaskForm(){ document.getElementById("taskModal").classList.remove("open"); }
+function saveTaskForm(){
+  const tid=document.getElementById("tfTid").value;
+  const pct=parseFloat(document.getElementById("tfPct").value);
+  if(isNaN(pct)||pct<0||pct>100){ alert(pk(["กรอก % ระหว่าง 0–100","ປ້ອນ % 0–100","Enter % 0–100"])); return; }
+  const floor=latestPctFor(tid);
+  if(floor!=null && pct<floor){ alert(pk(["ค่าสะสมต้องไม่น้อยกว่าค่าล่าสุด ("+floor+"%)","ຕ້ອງບໍ່ໜ້ອຍກວ່າ ("+floor+"%)","Must be ≥ latest ("+floor+"%)"])); return; }
+  const d=document.getElementById("tfDate").value||todayISO();
+  if(d>todayISO()){ alert(pk(["เลือกวันอนาคตไม่ได้","ບໍ່ໄດ້","No future date"])); return; }
+  const entry={date:d, taskId:tid, pct:pct, mh:parseFloat(document.getElementById("tfMh").value)||0,
+    by:document.getElementById("tfBy").value.trim(), note:document.getElementById("tfNote").value.trim()};
+  ENTRIES.push(entry); saveEntries(ENTRIES); applyEntries(); pushToSheet(entry);
+  closeTaskForm(); entryDeptPage();
+  const t=document.getElementById("entryToast"); if(t){ t.innerHTML=`<div class="toast">✓ ${pk(["บันทึกแล้ว","ບັນທຶກແລ້ວ","Saved"])}</div>`; setTimeout(()=>t.innerHTML="",2500); }
+}
+
+function _unused_oldEntry(){
   const todays=ENTRIES.filter(e=>e.date===todayISO()).length;
   const comp=complianceToday(), fullN=comp.filter(x=>x.state==="full").length, partN=comp.filter(x=>x.state==="partial").length, noneN=comp.filter(x=>x.state==="none").length;
   const days=[...Array(7).keys()].map(i=>{const d=new Date();d.setDate(d.getDate()-(6-i));return d;});
