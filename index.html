@@ -473,7 +473,7 @@ const app=document.getElementById("app"), navi=document.getElementById("navi");
 let PAGE="over";
 const NAV=[["over",["ภาพรวม","ພາບລວມ","Overview"],"grid"],["units",["หน่วยงาน","ໜ່ວຍງານ","Units"],"units"],
  ["jobs",["งานซ่อม","ວຽກສ້ອມແປງ","Jobs"],"wrench"],["ana",["การวิเคราะห์","ການວິເຄາະ","Analytics"],"chart"],
- ["entry",["บันทึกข้อมูล","ບັນທຶກຂໍ້ມູນ","Data Entry"],"edit"],["rep",["รายงาน","ລາຍງານ","Report"],"report"]];
+ ["rep",["รายงาน","ລາຍງານ","Report"],"report"],["entry",["บันทึกข้อมูล","ບັນທຶກຂໍ້ມູນ","Data Entry"],"edit"]];
 function renderNav(){
   navi.innerHTML=NAV.map(([id,t,ic])=>`<div class="nitem ${PAGE===id?'active':''}" tabindex="0" onclick="go('${id}')">${IC(ICONS[ic],18)}${pk(t)}</div>`).join("");
 }
