@@ -91,6 +91,23 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .compunit .cs{font-size:16px;font-weight:800}
 .comptable td,.comptable th{text-align:center;padding:6px 4px}
 .comptable td:first-child,.comptable th:first-child{text-align:left}
+.comptable tr.rowbad td{background:#FEF2F2}
+.comptable tr.rowwarn td{background:#FEFBEB}
+/* ต้องติดตาม */
+.followbox{background:linear-gradient(135deg,#FEE2E2,#FEF3F3);border:1px solid #F3B4B4;border-radius:12px;padding:12px 16px;margin-bottom:14px}
+.followbox .fbhead{font-size:13px;font-weight:800;color:var(--crit);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.followlist{display:flex;flex-wrap:wrap;gap:8px}
+.followitem{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #F0C0C0;border-radius:20px;padding:5px 8px 5px 12px;font-size:12.5px;font-weight:700;color:var(--ink)}
+.followitem .fdays{background:var(--crit);color:#fff;border-radius:14px;padding:1px 9px;font-size:12px;font-weight:800}
+.followitem .fdays.w{background:var(--warn)}
+.followok{color:var(--good);font-weight:700;font-size:13px}
+/* ปุ่มบันทึกเด่น */
+.btn-save{background:linear-gradient(135deg,#2563EB,#1D4ED8);color:#fff;font-size:16px;font-weight:800;
+  padding:14px 34px;border-radius:12px;border:none;cursor:pointer;font-family:inherit;
+  box-shadow:0 6px 18px rgba(37,99,235,.38);transition:all .15s;display:inline-flex;align-items:center;gap:9px}
+.btn-save:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(37,99,235,.5)}
+.btn-save:active{transform:translateY(0)}
+.saverow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--tint);border-radius:12px;padding:12px 16px;margin-top:4px}
 
 .backbtn{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1.5px solid var(--blue);
   color:var(--blue);font-weight:700;font-size:14px;border-radius:10px;padding:7px 16px;cursor:pointer;
@@ -702,7 +719,20 @@ function entryPage(){
   const todays=ENTRIES.filter(e=>e.date===todayISO()).length;
   const comp=complianceToday(), doneN=comp.filter(x=>x.done).length;
   const days=[...Array(7).keys()].map(i=>{const d=new Date();d.setDate(d.getDate()-(6-i));return d;});
-  const compCard = `
+  // สรุปวินัยราย 7 วัน + จัดอันดับ "ต้องติดตาม"
+  const stat=DATA.flatMap(s=>s.units).map(u=>{
+    const marks=days.map(d=>unitsRecordedOn(dateISO(d)).has(u.code));
+    const rec=marks.filter(Boolean).length;
+    return {u, marks, rec, miss:7-rec, pct:Math.round(rec/7*100)};
+  });
+  const follow=stat.filter(x=>x.miss>0).sort((a,b)=>b.miss-a.miss);
+  const followBox = `<div class="followbox">
+    <div class="fbhead">🔔 ${pk(["หน่วยงานที่ต้องติดตาม (ขาดบันทึกใน 7 วันล่าสุด)","ໜ່ວຍງານທີ່ຕ້ອງຕິດຕາມ (ຂາດບັນທຶກໃນ 7 ວັນຫຼ້າສຸດ)","Units to follow up (missed entries, last 7 days)"])}</div>
+    ${follow.length? `<div class="followlist">${follow.map(x=>`<span class="followitem">${un(x.u.name)}
+      <span class="fdays ${x.miss<=2?'w':''}">${pk(["ขาด","ຂາດ","missed"])} ${x.miss} ${pk(["วัน","ວັນ","d"])}</span></span>`).join("")}</div>`
+      : `<div class="followok">✓ ${pk(["ทุกหน่วยบันทึกครบทั้ง 7 วัน","ທຸກໜ່ວຍບັນທຶກຄົບ 7 ວັນ","All units logged every day"])}</div>`}
+  </div>`;
+  const compCard = followBox + `
   <div class="card">
     <h2>📋 ${pk(["เช็คการบันทึกประจำวัน (บังคับทุกหน่วย ทุกวัน)","ກວດການບັນທຶກປະຈຳວັນ (ບັງຄັບທຸກໜ່ວຍ ທຸກວັນ)","Daily entry check (mandatory, all units)"])}
       <span class="thin">· ${pk(["วันนี้บันทึกแล้ว","ມື້ນີ້ບັນທຶກແລ້ວ","recorded today"])} <b style="color:${doneN===9?'var(--good)':'var(--crit)'}">${doneN}/9</b> ${pk(["หน่วย","ໜ່ວຍ","units"])}</span></h2>
@@ -713,13 +743,13 @@ function entryPage(){
     </div>
     <div style="margin-top:14px" class="scrollx"><table class="comptable">
       <tr><th>${pk(["หน่วยงาน","ໜ່ວຍງານ","Unit"])} \\ ${pk(["ย้อนหลัง 7 วัน","ຍ້ອນຫຼັງ 7 ວັນ","last 7 days"])}</th>
-        ${days.map(d=>`<th class="num">${d.getDate()}/${d.getMonth()+1}</th>`).join("")}<th>${pk(["% บันทึก","% ບັນທຶກ","% logged"])}</th></tr>
-      ${DATA.flatMap(s=>s.units).map(u=>{
-        const marks=days.map(d=>unitsRecordedOn(dateISO(d)).has(u.code));
-        const pct=Math.round(marks.filter(Boolean).length/7*100);
-        return `<tr><td><b>${un(u.name)}</b></td>
-          ${marks.map(m=>`<td style="color:${m?'var(--good)':'var(--crit)'};font-weight:800">${m?'✓':'·'}</td>`).join("")}
-          <td class="num" style="font-weight:800;color:${pct>=80?'var(--good)':pct>=50?'var(--warn)':'var(--crit)'}">${pct}%</td></tr>`;}).join("")}
+        ${days.map(d=>`<th class="num">${d.getDate()}/${d.getMonth()+1}</th>`).join("")}<th>${pk(["ขาด","ຂາດ","Missed"])}</th><th>${pk(["% บันทึก","% ບັນທຶກ","% logged"])}</th></tr>
+      ${stat.map(x=>{
+        const cls = x.pct<50?"rowbad":x.pct<80?"rowwarn":"";
+        return `<tr class="${cls}"><td><b>${un(x.u.name)}</b></td>
+          ${x.marks.map(m=>`<td style="color:${m?'var(--good)':'var(--crit)'};font-weight:800">${m?'✓':'✗'}</td>`).join("")}
+          <td class="num" style="font-weight:800;color:${x.miss===0?'var(--good)':'var(--crit)'}">${x.miss}</td>
+          <td class="num" style="font-weight:800;color:${x.pct>=80?'var(--good)':x.pct>=50?'var(--warn)':'var(--crit)'}">${x.pct}%</td></tr>`;}).join("")}
     </table></div>
     <div class="small" style="margin-top:8px">${pk(["นับว่า \"บันทึกแล้ว\" เมื่อหน่วยงานนั้นมีการบันทึกอย่างน้อย 1 Task ในวันนั้น · หน่วยที่ ✗ จะถูกแจ้งเตือนบนหน้าภาพรวมให้ผู้บริหารเห็น","ນັບວ່າ \"ບັນທຶກແລ້ວ\" ເມື່ອໜ່ວຍງານມີການບັນທຶກຢ່າງໜ້ອຍ 1 Task ໃນມື້ນັ້ນ · ໜ່ວຍທີ່ ✗ ຈະຖືກແຈ້ງເຕືອນໜ້າພາບລວມ","A unit counts as \"recorded\" with ≥1 task entry that day · units marked ✗ are flagged on the executive overview"])}</div>
   </div>`;
@@ -742,8 +772,10 @@ function entryPage(){
       <div class="fld"><label>${pk(["ผู้บันทึก","ຜູ້ບັນທຶກ","Recorded by"])}</label><input id="fBy" type="text"></div>
       <div class="fld"><label>${pk(["หมายเหตุ","ໝາຍເຫດ","Note"])}</label><input id="fNote" type="text"></div>
     </div>
-    <button class="btn btn-p" onclick="saveEntry()">💾 ${pk(["บันทึกข้อมูล","ບັນທຶກຂໍ້ມູນ","Save"])}</button>
-    <span class="small" style="margin-left:12px">${pk(["วันที่บันทึก","ວັນທີບັນທຶກ","Date"])}: <b class="num">${todayISO()}</b></span>
+    <div class="saverow">
+      <button class="btn-save" onclick="saveEntry()">💾 ${pk(["บันทึกข้อมูล","ບັນທຶກຂໍ້ມູນ","Save entry"])}</button>
+      <span class="small">${pk(["วันที่บันทึก","ວັນທີບັນທຶກ","Date"])}: <b class="num">${todayISO()}</b></span>
+    </div>
   </div>
   <div class="card">
     <span class="seeall" onclick="exportEntries()">⬇ ${pk(["Export CSV ลง Google Sheet","Export CSV ລົງ Google Sheet","Export CSV for Google Sheet"])}</span>
