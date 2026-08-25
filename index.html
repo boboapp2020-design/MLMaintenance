@@ -1048,7 +1048,7 @@ function entryDeptPage(){
   app.innerHTML = pagehead(un(u.name)+" — "+pk(["บันทึกงาน","ບັນທຶກງານ","Record work"]),
     un(DATA.find(s=>s.units.includes(u)).name)+" · "+u.owner) + `
   <div class="deptbar">🔒 ${pk(["แผนก","ໜ່ວຍງານ","Unit"])} <b>${un(u.name)}</b> · ${pk(["บันทึกวันนี้","ບັນທຶກມື້ນີ້","today"])} <b>${allTasksToday}/${totalActive}</b> task
-    <span class="editlink" onclick="setDept('')">${pk(["เปลี่ยนแผนก","ປ່ຽນໜ່ວຍງານ","change unit"])}</span></div>
+    <button class="btn btn-o btnsm" style="margin-left:auto" onclick="setDept('')">← ${pk(["กลับ","ກັບຄືນ","Back"])}</button></div>
   <div class="entrysplit">
     <div class="card joblist"><div class="sub" style="padding:2px 8px 6px">${pk(["งานของแผนก","ວຽກຂອງໜ່ວຍ","Unit jobs"])}</div>${left}</div>
     <div class="card jobdetail">${right}</div>
