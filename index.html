@@ -268,6 +268,18 @@ svg text{font-family:inherit}
 .joblistitem .jl-st{font-size:15px;font-weight:800;flex:0 0 auto}
 .jobdetail h3{margin:0 0 4px;font-size:16px;font-weight:800}
 .jobdetail .jd-sub{font-size:12.5px;color:var(--mut);margin-bottom:12px}
+.jobdetail{animation:slideRL .3s cubic-bezier(.22,.61,.36,1)}
+@keyframes slideRL{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:translateX(0)}}
+.jobdetail .taskrow{animation:slideRL .34s cubic-bezier(.22,.61,.36,1) both}
+.jobdetail .taskrow:nth-child(2){animation-delay:.03s}
+.jobdetail .taskrow:nth-child(3){animation-delay:.06s}
+.jobdetail .taskrow:nth-child(4){animation-delay:.09s}
+.jobdetail .taskrow:nth-child(5){animation-delay:.12s}
+.jobdetail .taskrow:nth-child(6){animation-delay:.15s}
+.jobdetail .taskrow:nth-child(7){animation-delay:.18s}
+.jobdetail .taskrow:nth-child(8){animation-delay:.21s}
+.jobdetail .taskrow:nth-child(9){animation-delay:.24s}
+@media(prefers-reduced-motion:reduce){.jobdetail,.jobdetail .taskrow{animation:none}}
 details.card>summary{cursor:pointer;list-style:none;font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 details.card>summary::-webkit-details-marker{display:none}
 details.card>summary::marker{content:""}
@@ -950,7 +962,7 @@ let DEPT=""; try{ DEPT=localStorage.getItem("idash_dept")||""; }catch(e){}
 function unitByCode(code){ return DATA.flatMap(s=>s.units).find(u=>u.code===code); }
 let SELJOB=null;
 function setDept(code){ DEPT=code||""; SELJOB=null; try{ code?localStorage.setItem("idash_dept",code):localStorage.removeItem("idash_dept"); }catch(e){} entryPage(); }
-function selectJob(jid){ SELJOB=jid; entryDeptPage(); }
+function selectJob(jid){ SELJOB=jid; document.querySelectorAll('.joblistitem').forEach(function(el){ el.classList.toggle('active', el.getAttribute('onclick').indexOf("'"+jid+"'")>-1); }); var d=document.querySelector('.jobdetail'); if(d){ d.innerHTML=jobDetailHtml(); } else { entryDeptPage(); } }
 /* ===== flow บันทึกแบบไล่ขั้น: เลือกแผนก → Job → Task → ฟอร์ม → ยืนยัน Job ===== */
 function recordedToday(tid){ return ENTRIES.some(e=>e.date===todayISO() && e.taskId===tid); }
 function jobActiveTasks(j){ return j.tasks.filter(t=> t.s<=WNOW && actAt(t,WNOW)<1 ); }
@@ -988,18 +1000,8 @@ function entryPickerPage(){
 }
 
 /* หน้าแผนกของตน: รายการ Job → Task → บันทึก → ยืนยัน */
-function entryDeptPage(){
-  const u=unitByCode(DEPT); if(!u){ setDept(""); return; }
-  if(SELJOB && !u.jobs.some(j=>j.id===SELJOB)) SELJOB=null;
-  if(!SELJOB && u.jobs.length) SELJOB=u.jobs[0].id;
-  const allTasksToday=unitTasks(u).filter(t=>recordedToday(t.id)).length;
-  const totalActive=activeTasksOf(u).length;
-  const left=u.jobs.map(j=>{
-    const act=jobActiveTasks(j), dn=act.filter(t=>recordedToday(t.id)).length, conf=isJobConfirmed(j.id);
-    const st = conf?`<span style="color:var(--good)">✓</span>` : (act.length&&dn>=act.length?`<span style="color:var(--warn)">●</span>` : dn>0?`<span style="color:var(--warn)">◐</span>` : `<span style="color:var(--crit)">○</span>`);
-    return `<div class="joblistitem ${j.id===SELJOB?'active':''}" tabindex="0" onclick="selectJob('${j.id}')">
-      <span class="jl-nm">${tr(j.name)}<span class="num">${pk(["วันนี้","ມື້ນີ້","today"])} ${dn}/${act.length} task</span></span>
-      <span class="jl-st">${st}</span></div>`;}).join("");
+function jobDetailHtml(){
+  const u=unitByCode(DEPT); if(!u) return '';
   const j=u.jobs.find(x=>x.id===SELJOB);
   let right="";
   if(j){
@@ -1021,6 +1023,21 @@ function entryDeptPage(){
         ${!allDone&&!conf?`<span class="small">${pk(["ต้องบันทึกครบทุก Task ก่อน","ຕ້ອງບັນທຶກຄົບກ່ອນ","record all tasks first"])} (${doneToday}/${act.length})</span>`:""}
       </div>`;
   } else { right=`<div class="small">${pk(["เลือก Job จากด้านซ้าย","ເລືອກ Job ຈາກຊ້າຍ","Select a job on the left"])}</div>`; }
+  return right;
+}
+function entryDeptPage(){
+  const u=unitByCode(DEPT); if(!u){ setDept(""); return; }
+  if(SELJOB && !u.jobs.some(j=>j.id===SELJOB)) SELJOB=null;
+  if(!SELJOB && u.jobs.length) SELJOB=u.jobs[0].id;
+  const allTasksToday=unitTasks(u).filter(t=>recordedToday(t.id)).length;
+  const totalActive=activeTasksOf(u).length;
+  const left=u.jobs.map(j=>{
+    const act=jobActiveTasks(j), dn=act.filter(t=>recordedToday(t.id)).length, conf=isJobConfirmed(j.id);
+    const st = conf?`<span style="color:var(--good)">✓</span>` : (act.length&&dn>=act.length?`<span style="color:var(--warn)">●</span>` : dn>0?`<span style="color:var(--warn)">◐</span>` : `<span style="color:var(--crit)">○</span>`);
+    return `<div class="joblistitem ${j.id===SELJOB?'active':''}" tabindex="0" onclick="selectJob('${j.id}')">
+      <span class="jl-nm">${tr(j.name)}<span class="num">${pk(["วันนี้","ມື້ນີ້","today"])} ${dn}/${act.length} task</span></span>
+      <span class="jl-st">${st}</span></div>`;}).join("");
+  const right = jobDetailHtml();
   app.innerHTML = pagehead(un(u.name)+" — "+pk(["บันทึกงาน","ບັນທຶກງານ","Record work"]),
     un(DATA.find(s=>s.units.includes(u)).name)+" · "+u.owner) + `
   <div class="deptbar">🔒 ${pk(["แผนก","ໜ່ວຍງານ","Unit"])} <b>${un(u.name)}</b> · ${pk(["บันทึกวันนี้","ບັນທຶກມື້ນີ້","today"])} <b>${allTasksToday}/${totalActive}</b> task
