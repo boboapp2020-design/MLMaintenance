@@ -410,7 +410,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r34";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r35";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1175,10 +1175,14 @@ function overview(){
       <div class="icrow"><span class="icbub">${IC(ICONS.check)}</span>
         <div><div class="value num" style="font-size:28px;margin:0">${jobsDone} <span class="unit">/ ${jobsAll.length}</span></div></div></div>
       <div class="note" style="margin-top:6px">${pk(["ครบทุก Task จึงนับ","ນັບເມື່ອຄົບທຸກ Task","All tasks closed"])}</div></div>
-    <div class="kpi"><div class="label">${pk(["หน่วยล่าช้า · เสี่ยง","ໜ່ວຍຊັກຊ້າ · ສ່ຽງ","Late · at-risk units"])}</div>
-      <div class="icrow"><span class="icbub" style="background:var(--warn-bg);color:var(--warn)">${IC(ICONS.alert)}</span>
-        <div><div class="value num" style="font-size:28px;margin:0"><span style="color:var(--crit)">${late.length}</span> <span class="unit">· ${risk.length}</span></div></div></div>
-      <div class="note" style="margin-top:6px">${pk(["จาก "+rows.length+" หน่วยที่มีแผนแล้ว","ຈາກ "+rows.length+" ໜ່ວຍ","of "+rows.length+" units w/ plan"])}</div></div>
+    <div class="kpi"><div class="label">${pk(["หน่วยล่าช้า / เสี่ยง","ໜ່ວຍຊັກຊ້າ / ສ່ຽງ","Late / at-risk units"])}</div>
+      <div style="display:flex;gap:18px;align-items:flex-end;margin-top:2px">
+        <div><div class="num" style="font-size:30px;font-weight:800;line-height:1;color:var(--crit)">${late.length}</div>
+          <div class="small" style="color:var(--crit);font-weight:700;margin-top:3px">🔴 ${pk(["ล่าช้า","ຊັກຊ້າ","late"])}</div></div>
+        <div style="align-self:stretch;width:1px;background:var(--line)"></div>
+        <div><div class="num" style="font-size:30px;font-weight:800;line-height:1;color:var(--warn)">${risk.length}</div>
+          <div class="small" style="color:var(--warn);font-weight:700;margin-top:3px">🟡 ${pk(["เสี่ยง","ສ່ຽງ","at risk"])}</div></div></div>
+      <div class="note" style="margin-top:8px">${pk(["จาก "+rows.length+" หน่วยที่มีแผนแล้ว","ຈາກ "+rows.length+" ໜ່ວຍ","of "+rows.length+" units w/ plan"])}</div></div>
     <div class="kpi"><div class="label">${pk(["ก่อนเปิดหีบ","ກ່ອນເປີດຫີບ","To crushing start"])}</div>
       <div class="icrow"><span class="icbub">${IC(ICONS.cal)}</span>
         <div><div class="value num" style="font-size:28px;margin:0">${daysLeft} <span class="unit">${pk(["วัน","ວັນ","days"])}</span></div></div></div>
