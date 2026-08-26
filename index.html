@@ -194,9 +194,10 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .job.b-good{border-left-color:var(--good)} .job.b-warn{border-left-color:var(--warn)} .job.b-crit{border-left-color:var(--crit)}
 .jobhead{display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:13px 18px;cursor:pointer}
 .jobhead:hover{background:var(--tint)}
-.jname{flex:1 1 260px;font-size:14.5px;font-weight:700}
-.jmeta{font-size:12px;color:var(--mut)}
-.jbar{flex:1 1 130px;max-width:190px;height:12px;background:var(--tint2);border-radius:5px;position:relative}
+.jname{flex:1 1 220px;font-size:14.5px;font-weight:700}
+.jmeta{flex:0 0 auto;font-size:12px;color:var(--mut)}
+.jbar{flex:0 0 160px;height:12px;background:var(--tint2);border-radius:5px;position:relative}
+.jchip{flex:0 0 90px;display:flex;justify-content:flex-end}
 .jbar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:5px}
 .jbar .mark{position:absolute;top:-3px;width:3px;height:18px;background:var(--ink);border-radius:2px}
 .jpct{flex:0 0 108px;text-align:right;font-size:16px;font-weight:800}
@@ -388,7 +389,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r24";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r25";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1268,7 +1269,7 @@ function unitView(secId, uname){
         <span class="jmeta num">${done}/${j.tasks.length} task · ${fmt0(ja.mh)} ${pk(["แรง","ແຮງ","man-days"])}</span>
         <span class="jbar"><span class="fill" style="width:${ja.act}%;background:${SCc[jst[1]]}"></span><span class="mark" style="left:${ja.plan}%"></span></span>
         <span class="jpct num" style="color:${SCc[jst[1]]}">${fmt1(ja.act)}%<br><span class="small">${pk(["แผน","ແຜນ","plan"])} ${fmt1(ja.plan)}%</span></span>
-        <span class="chip c-${jst[1]}">${jst[0]}</span>
+        <span class="jchip"><span class="chip c-${jst[1]}">${jst[0]}</span></span>
       </div>
       <div class="jobbody"><div class="scrollx"><table>
         <tr><th>Task</th><th class="r">${pk(["แรง","ແຮງ","man-days"])}</th><th class="r">${pk(["กำหนด (สัปดาห์)","ກຳນົດ (ສັບປະດາ)","Sched. (wk)"])}</th><th class="r">${pk(["แผน","ແຜນ","Plan"])}</th><th class="r">${pk(["ผลจริง","ຜົນຕົວຈິງ","Actual"])}</th><th style="width:150px">${pk(["ความคืบหน้า","ຄວາມຄືບໜ້າ","Progress"])}</th><th>${pk(["สถานะ","ສະຖານະ","Status"])}</th></tr>
