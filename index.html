@@ -387,7 +387,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r14";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r15";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -645,7 +645,7 @@ let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
     const jobs = REAL_JOBS[u.code].map(rj=>{
       const tasks = rj.tasks.map(a=>{
         const s=wkOf(a[1],a[2]), e=Math.max(s+0.14, wkOf(a[3],a[4]));
-        const wt=a[5], mh=Math.round(FORCE_TOTAL[u.code]*8*wt/100);
+        const wt=a[5], mh=Math.round(FORCE_TOTAL[u.code]*wt/100);   // น้ำหนัก = แรง (คน-วัน) ตามไฟล์ ไม่คูณชั่วโมง
         /* plan(w) = ความคืบหน้าตามแผน "สะสมถึงสิ้นสัปดาห์ w" (w+1 = เช้าวันจันทร์สัปดาห์ถัดไป) */
         return {name:a[0], wt, mh, s, e, plan:w=>Math.max(0,Math.min(1,(w+1-s)/(e-s))), act:0};
       });
@@ -657,14 +657,14 @@ let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
      ใช้ task ตัวแทน 1 ตัวถือน้ำหนักทั้งหน่วย + เส้นแผนทางการ เพื่อให้ยอดรวมส่วน/โรงงานยังถูกต้อง
      task ตัวแทนนี้ถูกซ่อนจากทุกหน้ารายการ Job/Task (placeholder) รอนำเข้าของจริงภายหลัง */
   const sw=UNIT_STARTW[u.code];
-  const ptask={name:"(รอนำเข้าแผนงานจริง)", wt:100, mh:Math.max(1,Math.round(FORCE_TOTAL[u.code]*8)),
+  const ptask={name:"(รอนำเข้าแผนงานจริง)", wt:100, mh:Math.max(1,Math.round(FORCE_TOTAL[u.code])),
                s:sw, e:WEEKS, plan:w=>planU(u.code,w), act:0, placeholder:true};
   const jobs=[{name:"(รอนำเข้าแผนงานจริง)", tasks:[ptask], mh:ptask.mh, placeholder:true}];
   return {...u, jobs, blank:true};
 })}));
 
 /* ผูกแผนจริงเข้ากับโครงสร้าง:
-   - man-hr ของแต่ละหน่วยปรับสเกลให้รวม = แรงจริงของแผนก × 8 ชม. → การถ่วงน้ำหนักข้ามแผนกตรงตาม Sheet "รวม"
+   - น้ำหนักของแต่ละหน่วย = จำนวนแรง (คน-วัน) จริงของแผนก → การถ่วงน้ำหนักข้ามแผนกตรงตาม Sheet "รวม"
    - % แผนทุกระดับใช้ S-curve ทางการของแผนก (แรงสะสม ÷ แรงรวม)
    - ช่วงสัปดาห์ของ Task บีบให้อยู่ในหน้าต่างทำงานจริงของแผนก (BLR/GEN เริ่มสัปดาห์ 6) */
 DATA.forEach(sec=>sec.units.forEach(u=>{
@@ -926,9 +926,9 @@ function renderLang(){
     pk(["หมายเหตุ: ข้อมูลจากการบันทึกประจำวันของแต่ละแผนก ซิงก์ผ่าน Google Sheet · แผนตามไฟล์เป้าหมายงานซ่อม 2569",
         "ໝາຍເຫດ: ຂໍ້ມູນຈາກການບັນທຶກປະຈຳວັນຂອງແຕ່ລະໜ່ວຍງານ ຊິງຜ່ານ Google Sheet",
         "Note: Data from daily unit entries, synced via Google Sheet · Plan per 2026 target file"])+"<br>"+
-    pk(["เกณฑ์สถานะ (ผลต่างจากแผนสะสม): 🟢 ตามแผน ≥ −2 จุด · 🟡 เสี่ยง −2 ถึง −7 จุด · 🔴 ล่าช้า < −7 จุด · % ถ่วงน้ำหนักด้วย man-hours",
-        "ເກນສະຖານະ (ຜົນຕ່າງຈາກແຜນສະສົມ): 🟢 ຕາມແຜນ ≥ −2 ຈຸດ · 🟡 ສ່ຽງ −2 ຫາ −7 ຈຸດ · 🔴 ຊັກຊ້າ < −7 ຈຸດ · % ຖ່ວງນ້ຳໜັກດ້ວຍ man-hours",
-        "Status criteria (variance vs cumulative plan): 🟢 On plan ≥ −2 pts · 🟡 At risk −2 to −7 pts · 🔴 Late < −7 pts · man-hours weighted"])
+    pk(["เกณฑ์สถานะ (ผลต่างจากแผนสะสม): 🟢 ตามแผน ≥ −2 จุด · 🟡 เสี่ยง −2 ถึง −7 จุด · 🔴 ล่าช้า < −7 จุด · % ถ่วงน้ำหนักด้วยจำนวนแรง",
+        "ເກນສະຖານະ (ຜົນຕ່າງຈາກແຜນສະສົມ): 🟢 ຕາມແຜນ ≥ −2 ຈຸດ · 🟡 ສ່ຽງ −2 ຫາ −7 ຈຸດ · 🔴 ຊັກຊ້າ < −7 ຈຸດ · % ຖ່ວງນ້ຳໜັກດ້ວຍຈຳນວນແຮງ",
+        "Status criteria (variance vs cumulative plan): 🟢 On plan ≥ −2 pts · 🟡 At risk −2 to −7 pts · 🔴 Late < −7 pts · man-days weighted"])
     +'<br><span class="num" style="opacity:.55">'+BUILD+'</span>';
 }
 function go(p){ PAGE=p; if(p==='entry'){ DEPT=""; SELJOB=null; } renderNav(); ({over:overview,jobs:jobsPage,units:unitsPage,entry:entryPage,ana:anaPage,rep:repPage})[p](); window.scrollTo(0,0); }
@@ -983,9 +983,9 @@ function overview(){
       </div>
       ${donut(f.act, SCc[fTone])}
     </div>
-    <div class="kpi"><div class="label">${pk(["แรงงานสะสม","ແຮງງານສະສົມ","Man-hours used"])}</div>
+    <div class="kpi"><div class="label">${pk(["แรงงานสะสม","ແຮງງານສະສົມ","Man-days used"])}</div>
       <div class="icrow"><span class="icbub">${IC(ICONS.people)}</span>
-        <div><div class="value num" style="font-size:28px;margin:0">${fmt0(f.actMh)}</div><div class="small">man-hr</div></div></div>
+        <div><div class="value num" style="font-size:28px;margin:0">${fmt0(f.actMh)}</div><div class="small">${pk(["แรง","ແຮງ","man-days"])}</div></div></div>
       <div class="note num" style="margin-top:6px">${pk(["จากแผนทั้งฤดูกาล","ຈາກແຜນທັງລະດູການ","of season plan"])} ${fmt0(f.mh)}</div></div>
     <div class="kpi"><div class="label">${pk(["JOB เสร็จ","JOB ສຳເລັດ","Jobs done"])}</div>
       <div class="icrow"><span class="icbub">${IC(ICONS.check)}</span>
@@ -1065,7 +1065,7 @@ function jobsPage(){
   app.innerHTML = pagehead(pk(["งานซ่อมทั้งหมด","ວຽກສ້ອມແປງທັງໝົດ","All Jobs"])+" · "+jobs.length+" Job",
     pk(["เรียงจากล่าช้าที่สุด · คลิกแถวเพื่อไปหน้าหน่วยงาน","ຮຽງຈາກຊັກຊ້າທີ່ສຸດ · ຄລິກແຖວເພື່ອໄປໜ້າໜ່ວຍງານ","Sorted worst-first · click a row to drill down"])) + `
   <div class="card"><div class="scrollx"><table>
-    <tr><th>Job</th><th>${pk(["หน่วยงาน","ໜ່ວຍງານ","Unit"])}</th><th class="r">${pk(["แผน","ແຜນ","Plan"])}</th><th class="r">${pk(["ผลจริง","ຜົນຕົວຈິງ","Actual"])}</th><th class="r">${pk(["ผลต่าง","ຜົນຕ່າງ","Var"])}</th><th style="width:170px">${pk(["ความคืบหน้า","ຄວາມຄືບໜ້າ","Progress"])}</th><th class="r">man-hr</th><th>${pk(["สถานะ","ສະຖານະ","Status"])}</th></tr>
+    <tr><th>Job</th><th>${pk(["หน่วยงาน","ໜ່ວຍງານ","Unit"])}</th><th class="r">${pk(["แผน","ແຜນ","Plan"])}</th><th class="r">${pk(["ผลจริง","ຜົນຕົວຈິງ","Actual"])}</th><th class="r">${pk(["ผลต่าง","ຜົນຕ່າງ","Var"])}</th><th style="width:170px">${pk(["ความคืบหน้า","ຄວາມຄືບໜ້າ","Progress"])}</th><th class="r">${pk(["แรง","ແຮງ","man-days"])}</th><th>${pk(["สถานะ","ສະຖານະ","Status"])}</th></tr>
     ${jobs.map(x=>`<tr class="clickable" onclick='unitView("${x.s.id}","${x.u.name}")'>
       <td><b>${tr(x.j.name)}</b></td><td class="small">${un(x.u.name)}</td>
       <td class="r num small">${fmt1(x.a.plan)}%</td><td class="r num"><b>${fmt1(x.a.act)}%</b></td>
@@ -1097,8 +1097,8 @@ function unitView(secId, uname){
     <div class="kpi"><div class="label">${pk(["สถานะ","ສະຖານະ","Status"])}</div>
       <div class="value"><span class="chip c-${stC}" style="font-size:17px;padding:5px 18px">${stL}</span></div>
       <div class="note">${u.owner}</div></div>
-    <div class="kpi"><div class="label">${pk(["แรงงานสะสม","ແຮງງານສະສົມ","Man-hours used"])}</div>
-      <div class="value num" style="font-size:28px">${fmt0(a.actMh)}<span class="unit">man-hr</span></div>
+    <div class="kpi"><div class="label">${pk(["แรงงานสะสม","ແຮງງານສະສົມ","Man-days used"])}</div>
+      <div class="value num" style="font-size:28px">${fmt0(a.actMh)}<span class="unit">${pk(["แรง","ແຮງ","man-days"])}</span></div>
       <div class="note num">${pk(["แผนทั้งฤดู","ແຜນທັງລະດູ","Season plan"])} ${fmt0(a.mh)}</div></div>
     <div class="kpi"><div class="label">${pk(["ขอบเขตงาน","ຂອບເຂດວຽກ","Scope"])}</div>
       <div class="value num" style="font-size:28px">${visJobs(u).length}<span class="unit">job · ${visJobs(u).flatMap(j=>j.tasks).length} task</span></div>
@@ -1111,13 +1111,13 @@ function unitView(secId, uname){
     return `<div class="job b-${jst[1]}" id="job${ji}">
       <div class="jobhead" tabindex="0" onclick='document.getElementById("job${ji}").classList.toggle("open")'>
         <span class="caret">▶</span><span class="jname">${tr(j.name)}</span>
-        <span class="jmeta num">${done}/${j.tasks.length} task · ${fmt0(ja.mh)} man-hr</span>
+        <span class="jmeta num">${done}/${j.tasks.length} task · ${fmt0(ja.mh)} ${pk(["แรง","ແຮງ","man-days"])}</span>
         <span class="jbar"><span class="fill" style="width:${ja.act}%;background:${SCc[jst[1]]}"></span><span class="mark" style="left:${ja.plan}%"></span></span>
         <span class="jpct num" style="color:${SCc[jst[1]]}">${fmt1(ja.act)}%<br><span class="small">${pk(["แผน","ແຜນ","plan"])} ${fmt1(ja.plan)}%</span></span>
         <span class="chip c-${jst[1]}">${jst[0]}</span>
       </div>
       <div class="jobbody"><div class="scrollx"><table>
-        <tr><th>Task</th><th class="r">man-hr</th><th class="r">${pk(["กำหนด (สัปดาห์)","ກຳນົດ (ສັບປະດາ)","Sched. (wk)"])}</th><th class="r">${pk(["แผน","ແຜນ","Plan"])}</th><th class="r">${pk(["ผลจริง","ຜົນຕົວຈິງ","Actual"])}</th><th style="width:150px">${pk(["ความคืบหน้า","ຄວາມຄືບໜ້າ","Progress"])}</th><th>${pk(["สถานะ","ສະຖານະ","Status"])}</th></tr>
+        <tr><th>Task</th><th class="r">${pk(["แรง","ແຮງ","man-days"])}</th><th class="r">${pk(["กำหนด (สัปดาห์)","ກຳນົດ (ສັບປະດາ)","Sched. (wk)"])}</th><th class="r">${pk(["แผน","ແຜນ","Plan"])}</th><th class="r">${pk(["ผลจริง","ຜົນຕົວຈິງ","Actual"])}</th><th style="width:150px">${pk(["ความคืบหน้า","ຄວາມຄືບໜ້າ","Progress"])}</th><th>${pk(["สถานะ","ສະຖານະ","Status"])}</th></tr>
         ${j.tasks.map(t=>{const tp=t.plan(WNOW)*100, ta=actAt(t,WNOW)*100,
           tst= ta>=100?[pk(["เสร็จ ✓","ສຳເລັດ ✓","Done ✓"]),"good"]:statusOf(ta-tp);
           return `<tr><td>${tr(t.name)}</td><td class="r num">${fmt0(t.mh)}</td>
@@ -1418,7 +1418,7 @@ function entryTaskChanged(){
   const lastPct = tid ? latestPctFor(tid) : null;
   const floor = lastPct!=null ? lastPct : (x? Math.round(x.t.act*100) : 0);   // ห้ามต่ำกว่าค่านี้
   document.getElementById("taskInfo").innerHTML = x?
-    `<div class="taskinfo num">📌 <b>${tr(x.t.name)}</b> · ${pk(["แผน","ແຜນ","plan"])} ${fmt0(x.t.mh)} man-hr · ${pk(["สัปดาห์","ສັບປະດາ","wk"])} ${Math.max(1,Math.round(x.t.s))}–${Math.min(WEEKS,Math.round(x.t.e))} ·
+    `<div class="taskinfo num">📌 <b>${tr(x.t.name)}</b> · ${pk(["แผน","ແຜນ","plan"])} ${fmt0(x.t.mh)} ${pk(["แรง","ແຮງ","man-days"])} · ${pk(["สัปดาห์","ສັບປະດາ","wk"])} ${Math.max(1,Math.round(x.t.s))}–${Math.min(WEEKS,Math.round(x.t.e))} ·
      ${pk(["% แผนตอนนี้","% ແຜນຕອນນີ້","plan now"])} <b>${fmt1(x.t.plan(REALWK)*100)}%</b> · ${pk(["% ปัจจุบัน","% ປັດຈຸບັນ","current"])} <b>${fmt1(x.t.act*100)}%</b>
      <br><span style="color:var(--warn)">🔒 ${pk(["กรอกได้ไม่ต่ำกว่า","ປ້ອນໄດ້ບໍ່ຕ່ຳກວ່າ","must be ≥"])} ${floor}% ${pk(["(ความคืบหน้าสะสม ห้ามถอยหลัง)","(ຄວາມຄືບໜ້າສະສົມ ຫ້າມຖອຍຫຼັງ)","(cumulative — cannot go backward)"])}</span></div>`:"";
   if(x){ inp.min=floor; inp.value=Math.max(floor, Math.round(x.t.act*100)); inp.dataset.floor=floor; }
@@ -1471,7 +1471,7 @@ function exportExcel(){
   const SC={good:"stGood",warn:"stWarn",crit:"stCrit"};
   // ---- ชีตสรุปทั้งโรงงาน ----
   let sumRows = xlRow(xlS(pk(["สรุปงานซ่อมทั้งโรงงาน · ณ สัปดาห์ "+WNOW+" ("+ (function(){const d=wkEnd(WNOW);return d.getDate()+"/"+(d.getMonth()+1)+"/"+ (LANG==="th"?d.getFullYear()+543:d.getFullYear());})() +")","ສະຫຼຸບ","Factory summary"]),"title"));
-  sumRows += xlRow(["ส่วนงาน","หน่วยงาน","ผู้รับผิดชอบ","% แผนสะสม","% ผลจริง","ผลต่าง(จุด)","สถานะ","man-hr แผน","man-hr ทำได้","Job เสร็จ/ทั้งหมด"].map(h=>xlS(h,"hdr")).join(""));
+  sumRows += xlRow(["ส่วนงาน","หน่วยงาน","ผู้รับผิดชอบ","% แผนสะสม","% ผลจริง","ผลต่าง(จุด)","สถานะ","แรง แผน","แรง ทำได้","Job เสร็จ/ทั้งหมด"].map(h=>xlS(h,"hdr")).join(""));
   DATA.forEach(s=>s.units.forEach(u=>{
     const a=agg(unitTasks(u),WNOW), v=a.act-a.plan, st=statusOf(v);
     const jobs=u.jobs, done=jobs.filter(j=>agg(j.tasks,WNOW).act>=99.5).length;
@@ -1489,7 +1489,7 @@ function exportExcel(){
     const a=agg(unitTasks(u),WNOW), v=a.act-a.plan, st=statusOf(v);
     let rows = xlRow(xlS(un(u.name)+" · "+un(s.name)+" · "+u.owner,"title"));
     rows += xlRow(xlS(pk(["ความคืบหน้ารวม","ຄວາມຄືບໜ້າ","Progress"],0)+" "+fmt1(a.act)+"% / "+pk(["แผน","ແຜນ","plan"],0)+" "+fmt1(a.plan)+"% · "+st[0],"sub"));
-    rows += xlRow(["รหัส Job","ชื่อ Job","รหัส Task","ชื่อ Task","น้ำหนัก (แต้ม)","แต้มที่ทำได้","man-hr","สัปดาห์เริ่ม","สัปดาห์เสร็จ","% แผน","% ผลจริง","สถานะ","บันทึกล่าสุด","ผู้บันทึกล่าสุด"].map(h=>xlS(h,"hdr")).join(""));
+    rows += xlRow(["รหัส Job","ชื่อ Job","รหัส Task","ชื่อ Task","น้ำหนัก (แต้ม)","แต้มที่ทำได้","แรง","สัปดาห์เริ่ม","สัปดาห์เสร็จ","% แผน","% ผลจริง","สถานะ","บันทึกล่าสุด","ผู้บันทึกล่าสุด"].map(h=>xlS(h,"hdr")).join(""));
     if(u.blank){ rows += xlRow(xlS(pk(["ยังไม่มีแผน Job/Task — รอนำเข้าข้อมูลจริง (คงเส้นแผน %/แรงระดับหน่วยตามไฟล์เป้าหมาย)","ຍັງບໍ່ມີແຜນ Job/Task","No Job/Task plan yet — awaiting real data"],0),"sub")); }
     visJobs(u).forEach(j=>{
       const ja=agg(j.tasks,WNOW), jv=ja.act-ja.plan, jst=statusOf(jv);
@@ -1586,7 +1586,7 @@ function anaPage(){
       </div>
       <div class="railbar" style="margin-top:12px"><div class="fill" style="width:${Math.min(100,forecast)}%;background:${vcolor}"></div><div class="mark" style="left:100%"></div></div>
       <div class="railcap num"><span>${pk(["คาดการณ์จบที่","ຄາດຄະເນຈົບທີ່","projected finish"])} ${fmt1(forecast)}%</span>
-        <span>${pk(["ต้องทำอีก","ຕ້ອງເຮັດອີກ","need"])} ${fmt0(needMhWk)} man-hr/${pk(["สัปดาห์","ສັບປະດາ","wk"])} · ${pk(["ทำได้จริงเฉลี่ย","ເຮັດໄດ້ຈິງສະເລ່ຍ","currently"])} ${fmt0(haveMhWk)}/${pk(["สัปดาห์","ສັບປະດາ","wk"])}</span>
+        <span>${pk(["ต้องทำอีก","ຕ້ອງເຮັດອີກ","need"])} ${fmt0(needMhWk)} ${pk(["แรง","ແຮງ","man-days"])}/${pk(["สัปดาห์","ສັບປະດາ","wk"])} · ${pk(["ทำได้จริงเฉลี่ย","ເຮັດໄດ້ຈິງສະເລ່ຍ","currently"])} ${fmt0(haveMhWk)}/${pk(["สัปดาห์","ສັບປະດາ","wk"])}</span>
         <span>${pk(["เป้า","ເປົ້າ","target"])} 100% · ${fmtDate(SEASON_END)}</span></div>
     </div>`;
   })()}
@@ -1600,7 +1600,7 @@ function anaPage(){
     <div class="card"><h2>🔻 ${pk(["Top 5 Job ที่ฉุดภาพรวม","Top 5 Job ທີ່ດຶງພາບລວມ","Top 5 dragging jobs"])}</h2>
       ${jobs.map((x,i)=>`<div class="repline"><span class="bullet num">${i+1}.</span>
         <div style="flex:1"><b style="cursor:pointer;color:var(--blue)" onclick='unitView("${DATA.find(s=>s.units.includes(x.u)).id}","${x.u.name}")'>${tr(x.j.name)}</b>
-        <div class="small num">${un(x.u.name)} · ${fmt1(x.a.act)}% / ${fmt1(x.a.plan)}% · ${fmt0(x.a.mh)} man-hr</div></div>
+        <div class="small num">${un(x.u.name)} · ${fmt1(x.a.act)}% / ${fmt1(x.a.plan)}% · ${fmt0(x.a.mh)} ${pk(["แรง","ແຮງ","man-days"])}</div></div>
         <b class="num" style="color:var(--crit)">−${fmt1(Math.abs(x.varc))}</b></div>`).join("")}
     </div>
   </div>
@@ -1609,8 +1609,8 @@ function anaPage(){
       const maxLeft=Math.max(...DATA.map(x=>{const b=agg(secTasks(x),WNOW);return b.mh-b.actMh;}),1);
       return `<div class="prow"><span class="pl">${un(s.name)}</span>
       <span class="pb"><span class="pf" style="width:${left/maxLeft*100}%;background:${s.color}"></span></span>
-      <span class="pv num">${fmt0(left)} <span class="small">man-hr</span></span></div>`;}).join("")}
-    <div class="small num" style="margin-top:8px">${pk(["รวมคงเหลือ","ລວມເຫຼືອ","Total remaining"])} ${fmt0(f.mh-f.actMh)} man-hr · ${fmt0((f.mh-f.actMh)/wkLeft)} man-hr/${pk(["สัปดาห์","ສັບປະດາ","week"])}</div>
+      <span class="pv num">${fmt0(left)} <span class="small">${pk(["แรง","ແຮງ","man-days"])}</span></span></div>`;}).join("")}
+    <div class="small num" style="margin-top:8px">${pk(["รวมคงเหลือ","ລວມເຫຼືອ","Total remaining"])} ${fmt0(f.mh-f.actMh)} ${pk(["แรง","ແຮງ","man-days"])} · ${fmt0((f.mh-f.actMh)/wkLeft)} ${pk(["แรง","ແຮງ","man-days"])}/${pk(["สัปดาห์","ສັບປະດາ","week"])}</div>
   </div>`;
 }
 
@@ -1631,7 +1631,7 @@ function repPage(){
     <button class="btn btn-o" onclick="exportExcel()">📊 Export Excel</button></div>
   <div class="card"><h2>1. ${pk(["สรุปภาพรวม","ສະຫຼຸບພາບລວມ","Summary"])}</h2>
     <div class="repline"><span class="bullet">•</span><span class="num">${pk(["ความคืบหน้ารวม","ຄວາມຄືບໜ້າລວມ","Overall progress"])} <b>${fmt1(f.act)}%</b> ${pk(["เทียบแผน","ທຽບແຜນ","vs plan"])} ${fmt1(f.plan)}% — <b>${gap>=0?pk(["นำแผน","ນຳແຜນ","ahead"]):pk(["ช้ากว่าแผน","ຊ້າກວ່າແຜນ","behind"])} ${fmt1(Math.abs(gap))} ${PTS} (${fLbl})</b></span></div>
-    <div class="repline"><span class="bullet">•</span><span class="num">${pk(["แรงงานสะสม","ແຮງງານສະສົມ","Man-hours"])} <b>${fmt0(f.actMh)}</b> / ${fmt0(f.mh)} man-hr · Job ${pk(["เสร็จ","ສຳເລັດ","done"])} <b>${done.length}/${jobsAll.length}</b></span></div>
+    <div class="repline"><span class="bullet">•</span><span class="num">${pk(["แรงงานสะสม","ແຮງງານສະສົມ","Man-days"])} <b>${fmt0(f.actMh)}</b> / ${fmt0(f.mh)} ${pk(["แรง","ແຮງ","man-days"])} · Job ${pk(["เสร็จ","ສຳເລັດ","done"])} <b>${done.length}/${jobsAll.length}</b></span></div>
     <div class="repline"><span class="bullet">•</span><span class="num">${pk(["หน่วยล่าช้า","ໜ່ວຍຊັກຊ້າ","Late units"])} <b style="color:var(--crit)">${late.length}</b> · ${pk(["เสี่ยง","ສ່ຽງ","at-risk"])} <b style="color:var(--warn)">${risk.length}</b> / 9 · ${pk(["เหลือ","ເຫຼືອ","remaining"])} <b>${WEEKS-WNOW} ${pk(["สัปดาห์","ສັບປະດາ","weeks"])}</b></span></div>
   </div>
   <div class="card"><h2>2. ${pk(["สถานะรายหน่วยงาน","ສະຖານະລາຍໜ່ວຍງານ","Status by unit"])}</h2>
