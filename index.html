@@ -1003,6 +1003,19 @@ function unitByCode(code){ return DATA.flatMap(s=>s.units).find(u=>u.code===code
 let SELJOB=null;
 function setDept(code){ DEPT=code||""; SELJOB=null; entryPage(); }
 function selectJob(jid){ SELJOB=jid; document.querySelectorAll('.joblistitem').forEach(function(el){ el.classList.toggle('active', el.getAttribute('onclick').indexOf("'"+jid+"'")>-1); }); var d=document.querySelector('.jobdetail'); if(d){ d.innerHTML=jobDetailHtml(); } else { entryDeptPage(); } }
+function clearAllData(){
+  if(!confirm(pk(["⚠️ ล้างข้อมูลบันทึกทั้งหมด (ทั้งในเครื่องและใน Google Sheet)? ย้อนกลับไม่ได้","⚠️ ລ້າງຂໍ້ມູນທັງໝົດ? ຍ້ອນກັບບໍ່ໄດ້","⚠️ Clear ALL records (device + Google Sheet)? Cannot undo"]))) return;
+  try{ localStorage.removeItem("idash_entries"); localStorage.removeItem("idash_jobconf"); }catch(e){}
+  ENTRIES=[]; JOBCONF={}; applyEntries();
+  if(SHEET_API){
+    fetch(SHEET_API+"?action=clear").then(function(r){return r.json();}).then(function(res){
+      if(res && res.cleared){ ENTRIES=[]; saveEntries(ENTRIES); applyEntries();
+        alert(pk(["✓ ล้างข้อมูลทั้งหมดแล้ว (เครื่อง + Google Sheet)","✓ ລ້າງແລ້ວ","✓ Cleared device + Google Sheet"])); }
+      else { alert(pk(["ล้างในเครื่องแล้ว — แต่ Google Sheet ยังไม่ถูกล้าง\nต้องอัปเดตโค้ด Apps Script รุ่นใหม่ (มี action=clear) แล้ว Deploy → New version ก่อน\nหรือลบแถวในแท็บ Daily_Input เองก็ได้","ລ້າງໃນເຄື່ອງແລ້ວ — ຕ້ອງອັບເດດ Apps Script","Cleared device only — update the Apps Script (add action=clear) & redeploy, or delete rows in Daily_Input manually"])); }
+      go('entry');
+    }).catch(function(){ alert(pk(["ล้างในเครื่องแล้ว (เชื่อม Sheet ไม่สำเร็จ)","ລ້າງໃນເຄື່ອງແລ້ວ","Cleared device (sheet unreachable)"])); go('entry'); });
+  } else { alert(pk(["ล้างข้อมูลในเครื่องแล้ว","ລ້າງແລ້ວ","Cleared"])); go('entry'); }
+}
 /* ===== flow บันทึกแบบไล่ขั้น: เลือกแผนก → Job → Task → ฟอร์ม → ยืนยัน Job ===== */
 function recordedToday(tid){ return ENTRIES.some(e=>e.date===todayISO() && e.taskId===tid); }
 function jobActiveTasks(j){ return j.tasks.filter(t=> t.s<=WNOW && actAt(t,WNOW)<1 ); }
@@ -1038,6 +1051,7 @@ function entryPickerPage(){
   <div class="card"><h2>👇 ${pk(["เลือกแผนกของคุณ","ເລືອກໜ່ວຍງານຂອງທ່ານ","Select your unit"])}</h2>
     <div class="sub">${pk(["กดแผนกของคุณ เพื่อเข้าหน้าบันทึกงานของแผนกนั้น (✓ ครบ · ◐ ไม่ครบ · ✗ ยังไม่บันทึกวันนี้)","ກົດໜ່ວຍງານ (✓ ຄົບ · ◐ ບໍ່ຄົບ · ✗ ຍັງບໍ່ບັນທຶກ)","Tap your unit (✓ full · ◐ partial · ✗ none today)"])}</div>
     <div class="deptsections">${cols}</div>
+    <div style="margin-top:14px;text-align:right"><button class="btn-d" style="font-size:12.5px" onclick="clearAllData()">🗑 ${pk(["ล้างข้อมูลบันทึกทั้งหมด","ລ້າງຂໍ້ມູນທັງໝົດ","Clear all records"])}</button></div>
   </div>`;
 }
 
