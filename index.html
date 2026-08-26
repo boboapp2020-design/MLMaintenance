@@ -387,6 +387,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
+const BUILD = "build 2026-08-26 r10";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -726,6 +727,8 @@ async function syncFromSheet(attempt){
     const res=await fetch(SHEET_API+(SHEET_API.includes("?")?"&":"?")+"action=list",{method:"GET",cache:"no-store"});
     const data=await res.json();
     if(!Array.isArray(data)) throw new Error("bad payload");
+    /* เกราะกันข้อมูลหาย: ถ้าเซิร์ฟเวอร์ตอบว่างแต่เครื่องเรามีข้อมูลอยู่ ให้ลองซ้ำก่อนยอมรับ (กันจังหวะ Sheet สะดุด) */
+    if(data.length===0 && ENTRIES.length>0 && attempt<4) throw new Error("empty while local has data");
     ENTRIES=data.map(e=>({date:normDate(e.date), taskId:String(e.taskId), pct:Number(e.pct), mh:Number(e.mh)||0, by:e.by||"", note:e.note||""}));
     saveEntries(ENTRIES); applyEntries(); SYNC_STATE="ok";
     /* ไม่ re-render ขณะฟอร์มบันทึกเปิดอยู่ กันข้อมูลที่กำลังพิมพ์หาย */
@@ -929,12 +932,13 @@ function renderLang(){
   document.getElementById("logoSub").textContent=pk(["น้ำตาลมิตรลาว","ນ້ຳຕານມິດລາວ","Mitr Lao Sugar"]);
   document.getElementById("adminName").textContent=pk(["งานซ่อมฝ่ายโรงงาน","ວຽກສ້ອມແປງຝ່າຍໂຮງງານ","Factory Maintenance"]);
   document.getElementById("foot").innerHTML=
-    pk(["หมายเหตุ: ข้อมูลอัปเดตล่าสุดจากระบบ PM/CMMS เวลา 18:00 น. · <b>ข้อมูลจำลองเพื่อสาธิต</b>",
-        "ໝາຍເຫດ: ຂໍ້ມູນອັບເດດຫຼ້າສຸດຈາກລະບົບ PM/CMMS ເວລາ 18:00 · <b>ຂໍ້ມູນຈຳລອງເພື່ອສາທິດ</b>",
-        "Note: Data last updated from PM/CMMS at 18:00 · <b>Mock data for demo</b>"])+"<br>"+
+    pk(["หมายเหตุ: ข้อมูลจากการบันทึกประจำวันของแต่ละแผนก ซิงก์ผ่าน Google Sheet · แผนตามไฟล์เป้าหมายงานซ่อม 2569",
+        "ໝາຍເຫດ: ຂໍ້ມູນຈາກການບັນທຶກປະຈຳວັນຂອງແຕ່ລະໜ່ວຍງານ ຊິງຜ່ານ Google Sheet",
+        "Note: Data from daily unit entries, synced via Google Sheet · Plan per 2026 target file"])+"<br>"+
     pk(["เกณฑ์สถานะ (ผลต่างจากแผนสะสม): 🟢 ตามแผน ≥ −2 จุด · 🟡 เสี่ยง −2 ถึง −7 จุด · 🔴 ล่าช้า < −7 จุด · % ถ่วงน้ำหนักด้วย man-hours",
         "ເກນສະຖານະ (ຜົນຕ່າງຈາກແຜນສະສົມ): 🟢 ຕາມແຜນ ≥ −2 ຈຸດ · 🟡 ສ່ຽງ −2 ຫາ −7 ຈຸດ · 🔴 ຊັກຊ້າ < −7 ຈຸດ · % ຖ່ວງນ້ຳໜັກດ້ວຍ man-hours",
-        "Status criteria (variance vs cumulative plan): 🟢 On plan ≥ −2 pts · 🟡 At risk −2 to −7 pts · 🔴 Late < −7 pts · man-hours weighted"]);
+        "Status criteria (variance vs cumulative plan): 🟢 On plan ≥ −2 pts · 🟡 At risk −2 to −7 pts · 🔴 Late < −7 pts · man-hours weighted"])
+    +'<br><span class="num" style="opacity:.55">'+BUILD+'</span>';
 }
 function go(p){ PAGE=p; if(p==='entry'){ DEPT=""; SELJOB=null; } renderNav(); ({over:overview,jobs:jobsPage,units:unitsPage,entry:entryPage,ana:anaPage,rep:repPage})[p](); window.scrollTo(0,0); }
 function setWeek(w){ WNOW=parseInt(w); go(PAGE); }
