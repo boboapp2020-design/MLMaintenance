@@ -387,7 +387,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r10";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r11";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -705,7 +705,12 @@ let ENTRIES = loadEntries();
 
 /* ===== เชื่อมต่อ Google Sheet ผ่าน Apps Script Web App ===== */
 const SHEET_API_DEFAULT = "https://script.google.com/macros/s/AKfycbyMO9a9oj-0SmXC4-ley3zHj-4KDZQ6_ue-faTs57RmZpkamm2bTh24cBtsneu3xR5kIg/exec";
-let SHEET_API = SHEET_API_DEFAULT; try{ const saved=localStorage.getItem("idash_api"); if(saved!==null) SHEET_API=saved; }catch(e){}
+/* ใช้ URL ที่ฝังไว้เสมอ เว้นแต่มีการตั้งค่า URL อื่นที่ไม่ว่างไว้ (ค่าว่างจากการกดยกเลิกในอดีต → ล้างทิ้ง กลับมาใช้ค่าฝัง) */
+let SHEET_API = SHEET_API_DEFAULT;
+try{ const saved=localStorage.getItem("idash_api");
+  if(saved) SHEET_API=saved;
+  else if(saved==="") localStorage.removeItem("idash_api");
+}catch(e){}
 let SYNC_STATE = SHEET_API ? "connecting" : "off";   // off | connecting | ok | error
 function setSheetApi(url){
   url=(url||"").trim();
@@ -742,6 +747,10 @@ async function syncFromSheet(attempt){
 }
 /* ดึงข้อมูลใหม่ทุก 5 นาที ให้ทุกเครื่องเห็นข้อมูลล่าสุดโดยไม่ต้องรีโหลด */
 setInterval(function(){ if(SHEET_API && SYNC_STATE!=="connecting") syncFromSheet(); }, 300000);
+/* กลับมาที่แท็บ/เปิดจอมือถือ → ดึงข้อมูลใหม่ทันที (มือถือชอบพักแท็บจนข้อมูลค้าง) */
+document.addEventListener("visibilitychange", function(){
+  if(!document.hidden && SHEET_API && SYNC_STATE!=="connecting") syncFromSheet();
+});
 function pushToSheet(entry){
   if(!SHEET_API) return;
   fetch(SHEET_API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(entry)}).catch(()=>{});
