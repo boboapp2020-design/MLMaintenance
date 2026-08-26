@@ -533,6 +533,61 @@ function planU(code,w){
 const REALWK = Math.max(1, Math.min(WEEKS, Math.floor((Date.now()-SEASON_START.getTime())/(7*86400000))+1));
 let WNOW = REALWK;   // สัปดาห์ที่กำลังดู (เปลี่ยนได้จากตัวเลือกวันที่)
 
+/* ===== แผนงานจริงราย Job/Task (ไฟล์ "แผนบำรุงรักษา และซ่อมแซมเครื่องจักรประจำ") =====
+   ระบบแต้มน้ำหนัก: แผนกเต็ม 100 แต้ม · น้ำหนัก Task = วันทำงาน × 50/164 (2 กลุ่มงาน กลุ่มละ 50)
+   user บันทึกเป็น "แต้มสะสมที่เก็บได้" ของแต่ละ Task (0 – น้ำหนัก Task) ระบบแปลงเป็น % ให้ทุกระดับ
+   รูปแบบ task: [ชื่อ, เดือนเริ่ม, วันเริ่ม, เดือนเสร็จ, วันเสร็จ, แต้มน้ำหนัก] (ปี ค.ศ. 2026) */
+const REAL_JOBS = {
+ PAN: [
+  {name:"งานเปิดฝา Man Hold และ Cleaning ตัวหม้อเคี่ยว รางกวน", owner:"คำปะดิด/หมอน/คำแป้ง/บุนเถีง", tasks:[
+    ["ล้าง และทำความสะอาด หม้อเคี่ยว A, B, C",4,20,4,25,1.83],
+    ["ล้าง และทำความสะอาด รางกวน A, B, C",4,27,5,2,1.52]]},
+  {name:"งานซ่อมตัวหม้อเคี่ยว และรางกวน", owner:"คำปะดิด/หมอน/คำแป้ง/บุนเถีง", tasks:[
+    ["งานตรวจเช็ค และซ่อมแซม ลูกลอย และวาล์ว เข้า-ออก Steam Trap",5,4,5,9,1.83],
+    ["ตรวจเช็ค ถอดเพลารางกวน A,B,C - Massecuite และถัง Receiver, Magma/Seed",5,11,5,23,3.66],
+    ["ตรวจเช็ค ชิลวาล์วเดรน/วาล์วลงน้ำตาล/วาล์ววัตถุดิบ/เมรนเชื้อเข้าหม้อเคี่ยว A, B, C",5,25,6,6,3.66],
+    ["ถอด ทำความสะอาด ทดสอบประสิทธิภาพ Valve Steam หม้อเคี่ยว A1 - C3",6,8,6,20,3.66],
+    ["เปลี่ยนกล่องเดรนไอระเหยหัวเคี่ยว B3 และ C1",6,22,6,24,0.91],
+    ["แก้ไขท่อ Mol A ย้ายจุดต่อเข้าหม้อเคี่ยวจากด้านล่างท่อเมรน เป็นหลังเมรน B3 C1 C2",6,25,6,27,0.91],
+    ["งานแยงจุ๊บหม้อเคี่ยว",6,29,7,11,3.66],
+    ["งานอัดน้ำ เบ่งจุ๊บ หม้อเคี่ยว A1 - C3 (แรงดันน้ำ 2.5 kg/cm²)",7,13,7,22,2.74],
+    ["แก้ไขหน้าแป้น 16 นิ้ว หน้าถัง DCR-SEED",7,23,7,25,0.61],
+    ["ย้ายจุดติดตั้งหัววัด Brix ถัง Dilute mol",7,27,8,1,1.83],
+    ["ติดตั้งลายท่อไออบเมรน B-magma & A-Seed ไปหม้อ A5 & A6",8,3,8,8,1.83],
+    ["งานประกอบ ชิลยางวาล์วเดรน/วาล์วลงน้ำตาล/วาล์ววัตถุดิบ/เมรนเชื้อเข้าหม้อเคี่ยว",8,10,8,15,1.83],
+    ["ย้ายท่อไออบหม้อเคี่ยวจากหัวหม้อเข้าตัวหม้อ A1 - C3",8,17,8,29,3.66],
+    ["ต่อท่อน้ำเลี้ยงกะบะคอเพลารางกวน A B",8,31,9,5,1.83],
+    ["งานซ่อม และประกอบวาล์วไอเข้าหม้อเคี่ยว A1 - C2 (ตรวจเช็ค/ทำความสะอาด/อัดปะเก็น)",9,7,9,19,3.35],
+    ["งานประกอบเพลารางกวน (ที่ถอดซ่อม)",9,21,10,10,5.49],
+    ["งานเก็บทำความสะอาดหม้อ-รางกวน และพื้นแผนก",10,12,10,17,1.83],
+    ["ล้างทำความสะอาด ถังวัตถุดิบ-หม้อ-รางกวน พร้อมทดลองเครื่องจักร",10,19,10,31,3.35]]},
+  {name:"งานเปิดฝา Man Hold และ Cleaning ถังวัตถุดิบ (ถังโมล ถัง Magma น้ำเชื่อม)", owner:"สังทอง/จันโท/พวงพัน/เขียว/อำไพวัน", tasks:[
+    ["ล้าง และทำความสะอาดถังวัตถุดิบ (A/B-Mol, C-Remelt, Syrup, น้ำร้อน Seed/Magma)",4,20,5,2,3.35]]},
+  {name:"งานซ่อมแซม Cooling Tower - Pipe Condenser", owner:"สังทอง/จันโท/พวงพัน/เขียว/อำไพวัน", tasks:[
+    ["ตรวจสอบความหนาท่อ Condenser เข้า-ออก Cooling",5,4,5,13,2.74],
+    ["เช็คท่อน้ำเมรน Header pump ที่มีการกุสะแตนเลส",5,14,5,16,0.91],
+    ["ถอด-ซ่อม Valve Jet Condenser A1 - C3",5,18,5,23,1.83],
+    ["ล้างทำความสะอาด บ่อน้ำ Cooling Tower",5,25,6,6,3.35],
+    ["งานถอด และซ่อมแซมตะแกรง Jet Condenser A1 - C3",6,8,6,20,3.66],
+    ["ตรวจเช็คหัวสเปรย์น้ำ Jet Condenser A1 - C3",6,22,7,4,3.66],
+    ["ตรวจเช็คจำนวนหัว Spray น้ำ Cooling Tower cell สร้าง 2017 ที่ชำรุดเสียหาย",7,6,7,11,1.83],
+    ["เจาะรางกวน B ทำเป็น Flow หากัน B1-B2-B3-C1",7,13,8,1,5.49],
+    ["แก้ไขลายท่อจากปั๊ม C-mass Receiver02 ขึ้นตรงรางกวนตั้ง",8,3,8,22,5.49],
+    ["แก้ไขท่อเดรน Air vent ท่อน้ำ Condenser ขากลับ Seal tank เป็น 2 นิ้ว",8,24,8,29,1.83],
+    ["แก้ไขเมรน Remelt เข้าหม้อเคี่ยว ร่วมลาย A-MOL",8,31,9,5,1.83],
+    ["แก้ท่อ Blow ไอถัง Condensate ข้างอาคารทางเดิน ทำเป็นจวยรับ พร้อมติดท่อเดรน",9,7,9,12,1.52],
+    ["ทำกะบะรับน้ำเลี้ยงคอเพลา ปั๊ม Vacuum พร้อมท่อเดรน",9,14,9,19,1.83],
+    ["แก้ไขเชื่อมท่อน้ำร้อนใต้หม้อ A1 ลายไปหม้อ A5 A6",9,21,9,26,1.83],
+    ["เปลี่ยนหัว Spray น้ำ Cooling Tower cell สร้าง 2017",9,28,10,3,1.83],
+    ["งานอัดปะเก็นคอเพลาหม้อเคี่ยว/รางกวน/ถัง Seed/Magma",10,5,10,10,1.83],
+    ["งานตรวจเช็ค และซ่อมแซม วาล์ว และ Check Valve Syphon",10,12,10,17,1.83],
+    ["ตรวจสอบ-เปลี่ยนสายพานใบกวนหัวหม้อ/รางกวน/ถัง/ปั๊ม Vacuum",10,19,10,24,1.83],
+    ["ล้างทำความสะอาด บ่อน้ำ Cooling Tower พร้อมทดลองเครื่องจักร",10,26,10,31,1.52]]},
+ ],
+};
+/* พิกัดสัปดาห์ของวันที่ (สัปดาห์ 1 เริ่ม 20 เม.ย.) เศษทศนิยม = ตำแหน่งภายในสัปดาห์ */
+const wkOf=(m,d)=>((Date.UTC(2026,m-1,d)-Date.UTC(2026,3,20))/86400000)/7+1;
+
 const PHASES = [
   ["ถอดชิ้นส่วน / เปิดตรวจภายใน", .06],
   ["ตรวจวัดและประเมินสภาพ (NDT/วัดค่า)", .07],
@@ -584,6 +639,18 @@ const MODEL = [
 ];
 
 let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
+  if(REAL_JOBS[u.code]){
+    /* แผนกที่มีแผนจริง: สร้าง Job/Task ตามไฟล์ · แต้มน้ำหนัก (wt) = % ของแผนก · % แผนของ Task เดินตามช่วงวันที่จริง */
+    const jobs = REAL_JOBS[u.code].map(rj=>{
+      const tasks = rj.tasks.map(a=>{
+        const s=wkOf(a[1],a[2]), e=Math.max(s+0.14, wkOf(a[3],a[4]));
+        const wt=a[5], mh=Math.round(FORCE_TOTAL[u.code]*8*wt/100);
+        return {name:a[0], wt, mh, s, e, plan:w=>Math.max(0,Math.min(1,(w-s)/(e-s))), act:0};
+      });
+      return {name:rj.name, owner:rj.owner, tasks, mh:tasks.reduce((x,t)=>x+t.mh,0), real:true};
+    });
+    return {...u, jobs, real:true};
+  }
   const jobs = u.jobs.map(([jname, jmh], ji) => {
     const nT = 5 + Math.floor(rng()*6);
     const idx = Array.from({length:nT},(_,i)=>Math.round(i*(PHASES.length-1)/(nT-1)));
@@ -609,14 +676,19 @@ let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
    - ช่วงสัปดาห์ของ Task บีบให้อยู่ในหน้าต่างทำงานจริงของแผนก (BLR/GEN เริ่มสัปดาห์ 6) */
 DATA.forEach(sec=>sec.units.forEach(u=>{
   const tks=u.jobs.flatMap(j=>j.tasks);
-  const f=FORCE_TOTAL[u.code]*8/tks.reduce((s,t)=>s+t.mh,0);
-  const sw=UNIT_STARTW[u.code], k=(WEEKS-sw+1)/30;
-  tks.forEach(t=>{
-    t.mh=Math.max(1,Math.round(t.mh*f));
-    t.s=sw+(t.s-1)*k; t.e=Math.min(WEEKS, Math.max(t.s+1, sw+(t.e-1)*k));
-    t.plan=w=>planU(u.code,w);
-  });
-  u.jobs.forEach(j=>{ j.mh=j.tasks.reduce((a,t)=>a+t.mh,0); });
+  if(!u.real){
+    const f=FORCE_TOTAL[u.code]*8/tks.reduce((s,t)=>s+t.mh,0);
+    const sw=UNIT_STARTW[u.code], k=(WEEKS-sw+1)/30;
+    tks.forEach(t=>{
+      t.mh=Math.max(1,Math.round(t.mh*f));
+      t.s=sw+(t.s-1)*k; t.e=Math.min(WEEKS, Math.max(t.s+1, sw+(t.e-1)*k));
+      t.plan=w=>planU(u.code,w);
+    });
+    u.jobs.forEach(j=>{ j.mh=j.tasks.reduce((a,t)=>a+t.mh,0); });
+  }
+  /* แต้มน้ำหนักของ Task (% ของแผนก) — แผนกแผนจริงมี wt จากไฟล์แล้ว แผนก mock คิดจากสัดส่วน man-hr */
+  const tot=tks.reduce((s,t)=>s+t.mh,0);
+  tks.forEach(t=>{ if(t.wt==null) t.wt=Math.round(t.mh/tot*10000)/100; });
 }));
 
 /* ---- Task IDs + บันทึกจริง ---- */
@@ -683,7 +755,8 @@ function applyEntries(){
   Object.values(TASK_INDEX).forEach(x=>{ x.t.act = x.t.mockAct; });
   const latest = {};
   ENTRIES.forEach(en=>{ if(!latest[en.taskId] || en.date >= latest[en.taskId].date) latest[en.taskId]=en; });
-  Object.entries(latest).forEach(([tid,en])=>{ if(TASK_INDEX[tid]) TASK_INDEX[tid].t.act = Math.max(0,Math.min(1,en.pct/100)); });
+  /* ค่าที่บันทึก (pct) = แต้มสะสมที่เก็บได้ของ Task (0 – น้ำหนัก Task) → แปลงเป็นสัดส่วนของ Task */
+  Object.entries(latest).forEach(([tid,en])=>{ if(TASK_INDEX[tid]){ const t=TASK_INDEX[tid].t; t.act = Math.max(0,Math.min(1,(en.pct||0)/(t.wt||1))); } });
 }
 applyEntries();
 
@@ -1121,7 +1194,7 @@ function jobDetailHtml(){
           <div class="tk-main">
             <span class="tk-nm">${tr(t.name)}</span>
             <div class="tk-gauge"><div class="tk-fill" style="width:${ta}%;background:${cc}"></div><div class="tk-mark" style="left:${tp}%"></div></div>
-            <div class="tk-pctline num"><b style="color:${cc}">${cur}%</b> / ${pk(["แผน","ແຜນ","plan"])} ${fmt1(tp)}%${done?" · ✓":""}</div>
+            <div class="tk-pctline num"><b style="color:${cc}">${fmt1(ta/100*t.wt)}</b>/${t.wt} ${pk(["แต้ม","ແຕ້ມ","pts"])} (${cur}%) · ${pk(["เป้า","ເປົ້າ","target"])} ${fmt1(tp/100*t.wt)} ${pk(["แต้ม","ແຕ້ມ","pts"])}${done?" · ✓":""}</div>
           </div>
           <div class="tk-ctl">${done ? `<span class="chip c-good">${pk(["เสร็จแล้ว","ສຳເລັດ","Done"])}</span>`
             : rec ? `<span class="chip c-good">✓ ${pk(["บันทึกวันนี้","ບັນທຶກມື້ນີ້","logged today"])}</span><br><button class="btn btn-o btnsm" style="margin-top:6px" onclick="openTaskForm('${t.id}')">${pk(["แก้ไข","ແກ້ໄຂ","edit"])}</button>`
@@ -1169,31 +1242,41 @@ function latestEntryFor(tid){
 function openTaskForm(tid){
   const x=TASK_INDEX[tid]; if(!x) return;
   const lastE=latestEntryFor(tid);
-  const floor=latestPctFor(tid), cur=Math.round(x.t.act*100), fl=floor!=null?floor:0;
-  const prefill = lastE ? lastE.pct : cur;   // เด้งค่าล่าสุด/เมื่อวาน ถ้ายังไม่เคยบันทึกใช้ค่าปัจจุบัน
+  const wt=x.t.wt, curPts=Math.round(x.t.act*wt*100)/100;
+  const floor=latestPctFor(tid), fl=floor!=null?floor:0;
+  const prefill = lastE ? lastE.pct : curPts;   // เด้งแต้มล่าสุด ถ้ายังไม่เคยบันทึกใช้ค่าปัจจุบัน
+  const tgtPts=Math.round(x.t.plan(REALWK)*wt*100)/100;
   document.getElementById("taskModalTitle").textContent=tr(x.t.name);
   document.getElementById("taskModalBody").innerHTML=`
-    <div class="taskinfo num">📌 ${pk(["แผน","ແຜນ","plan"])} ${fmt0(x.t.mh)} man-hr · ${pk(["สัปดาห์","ສັບປະດາ","wk"])} ${Math.max(1,Math.round(x.t.s))}–${Math.min(WEEKS,Math.round(x.t.e))} · ${pk(["% แผนตอนนี้","% ແຜນ","plan now"])} <b>${fmt1(x.t.plan(REALWK)*100)}%</b>
-    <br>${lastE?`📈 ${pk(["ค่าล่าสุด","ຄ່າຫຼ້າສຸດ","latest"])} <b>${lastE.pct}%</b> (${pk(["บันทึกเมื่อ","ບັນທຶກເມື່ອ","on"])} ${lastE.date}) — ${pk(["กรอกต่อจากนี้","ປ້ອນຕໍ່ຈາກນີ້","continue from here"])}`:`${pk(["ยังไม่เคยบันทึก · % ปัจจุบัน","ຍັງບໍ່ເຄີຍບັນທຶກ · ປັດຈຸບັນ","No record yet · current"])} <b>${cur}%</b>`}
-    <br><span style="color:var(--warn)">🔒 ${pk(["กรอกได้ไม่ต่ำกว่า","ປ້ອນໄດ້ບໍ່ຕ່ຳກວ່າ","must be ≥"])} ${fl}%</span></div>
+    <div class="taskinfo num">⚖️ ${pk(["น้ำหนัก Task นี้","ນ້ຳໜັກ Task ນີ້","Task weight"])} <b>${wt}</b> ${pk(["แต้ม (แผนกเต็ม 100)","ແຕ້ມ (ໜ່ວຍເຕັມ 100)","pts (unit = 100)"])} · ${pk(["สัปดาห์","ສັບປະດາ","wk"])} ${Math.max(1,Math.round(x.t.s))}–${Math.min(WEEKS,Math.round(x.t.e))}
+    <br>🎯 ${pk(["เป้าสะสมถึงตอนนี้","ເປົ້າສະສົມຮອດຕອນນີ້","Target to date"])} <b>${tgtPts}</b> ${pk(["แต้ม","ແຕ້ມ","pts"])} (${fmt1(x.t.plan(REALWK)*100)}% ${pk(["ของ Task","ຂອງ Task","of task"])})
+    <br>${lastE?`📈 ${pk(["แต้มล่าสุด","ແຕ້ມຫຼ້າສຸດ","latest"])} <b>${lastE.pct}</b> (${pk(["บันทึกเมื่อ","ບັນທຶກເມື່ອ","on"])} ${lastE.date}) — ${pk(["กรอกต่อจากนี้","ປ້ອນຕໍ່ຈາກນີ້","continue from here"])}`:`${pk(["ยังไม่เคยบันทึก · แต้มปัจจุบัน","ຍັງບໍ່ເຄີຍບັນທຶກ · ແຕ້ມປັດຈຸບັນ","No record yet · current"])} <b>${curPts}</b>`}
+    <br><span style="color:var(--warn)">🔒 ${pk(["กรอกได้ไม่ต่ำกว่า","ປ້ອນໄດ້ບໍ່ຕ່ຳກວ່າ","must be ≥"])} ${fl} ${pk(["แต้ม (สะสม ห้ามถอยหลัง)","ແຕ້ມ","pts"])}</span></div>
     <input type="hidden" id="tfTid" value="${tid}">
     <div class="formgrid">
       <div class="fld"><label>📅 ${pk(["วันที่บันทึก","ວັນທີ","Date"])}</label><input id="tfDate" type="date" value="${todayISO()}" max="${todayISO()}"></div>
-      <div class="fld"><label>${pk(["% ความคืบหน้าสะสม","% ຄວາມຄືບໜ້າ","Cumulative %"])}</label><input id="tfPct" type="number" min="${fl}" max="100" step="5" value="${Math.max(fl,prefill)}"></div>
+      <div class="fld"><label>⚖️ ${pk(["แต้มสะสมที่ทำได้","ແຕ້ມສະສົມທີ່ເຮັດໄດ້","Points earned (cum.)"])} <span class="num">(0–${wt})</span></label><input id="tfPct" type="number" min="${fl}" max="${wt}" step="0.01" value="${Math.max(fl,prefill)}" oninput="tfPctHint(this.value,${wt})"><div id="tfPctHint" class="small num"></div></div>
       <div class="fld"><label>${pk(["man-hr วันนั้น","man-hr","Man-hours"])}</label><input id="tfMh" type="number" min="0" step="1" placeholder="24"></div>
       <div class="fld"><label>${pk(["ผู้บันทึก","ຜູ້ບັນທຶກ","By"])}</label><input id="tfBy" type="text"></div>
     </div>
     <div class="fld" style="margin-bottom:12px"><label>${pk(["หมายเหตุ","ໝາຍເຫດ","Note"])}</label><input id="tfNote" type="text"></div>
     <button class="btn-save" onclick="saveTaskForm()">💾 ${pk(["บันทึก Task นี้","ບັນທຶກ Task ນີ້","Save this task"])}</button>`;
   document.getElementById("taskModal").classList.add("open");
+  tfPctHint(Math.max(fl,prefill), wt);
+}
+function tfPctHint(v,wt){
+  const el=document.getElementById("tfPctHint"); if(!el) return;
+  const p=parseFloat(v);
+  el.textContent = isNaN(p) ? "" : "= "+fmt1(Math.max(0,Math.min(1,p/wt))*100)+"% "+pk(["ของ Task นี้","ຂອງ Task ນີ້","of this task"]);
 }
 function closeTaskForm(){ document.getElementById("taskModal").classList.remove("open"); }
 function saveTaskForm(){
   const tid=document.getElementById("tfTid").value;
+  const wt=TASK_INDEX[tid]?TASK_INDEX[tid].t.wt:100;
   const pct=parseFloat(document.getElementById("tfPct").value);
-  if(isNaN(pct)||pct<0||pct>100){ alert(pk(["กรอก % ระหว่าง 0–100","ປ້ອນ % 0–100","Enter % 0–100"])); return; }
+  if(isNaN(pct)||pct<0||pct>wt+0.001){ alert(pk(["กรอกแต้มระหว่าง 0–"+wt,"ປ້ອນແຕ້ມ 0–"+wt,"Enter points 0–"+wt])); return; }
   const floor=latestPctFor(tid);
-  if(floor!=null && pct<floor){ alert(pk(["ค่าสะสมต้องไม่น้อยกว่าค่าล่าสุด ("+floor+"%)","ຕ້ອງບໍ່ໜ້ອຍກວ່າ ("+floor+"%)","Must be ≥ latest ("+floor+"%)"])); return; }
+  if(floor!=null && pct<floor){ alert(pk(["แต้มสะสมต้องไม่น้อยกว่าค่าล่าสุด ("+floor+" แต้ม)","ຕ້ອງບໍ່ໜ້ອຍກວ່າ ("+floor+" ແຕ້ມ)","Must be ≥ latest ("+floor+" pts)"])); return; }
   const d=document.getElementById("tfDate").value||todayISO();
   if(d>todayISO()){ alert(pk(["เลือกวันอนาคตไม่ได้","ບໍ່ໄດ້","No future date"])); return; }
   const entry={date:d, taskId:tid, pct:pct, mh:parseFloat(document.getElementById("tfMh").value)||0,
@@ -1389,15 +1472,16 @@ function exportExcel(){
     const a=agg(unitTasks(u),WNOW), v=a.act-a.plan, st=statusOf(v);
     let rows = xlRow(xlS(un(u.name)+" · "+un(s.name)+" · "+u.owner,"title"));
     rows += xlRow(xlS(pk(["ความคืบหน้ารวม","ຄວາມຄືບໜ້າ","Progress"],0)+" "+fmt1(a.act)+"% / "+pk(["แผน","ແຜນ","plan"],0)+" "+fmt1(a.plan)+"% · "+st[0],"sub"));
-    rows += xlRow(["รหัส Job","ชื่อ Job","รหัส Task","ชื่อ Task","man-hr","สัปดาห์เริ่ม","สัปดาห์เสร็จ","% แผน","% ผลจริง","สถานะ","บันทึกล่าสุด","ผู้บันทึกล่าสุด"].map(h=>xlS(h,"hdr")).join(""));
+    rows += xlRow(["รหัส Job","ชื่อ Job","รหัส Task","ชื่อ Task","น้ำหนัก (แต้ม)","แต้มที่ทำได้","man-hr","สัปดาห์เริ่ม","สัปดาห์เสร็จ","% แผน","% ผลจริง","สถานะ","บันทึกล่าสุด","ผู้บันทึกล่าสุด"].map(h=>xlS(h,"hdr")).join(""));
     u.jobs.forEach(j=>{
       const ja=agg(j.tasks,WNOW), jv=ja.act-ja.plan, jst=statusOf(jv);
-      rows += xlRow(xlS(j.id,"sec")+xlS(tr(j.name),"sec")+xlS("","sec")+xlS(pk(["(รวมงาน)","(ລວມ)","(job total)"],0),"sec")+xlN(Math.round(ja.mh),"sec")+xlS("","sec")+xlS("","sec")+xlN(+ja.plan.toFixed(1),"secp")+xlN(+ja.act.toFixed(1),"secp")+xlS(jst[0],"sec")+xlS("","sec")+xlS("","sec"));
+      const jwt=+j.tasks.reduce((s,t)=>s+t.wt,0).toFixed(2), jpts=+j.tasks.reduce((s,t)=>s+actAt(t,WNOW)*t.wt,0).toFixed(2);
+      rows += xlRow(xlS(j.id,"sec")+xlS(tr(j.name),"sec")+xlS("","sec")+xlS(pk(["(รวมงาน)","(ລວມ)","(job total)"],0),"sec")+xlN(jwt,"sec")+xlN(jpts,"sec")+xlN(Math.round(ja.mh),"sec")+xlS("","sec")+xlS("","sec")+xlN(+ja.plan.toFixed(1),"secp")+xlN(+ja.act.toFixed(1),"secp")+xlS(jst[0],"sec")+xlS("","sec")+xlS("","sec"));
       j.tasks.forEach(t=>{
         const tp=t.plan(WNOW)*100, ta=actAt(t,WNOW)*100, tst= ta>=100?["เสร็จ","good"]:statusOf(ta-tp);
         const le=latestEntryFor(t.id);
         rows += xlRow(
-          xlS(j.id)+xlS(tr(j.name))+xlS(t.id)+xlS(tr(t.name))+xlN(Math.round(t.mh))+
+          xlS(j.id)+xlS(tr(j.name))+xlS(t.id)+xlS(tr(t.name))+xlN(t.wt)+xlN(+(actAt(t,WNOW)*t.wt).toFixed(2))+xlN(Math.round(t.mh))+
           xlN(Math.max(1,Math.round(t.s)))+xlN(Math.min(WEEKS,Math.round(t.e)))+
           xlN(+tp.toFixed(1),"pct")+xlN(+ta.toFixed(1),"pct")+xlS(tst[0],SC[tst[1]])+
           xlS(le?le.date:"")+xlS(le?le.by:"")
