@@ -197,7 +197,8 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .jname{flex:1 1 220px;font-size:14.5px;font-weight:700}
 .jmeta{flex:0 0 auto;font-size:12px;color:var(--mut)}
 .jbar{flex:0 0 160px;height:12px;background:var(--tint2);border-radius:5px;position:relative}
-.jchip{flex:0 0 90px;display:flex;justify-content:flex-end}
+.jchip{flex:0 0 100px;display:flex;justify-content:flex-end}
+.jchip .chip{white-space:nowrap}
 .jbar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:5px}
 .jbar .mark{position:absolute;top:-3px;width:3px;height:18px;background:var(--ink);border-radius:2px}
 .jpct{flex:0 0 108px;text-align:right;font-size:16px;font-weight:800}
@@ -290,6 +291,8 @@ svg text{font-family:inherit}
 .joblistitem .jl-nm{flex:1;font-size:13.5px;font-weight:700;line-height:1.35}
 .joblistitem .jl-nm span{display:block;font-size:11.5px;color:var(--mut);font-weight:500;margin-top:2px}
 .joblistitem .jl-st{font-size:15px;font-weight:800;flex:0 0 auto}
+.joblistitem.jdone{background:var(--good-bg);border-color:transparent}
+.donebadge{display:inline-block;font-size:10.5px;font-weight:800;color:#fff;background:var(--good);border-radius:6px;padding:1px 7px;margin-left:4px;vertical-align:middle;letter-spacing:.2px}
 .jobdetail h3{margin:0 0 4px;font-size:16px;font-weight:800}
 .jobdetail .jd-sub{font-size:12.5px;color:var(--mut);margin-bottom:12px}
 .jobdetail{animation:slideRL .3s cubic-bezier(.22,.61,.36,1)}
@@ -389,7 +392,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r25";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r26";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1269,7 +1272,7 @@ function unitView(secId, uname){
         <span class="jmeta num">${done}/${j.tasks.length} task · ${fmt0(ja.mh)} ${pk(["แรง","ແຮງ","man-days"])}</span>
         <span class="jbar"><span class="fill" style="width:${ja.act}%;background:${SCc[jst[1]]}"></span><span class="mark" style="left:${ja.plan}%"></span></span>
         <span class="jpct num" style="color:${SCc[jst[1]]}">${fmt1(ja.act)}%<br><span class="small">${pk(["แผน","ແຜນ","plan"])} ${fmt1(ja.plan)}%</span></span>
-        <span class="jchip"><span class="chip c-${jst[1]}">${jst[0]}</span></span>
+        <span class="jchip">${ja.act>=99.5?`<span class="chip c-good">✓ ${pk(["เสร็จ 100%","ສຳເລັດ 100%","100% done"])}</span>`:`<span class="chip c-${jst[1]}">${jst[0]}</span>`}</span>
       </div>
       <div class="jobbody"><div class="scrollx"><table>
         <tr><th>Task</th><th class="r">${pk(["แรง","ແຮງ","man-days"])}</th><th class="r">${pk(["กำหนด (สัปดาห์)","ກຳນົດ (ສັບປະດາ)","Sched. (wk)"])}</th><th class="r">${pk(["แผน","ແຜນ","Plan"])}</th><th class="r">${pk(["ผลจริง","ຜົນຕົວຈິງ","Actual"])}</th><th style="width:150px">${pk(["ความคืบหน้า","ຄວາມຄືບໜ້າ","Progress"])}</th><th>${pk(["สถานะ","ສະຖານະ","Status"])}</th></tr>
@@ -1388,9 +1391,10 @@ function entryDeptPage(){
   const totalActive=activeTasksOf(u).length;
   const left=jl.length? jl.map(j=>{
     const act=jobActiveTasks(j), dn=act.filter(t=>recordedToday(t.id)).length, conf=isJobConfirmed(j.id);
-    const st = conf?`<span style="color:var(--good)">✓</span>` : (act.length&&dn>=act.length?`<span style="color:var(--warn)">●</span>` : dn>0?`<span style="color:var(--warn)">◐</span>` : `<span style="color:var(--crit)">○</span>`);
-    return `<div class="joblistitem ${j.id===SELJOB?'active':''}" tabindex="0" onclick="selectJob('${j.id}')">
-      <span class="jl-nm">${tr(j.name)}<span class="num">${pk(["สัปดาห์นี้","ອາທິດນີ້","this wk"])} ${dn}/${act.length} task</span></span>
+    const jpct=agg(j.tasks,WNOW).act, jdone=jpct>=99.5;   // Job เสร็จ 100% แล้วหรือยัง
+    const st = jdone?`<span style="color:var(--good)">✔</span>` : conf?`<span style="color:var(--good)">✓</span>` : (act.length&&dn>=act.length?`<span style="color:var(--warn)">●</span>` : dn>0?`<span style="color:var(--warn)">◐</span>` : `<span style="color:var(--crit)">○</span>`);
+    return `<div class="joblistitem ${j.id===SELJOB?'active':''} ${jdone?'jdone':''}" tabindex="0" onclick="selectJob('${j.id}')">
+      <span class="jl-nm">${tr(j.name)}${jdone?` <span class="donebadge">✓ ${pk(["เสร็จ 100%","ສຳເລັດ 100%","100% done"])}</span>`:""}<span class="num">${jdone?pk(["ทั้ง Job เสร็จแล้ว","ທັງ Job ສຳເລັດ","job complete"]):(pk(["สัปดาห์นี้","ອາທິດນີ້","this wk"])+" "+dn+"/"+act.length+" task")} · ${fmt1(jpct)}%</span></span>
       <span class="jl-st">${st}</span></div>`;}).join("")
     : `<div class="small" style="padding:14px 10px;color:var(--mut)">📋 ${pk(["ยังไม่มีแผนงานของหน่วยนี้ รอนำเข้าข้อมูลจริง","ຍັງບໍ່ມີແຜນວຽກ ລໍຖ້ານຳເຂົ້າ","No work plan yet — awaiting real data"])}</div>`;
   const right = jobDetailHtml();
