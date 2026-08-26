@@ -563,13 +563,10 @@ let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
     const tasks = idx.map((pi,ti)=>{
       const mh = Math.round(jmh*PHASES[pi][1]/wsum);
       const s = jStart + span*ti/nT, e = jStart + span*(ti+1)/nT + span*0.15;
-      const lagT = u.lag + (rng()-0.5)*2;
       const plan = w => Math.max(0, Math.min(1,(w-s)/(e-s)));
-      let act = Math.max(0, Math.min(1, plan(REALWK - lagT)));
-      act = Math.round(act*20)/20;
+      let act = 0;   /* ล้างข้อมูลจำลอง: เริ่มที่ 0% ทุก Task (โครงสร้าง/แผนคงไว้) รอข้อมูลจริงจากการบันทึก */
       return {name:PHASES[pi][0], mh, s, e, plan, act};
     });
-    if(jEnd <= REALWK+2 && u.lag <= 1.5){ tasks.forEach(t=>t.act=1); }
     return {name:jname, tasks, mh:tasks.reduce((a,t)=>a+t.mh,0)};
   });
   return {...u, jobs};
