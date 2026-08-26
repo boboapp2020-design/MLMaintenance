@@ -392,7 +392,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r29";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r30";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1399,7 +1399,7 @@ function entryDeptPage(){
     const jpct=agg(j.tasks,WNOW).act, jdone=jpct>=99.5;   // Job เสร็จ 100% แล้วหรือยัง
     const st = jdone?`<span style="color:var(--good)">✔</span>` : conf?`<span style="color:var(--good)">✓</span>` : (act.length&&dn>=act.length?`<span style="color:var(--warn)">●</span>` : dn>0?`<span style="color:var(--warn)">◐</span>` : `<span style="color:var(--crit)">○</span>`);
     return `<div class="joblistitem ${j.id===SELJOB?'active':''} ${jdone?'jdone':''}" tabindex="0" onclick="selectJob('${j.id}')">
-      <span class="jl-nm">${tr(j.name)}${jdone?` <span class="donebadge">✓ ${pk(["เสร็จ 100%","ສຳເລັດ 100%","100% done"])}</span>`:""}<span class="num">${jdone?pk(["ทั้ง Job เสร็จแล้ว","ທັງ Job ສຳເລັດ","job complete"]):(pk(["สัปดาห์นี้","ອາທິດນີ້","this wk"])+" "+dn+"/"+act.length+" task")} · ${fmt1(jpct)}%</span></span>
+      <span class="jl-nm">${tr(j.name)}<span class="num">${jdone?pk(["ทั้ง Job เสร็จแล้ว","ທັງ Job ສຳເລັດ","job complete"]):(pk(["สัปดาห์นี้","ອາທິດນີ້","this wk"])+" "+dn+"/"+act.length+" task")} · ${fmt1(jpct)}%</span></span>
       <span class="jl-st">${st}</span></div>`;}).join("")
     : `<div class="small" style="padding:14px 10px;color:var(--mut)">📋 ${pk(["ยังไม่มีแผนงานของหน่วยนี้ รอนำเข้าข้อมูลจริง","ຍັງບໍ່ມີແຜນວຽກ ລໍຖ້ານຳເຂົ້າ","No work plan yet — awaiting real data"])}</div>`;
   const right = jobDetailHtml();
