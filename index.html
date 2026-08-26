@@ -645,7 +645,8 @@ let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
       const tasks = rj.tasks.map(a=>{
         const s=wkOf(a[1],a[2]), e=Math.max(s+0.14, wkOf(a[3],a[4]));
         const wt=a[5], mh=Math.round(FORCE_TOTAL[u.code]*8*wt/100);
-        return {name:a[0], wt, mh, s, e, plan:w=>Math.max(0,Math.min(1,(w-s)/(e-s))), act:0};
+        /* plan(w) = ความคืบหน้าตามแผน "สะสมถึงสิ้นสัปดาห์ w" (w+1 = เช้าวันจันทร์สัปดาห์ถัดไป) */
+        return {name:a[0], wt, mh, s, e, plan:w=>Math.max(0,Math.min(1,(w+1-s)/(e-s))), act:0};
       });
       return {name:rj.name, owner:rj.owner, tasks, mh:tasks.reduce((x,t)=>x+t.mh,0), real:true};
     });
