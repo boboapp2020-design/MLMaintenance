@@ -612,9 +612,6 @@ const MODEL = [
    {name:"หม้อปั่น", code:"CFG", owner:"หน.หน่วยหม้อปั่น", lag:1.5, jobs:[
      ["Overhaul หม้อปั่น Batch 4 เครื่อง",1600],["เปลี่ยนตะแกรง (screen) และ basket",700],
      ["ซ่อมระบบเบรกและ hydraulic",550],["ปรับสมดุล (balancing) rotor",450]]},
-   {name:"ลูกหีบ", code:"MIL", owner:"หน.หน่วยลูกหีบ", lag:-1, jobs:[
-     ["เจียร/เปลี่ยนลูกหีบชุด 1–5",2200],["Overhaul เกียร์ขับลูกหีบ",1400],
-     ["ซ่อมแท่นและ bearing ลูกหีบ",900],["ปรับตั้ง setting ลูกหีบ",400]]},
  ]},
  {id:"maint", name:"ส่วนซ่อมบำรุง", color:"#2563EB", units:[
    {name:"ซ่อมบำรุงไฟฟ้า", code:"ELE", owner:"หน.ซ่อมบำรุงไฟฟ้า", lag:2.5, jobs:[
@@ -627,7 +624,10 @@ const MODEL = [
      ["สอบเทียบเครื่องมือวัด 250 จุด",900],["เปลี่ยน transmitter/control valve เสื่อม",800],
      ["ปรับปรุงระบบ DCS I/O",700]]},
  ]},
- {id:"power", name:"ส่วนผลิตไฟฟ้า", color:"#D97706", units:[
+ {id:"power", name:"ส่วนต้นกำลัง", color:"#D97706", units:[
+   {name:"ลูกหีบ", code:"MIL", owner:"หน.หน่วยลูกหีบ", lag:-1, jobs:[
+     ["เจียร/เปลี่ยนลูกหีบชุด 1–5",2200],["Overhaul เกียร์ขับลูกหีบ",1400],
+     ["ซ่อมแท่นและ bearing ลูกหีบ",900],["ปรับตั้ง setting ลูกหีบ",400]]},
    {name:"หม้อไอน้ำ", code:"BLR", owner:"หน.หน่วยหม้อไอน้ำ", lag:3.5, jobs:[
      ["เปลี่ยนท่อ water wall Boiler #2",2400],["ซ่อมผนังเตาและ refractory",1300],
      ["Overhaul พัดลม ID/FD และ air heater",1000],["ตรวจสอบและทดสอบ safety valve",500],
