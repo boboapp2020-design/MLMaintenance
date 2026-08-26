@@ -756,11 +756,11 @@ function sCurve(tasks, lineColor="#2563EB", w=720, h=260){
   const mL=42,mR=16,mT=18,mB=32, iw=w-mL-mR, ih=h-mT-mB;
   const X=wk=>mL+iw*wk/WEEKS, Y=v=>mT+ih*(1-v/100);
   const path=(arr,n)=>arr.slice(0,n+1).map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+","+Y(v).toFixed(1)).join(" ");
-  const months=MON[LI()].slice(3,11);
+  const months=MON[LI()].slice(3,10);
   let g="";
   for(let v=0;v<=100;v+=25) g+=`<line x1="${mL}" x2="${w-mR}" y1="${Y(v)}" y2="${Y(v)}" stroke="#EAF0F8" stroke-width="1"/>
       <text x="${mL-8}" y="${Y(v)+4}" font-size="11" fill="#64748B" text-anchor="end">${v}</text>`;
-  months.forEach((m,i)=>{ const wk=i*35/8+35/16; g+=`<text x="${X(wk)}" y="${h-9}" font-size="11" fill="#64748B" text-anchor="middle">${m}</text>`; });
+  months.forEach((m,i)=>{ const wk=i*WEEKS/7+WEEKS/14; g+=`<text x="${X(wk)}" y="${h-9}" font-size="11" fill="#64748B" text-anchor="middle">${m}</text>`; });
   const xN=X(WNOW), yA=Y(Act[WNOW]);
   const area = path(Act,WNOW)+`L${X(WNOW)},${Y(0)} L${X(0)},${Y(0)} Z`;
   return `<div class="chartwrap"><button class="savepic noprint" title="${pk(["บันทึกกราฟเป็นรูป","ບັນທຶກກຣາຟເປັນຮູບ","Save chart as image"])}" onclick="saveChart(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M4 20h16"/></svg></button>
@@ -858,7 +858,7 @@ function setWeek(w){ WNOW=parseInt(w); go(PAGE); }
 function weekChip(){
   const opts=[...Array(REALWK).keys()].map(i=>{const w=i+1;
     return `<option value="${w}" ${w===WNOW?"selected":""}>${pk(["สัปดาห์","ສັບປະດາ","Week"])} ${w} · ${fmtDate(wkEnd(w))}</option>`;}).join("");
-  return `<div class="datechip">${IC(ICONS.cal,18)}<span class="num">15 ${MON[LI()][3]} ${LANG==="th"?2569:2026} –</span>
+  return `<div class="datechip">${IC(ICONS.cal,18)}<span class="num">20 ${MON[LI()][3]} ${LANG==="th"?2569:2026} –</span>
     <select id="wkSel" onchange="setWeek(this.value)" title="${pk(["เลือกดูข้อมูลย้อนหลัง","ເລືອກເບິ່ງຂໍ້ມູນຍ້ອນຫຼັງ","View historical data"])}">${opts}</select></div>`;
 }
 function histBanner(){ return ""; }
@@ -919,7 +919,7 @@ function overview(){
   <div class="card">
     <h2>${pk(["ความคืบหน้าเทียบแผน","ຄວາມຄືບໜ້າທຽບແຜນ","Progress vs plan"])}</h2>
     <div class="railbar"><div class="fill" style="width:${f.act}%"></div><div class="mark" style="left:${f.plan}%"></div></div>
-    <div class="railcap num"><span>15 ${MON[LI()][3]} ${LANG==="th"?2569:2026}</span>
+    <div class="railcap num"><span>20 ${MON[LI()][3]} ${LANG==="th"?2569:2026}</span>
     <span>${pk(["ผลจริง","ຜົນຕົວຈິງ","Actual"])} ${fmt1(f.act)}% · ${pk(["ขีดดำ = แผน","ຂີດດຳ = ແຜນ","tick = plan"])} ${fmt1(f.plan)}%</span>
     <span>100% · ${fmtDate(SEASON_END)}</span></div>
   </div>
