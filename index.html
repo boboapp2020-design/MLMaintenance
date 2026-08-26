@@ -387,7 +387,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r17";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r18";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -698,8 +698,8 @@ let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
     const jobs = REAL_JOBS_WK[u.code].map(rj=>{
       const rawTot = rj.tasks.reduce((x,t)=>x+t[3],0);
       const tasks = rj.tasks.map(a=>{
-        const s=5+a[1], e=5+a[2]+1;                       // สัปดาห์ฤดู เริ่ม–จบ (จบสิ้นสัปดาห์ 5+a[2])
-        const wt=Math.round(a[3]/rawTot*rj.w*1000)/1000;  // % ของแผนก
+        const s=5+a[1], e=5+a[2]+1;                     // สัปดาห์ฤดู เริ่ม–จบ (จบสิ้นสัปดาห์ 5+a[2])
+        const wt=Math.round(a[3]/rawTot*rj.w*100)/100;  // % ของแผนก (2 ตำแหน่ง ให้ตรงกับค่าที่บันทึก → Task ที่เสร็จได้ 100% พอดี)
         const mh=Math.round(FORCE_TOTAL[u.code]*wt/100);
         return {name:a[0], wt, mh, s, e, plan:w=>Math.max(0,Math.min(1,(w+1-s)/(e-s))), act:0};
       });
