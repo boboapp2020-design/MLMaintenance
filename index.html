@@ -719,17 +719,26 @@ function normDate(d){
   if(!isNaN(dt.getTime())) return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
   return String(d);
 }
-async function syncFromSheet(){
+async function syncFromSheet(attempt){
+  attempt=attempt||1;
   if(!SHEET_API){ SYNC_STATE="off"; return; }
   try{
-    const res=await fetch(SHEET_API+(SHEET_API.includes("?")?"&":"?")+"action=list",{method:"GET"});
+    const res=await fetch(SHEET_API+(SHEET_API.includes("?")?"&":"?")+"action=list",{method:"GET",cache:"no-store"});
     const data=await res.json();
-    if(Array.isArray(data)){
-      ENTRIES=data.map(e=>({date:normDate(e.date), taskId:String(e.taskId), pct:Number(e.pct), mh:Number(e.mh)||0, by:e.by||"", note:e.note||""}));
-      saveEntries(ENTRIES); applyEntries(); SYNC_STATE="ok"; go(PAGE);
-    } else { SYNC_STATE="error"; if(PAGE==="entry") entryPage(); }
-  }catch(err){ SYNC_STATE="error"; if(PAGE==="entry") entryPage(); }
+    if(!Array.isArray(data)) throw new Error("bad payload");
+    ENTRIES=data.map(e=>({date:normDate(e.date), taskId:String(e.taskId), pct:Number(e.pct), mh:Number(e.mh)||0, by:e.by||"", note:e.note||""}));
+    saveEntries(ENTRIES); applyEntries(); SYNC_STATE="ok";
+    /* ไม่ re-render ขณะฟอร์มบันทึกเปิดอยู่ กันข้อมูลที่กำลังพิมพ์หาย */
+    const m=document.getElementById("taskModal");
+    if(!m || !m.classList.contains("open")) go(PAGE);
+  }catch(err){
+    /* Apps Script อาจตอบช้า (cold start) — ลองซ้ำอัตโนมัติสูงสุด 4 ครั้ง */
+    if(attempt<4){ SYNC_STATE="connecting"; setTimeout(function(){ syncFromSheet(attempt+1); }, 4000*attempt); }
+    else { SYNC_STATE="error"; if(PAGE==="entry") entryPage(); }
+  }
 }
+/* ดึงข้อมูลใหม่ทุก 5 นาที ให้ทุกเครื่องเห็นข้อมูลล่าสุดโดยไม่ต้องรีโหลด */
+setInterval(function(){ if(SHEET_API && SYNC_STATE!=="connecting") syncFromSheet(); }, 300000);
 function pushToSheet(entry){
   if(!SHEET_API) return;
   fetch(SHEET_API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(entry)}).catch(()=>{});
