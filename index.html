@@ -388,7 +388,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r23";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r24";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -865,7 +865,8 @@ async function syncFromSheet(attempt){
   }
 }
 /* ดึงข้อมูลใหม่ทุก 5 นาที ให้ทุกเครื่องเห็นข้อมูลล่าสุดโดยไม่ต้องรีโหลด */
-setInterval(function(){ if(SHEET_API && SYNC_STATE!=="connecting") syncFromSheet(); }, 300000);
+/* ดึงข้อมูลใหม่ทุก 20 วินาที ให้ใกล้เคียง real-time (re-render เฉพาะเมื่อข้อมูลเปลี่ยนจริง จึงไม่กระตุก) */
+setInterval(function(){ if(SHEET_API && SYNC_STATE!=="connecting" && !document.hidden) syncFromSheet(); }, 20000);
 /* กลับมาที่แท็บ/เปิดจอมือถือ → ดึงข้อมูลใหม่ทันที (มือถือชอบพักแท็บจนข้อมูลค้าง) */
 document.addEventListener("visibilitychange", function(){
   if(!document.hidden && SHEET_API && SYNC_STATE!=="connecting") syncFromSheet();
@@ -1342,7 +1343,6 @@ function entryPickerPage(){
   <div class="card"><h2>👇 ${pk(["เลือกแผนกของคุณ","ເລືອກໜ່ວຍງານຂອງທ່ານ","Select your unit"])}</h2>
     <div class="sub">${pk(["📅 บันทึกทุกสัปดาห์ · กำหนดส่งทุกวันศุกร์ — กดแผนกของคุณเพื่อบันทึก (✓ ครบ · ◐ ไม่ครบ · ✗ ยังไม่บันทึกสัปดาห์นี้)","📅 ບັນທຶກທຸກອາທິດ · ກຳນົດສົ່ງທຸກວັນສຸກ (✓ ຄົບ · ◐ ບໍ່ຄົບ · ✗ ຍັງບໍ່ບັນທຶກ)","📅 Record weekly · due every Friday — tap your unit (✓ full · ◐ partial · ✗ none this week)"])}</div>
     <div class="deptsections">${cols}</div>
-    <div style="margin-top:14px;text-align:right"><button class="btn-d" style="font-size:12.5px" onclick="clearAllData()">🗑 ${pk(["ล้างข้อมูลบันทึกทั้งหมด","ລ້າງຂໍ້ມູນທັງໝົດ","Clear all records"])}</button></div>
   </div>`;
 }
 
