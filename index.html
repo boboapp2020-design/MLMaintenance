@@ -404,6 +404,7 @@ const NAMES = {
  "ส่วนกระบวนการผลิต":["ส่วนกระบวนการผลิต","ພາກຂະບວນການຜະລິດ","Process Section"],
  "ส่วนซ่อมบำรุง":["ส่วนซ่อมบำรุง","ພາກສ້ອມບຳລຸງ","Maintenance Section"],
  "ส่วนต้นกำลัง":["ส่วนต้นกำลัง","ພາກຕົ້ນກຳລັງ","Power House Section"],
+ "ส่วนผลิตไฟฟ้า":["ส่วนผลิตไฟฟ้า","ພາກຜະລິດໄຟຟ້າ","Power Generation Section"],
  "หม้อต้ม":["หม้อต้ม","ໝໍ້ຕົ້ມ","Evaporator"],
  "หม้อเคี่ยว":["หม้อเคี่ยว","ໝໍ້ຄ່ຽວ","Vacuum Pan"],
  "หม้อปั่น":["หม้อปั่น","ໝໍ້ປັ່ນ","Centrifugal"],
@@ -497,9 +498,39 @@ const UNIT_ICON = {"หม้อต้ม":"boiler","หม้อเคี่ย
 /* ============ Mock data ============ */
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const rng = mulberry32(20690824);
-/* ฤดูซ่อม: 15 เม.ย. 2569 – 10 พ.ย. 2569 = 30 สัปดาห์ · วันนี้ 24 ส.ค. = สัปดาห์ 19 */
-const WEEKS = 30, REALWK = 19;
-const SEASON_START = new Date(2026,3,15), SEASON_END = new Date(2026,10,10);
+/* ===== แผนจริง พ.ศ. 2569 จากไฟล์ "ตารางวัน (เป้าหมายงานซ่อม) 2026 รวมทั้งโรงงาน R1" =====
+   ฤดูซ่อม 28 สัปดาห์: สัปดาห์ 1 = 20–25 เม.ย. 2569 … สัปดาห์ 28 = 26–31 ต.ค. 2569 (รวม 164 วันทำงาน)
+   แรง = กำลังพล (คน-วัน) ต่อสัปดาห์ของแต่ละแผนก · รวมทั้งโรงงาน 17,473 แรง
+   เป้าหมาย % สะสม = แรงสะสม ÷ แรงรวม (ถ่วงน้ำหนักตามกำลังพลจริง ตรงกับ Sheet "รวม") */
+const WEEKS = 28;
+const SEASON_START = new Date(2026,3,20), SEASON_END = new Date(2026,9,31);
+const PLAN_DAYS = [6,5,6,6,6,6,6,6,6,6,6,6,6,5,6,6,6,6,6,6,5,6,6,6,6,6,6,5];
+const PLAN_FORCE = {
+  MEC:[81,67,81,81,81,81,81,81,81,81,81,81,81,67,81,81,81,81,81,81,67,81,81,81,81,81,81,67],
+  ELE:[56,46,56,56,56,56,56,56,56,56,56,56,56,46,56,56,56,56,56,56,46,56,56,56,56,56,56,46],
+  INS:[38,31,38,38,38,56,56,56,56,56,56,56,56,46,56,56,56,56,56,56,46,56,56,56,56,56,56,46],
+  EVP:[56,46,56,56,56,56,56,56,56,56,56,56,56,46,56,56,56,56,56,56,46,56,56,56,56,56,56,46],
+  PAN:[56,46,56,56,56,56,56,56,56,56,56,56,56,46,56,56,56,56,56,56,46,56,56,56,56,56,56,46],
+  CFG:[56,46,56,56,56,56,56,56,56,56,56,56,56,46,56,56,56,56,56,56,46,56,56,56,56,56,56,46],
+  MIL:[156,129,156,156,156,156,156,156,156,156,156,156,156,129,156,156,156,156,156,156,129,156,156,156,156,156,156,129],
+  BLR:[0,0,0,0,0,96,96,96,96,96,96,96,96,79,96,96,96,96,96,96,79,96,96,96,96,96,96,79],
+  GEN:[0,0,0,0,0,57,57,57,57,57,57,57,57,57,47,57,57,57,57,57,57,47,57,57,57,57,57,57],
+};
+const FORCE_TOTAL={}, PLAN_CUM={}, UNIT_STARTW={};
+Object.entries(PLAN_FORCE).forEach(([c,a])=>{
+  const tot=a.reduce((x,y)=>x+y,0); FORCE_TOTAL[c]=tot;
+  let s=0; PLAN_CUM[c]=a.map(v=>(s+=v)/tot);
+  UNIT_STARTW[c]=a.findIndex(v=>v>0)+1;
+});
+const WEEK_FORCE = PLAN_DAYS.map((_,i)=>Object.values(PLAN_FORCE).reduce((s,a)=>s+a[i],0));
+/* % แผนสะสมทางการของแผนก ณ สัปดาห์ w (เศษสัปดาห์ = เทียบบัญญัติไตรยางศ์ในสัปดาห์นั้น) */
+function planU(code,w){
+  const cum=PLAN_CUM[code]; if(!cum) return 0;
+  if(w<=0) return 0; if(w>=WEEKS) return 1;
+  const i=Math.floor(w), lo=i>=1?cum[i-1]:0, hi=cum[Math.min(i,WEEKS-1)];
+  return Math.min(1, lo+(hi-lo)*(w-i));
+}
+const REALWK = Math.max(1, Math.min(WEEKS, Math.floor((Date.now()-SEASON_START.getTime())/(7*86400000))+1));
 let WNOW = REALWK;   // สัปดาห์ที่กำลังดู (เปลี่ยนได้จากตัวเลือกวันที่)
 
 const PHASES = [
@@ -526,6 +557,9 @@ const MODEL = [
    {name:"หม้อปั่น", code:"CFG", owner:"หน.หน่วยหม้อปั่น", lag:1.5, jobs:[
      ["Overhaul หม้อปั่น Batch 4 เครื่อง",1600],["เปลี่ยนตะแกรง (screen) และ basket",700],
      ["ซ่อมระบบเบรกและ hydraulic",550],["ปรับสมดุล (balancing) rotor",450]]},
+   {name:"ลูกหีบ", code:"MIL", owner:"หน.หน่วยลูกหีบ", lag:-1, jobs:[
+     ["เจียร/เปลี่ยนลูกหีบชุด 1–5",2200],["Overhaul เกียร์ขับลูกหีบ",1400],
+     ["ซ่อมแท่นและ bearing ลูกหีบ",900],["ปรับตั้ง setting ลูกหีบ",400]]},
  ]},
  {id:"maint", name:"ส่วนซ่อมบำรุง", color:"#2563EB", units:[
    {name:"ซ่อมบำรุงไฟฟ้า", code:"ELE", owner:"หน.ซ่อมบำรุงไฟฟ้า", lag:2.5, jobs:[
@@ -538,10 +572,7 @@ const MODEL = [
      ["สอบเทียบเครื่องมือวัด 250 จุด",900],["เปลี่ยน transmitter/control valve เสื่อม",800],
      ["ปรับปรุงระบบ DCS I/O",700]]},
  ]},
- {id:"power", name:"ส่วนต้นกำลัง", color:"#D97706", units:[
-   {name:"ลูกหีบ", code:"MIL", owner:"หน.หน่วยลูกหีบ", lag:-1, jobs:[
-     ["เจียร/เปลี่ยนลูกหีบชุด 1–5",2200],["Overhaul เกียร์ขับลูกหีบ",1400],
-     ["ซ่อมแท่นและ bearing ลูกหีบ",900],["ปรับตั้ง setting ลูกหีบ",400]]},
+ {id:"power", name:"ส่วนผลิตไฟฟ้า", color:"#D97706", units:[
    {name:"หม้อไอน้ำ", code:"BLR", owner:"หน.หน่วยหม้อไอน้ำ", lag:3.5, jobs:[
      ["เปลี่ยนท่อ water wall Boiler #2",2400],["ซ่อมผนังเตาและ refractory",1300],
      ["Overhaul พัดลม ID/FD และ air heater",1000],["ตรวจสอบและทดสอบ safety valve",500],
@@ -571,6 +602,22 @@ let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
   });
   return {...u, jobs};
 })}));
+
+/* ผูกแผนจริงเข้ากับโครงสร้าง:
+   - man-hr ของแต่ละหน่วยปรับสเกลให้รวม = แรงจริงของแผนก × 8 ชม. → การถ่วงน้ำหนักข้ามแผนกตรงตาม Sheet "รวม"
+   - % แผนทุกระดับใช้ S-curve ทางการของแผนก (แรงสะสม ÷ แรงรวม)
+   - ช่วงสัปดาห์ของ Task บีบให้อยู่ในหน้าต่างทำงานจริงของแผนก (BLR/GEN เริ่มสัปดาห์ 6) */
+DATA.forEach(sec=>sec.units.forEach(u=>{
+  const tks=u.jobs.flatMap(j=>j.tasks);
+  const f=FORCE_TOTAL[u.code]*8/tks.reduce((s,t)=>s+t.mh,0);
+  const sw=UNIT_STARTW[u.code], k=(WEEKS-sw+1)/30;
+  tks.forEach(t=>{
+    t.mh=Math.max(1,Math.round(t.mh*f));
+    t.s=sw+(t.s-1)*k; t.e=Math.min(WEEKS, Math.max(t.s+1, sw+(t.e-1)*k));
+    t.plan=w=>planU(u.code,w);
+  });
+  u.jobs.forEach(j=>{ j.mh=j.tasks.reduce((a,t)=>a+t.mh,0); });
+}));
 
 /* ---- Task IDs + บันทึกจริง ---- */
 const TASK_INDEX = {};
@@ -684,7 +731,8 @@ const CFG={warn:2,crit:7};
 function statusOf(v){ return v>=-CFG.warn?[pk(["ตามแผน","ຕາມແຜນ","On plan"]),"good"]:v>=-CFG.crit?[pk(["เสี่ยง","ສ່ຽງ","At risk"]),"warn"]:[pk(["ล่าช้า","ຊັກຊ້າ","Late"]),"crit"]; }
 const fmt1 = x=>x.toLocaleString("th-TH",{maximumFractionDigits:1,minimumFractionDigits:1});
 const fmt0 = x=>Math.round(x).toLocaleString("th-TH");
-function wkEnd(w){ return new Date(2026,3,15+w*7-1); }
+function wkStart(w){ return new Date(2026,3,20+(w-1)*7); }
+function wkEnd(w){ return new Date(2026,3,18+w*7); }   /* สัปดาห์ทำงาน จ.–ส. (เช่น สัปดาห์ 1 = 20–25 เม.ย.) */
 
 /* ============ charts ============ */
 function donut(pct, color="#2563EB", size=92){
@@ -839,7 +887,8 @@ function overview(){
      ${partU.length?`<span class="cbnum num" style="background:var(--warn)">${partU.length}</span> ${pk(["บันทึกไม่ครบ","ບັນທຶກບໍ່ຄົບ","partial"])}: <span class="cbunits">${partU.map(x=>un(x.u.name)+" ("+x.logged+"/"+x.active+")").join(" · ")}</span>`:""}
      <a onclick="go('entry')">${pk(["บันทึก ›","ບັນທຶກ ›","Record ›"])}</a></div>`;
   app.innerHTML = pagehead(pk(["ความคืบหน้าของงานซ่อม","ຄວາມຄືບໜ້າຂອງວຽກສ້ອມແປງ","Maintenance Progress"]),
-    pk(["ภาพรวม ณ วันที่","ພາບລວມ ນະວັນທີ","As of"])+" "+fmtDate(wkEnd(WNOW))+" · "+pk(["สัปดาห์ที่","ສັບປະດາທີ","Week"])+" "+WNOW+"/"+WEEKS) + compBanner + `
+    pk(["ภาพรวม ณ วันที่","ພາບລວມ ນະວັນທີ","As of"])+" "+fmtDate(wkEnd(WNOW))+" · "+pk(["สัปดาห์ที่","ສັບປະດາທີ","Week"])+" "+WNOW+"/"+WEEKS
+    +" · "+pk(["ทำงาน","ເຮັດວຽກ","workdays"])+" "+PLAN_DAYS[WNOW-1]+" "+pk(["วัน","ວັນ","days"])+" · "+pk(["กำลังพลตามแผน","ກຳລັງພົນຕາມແຜນ","planned force"])+" "+fmt0(WEEK_FORCE[WNOW-1])+" "+pk(["แรง","ແຮງ","man-days"])) + compBanner + `
   <div class="kpis">
     <div class="kpi hero">
       <div>
