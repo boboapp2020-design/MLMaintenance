@@ -410,7 +410,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r33";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r34";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1149,8 +1149,9 @@ function overview(){
   const compAll=complianceToday();
   const noneU=compAll.filter(x=>x.state==="none"), partU=compAll.filter(x=>x.state==="partial");
   const dueTxt=pk(["กำหนดส่งสัปดาห์นี้ ศุกร์ "+fmtDate(weekFriday(WNOW)),"ກຳນົດສົ່ງ ວັນສຸກ "+fmtDate(weekFriday(WNOW)),"due Fri "+fmtDate(weekFriday(WNOW))]);
+  const wkTxt=pk(["สัปดาห์ที่ "+WNOW+"/"+WEEKS,"ອາທິດທີ "+WNOW+"/"+WEEKS,"Week "+WNOW+"/"+WEEKS]);
   const compBanner = (noneU.length===0 && partU.length===0) ? "" :
-    `<div class="compbanner">📅 <b>${dueTxt}</b> ·
+    `<div class="compbanner">📅 <b>${wkTxt}</b> · <b>${dueTxt}</b> ·
      ${noneU.length?`<span class="cbnum num">${noneU.length}</span> ${pk(["ยังไม่บันทึกสัปดาห์นี้","ຍັງບໍ່ບັນທຶກ","not recorded"])}: <span class="cbunits">${noneU.map(x=>un(x.u.name)).join(" · ")}</span>`:""}
      ${partU.length?`<span class="cbnum num" style="background:var(--warn)">${partU.length}</span> ${pk(["บันทึกไม่ครบ","ບັນທຶກບໍ່ຄົບ","partial"])}: <span class="cbunits">${partU.map(x=>un(x.u.name)+" ("+x.logged+"/"+x.active+")").join(" · ")}</span>`:""}
      <a onclick="go('entry')">${pk(["บันทึก ›","ບັນທຶກ ›","Record ›"])}</a></div>`;
