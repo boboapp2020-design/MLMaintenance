@@ -410,7 +410,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r32";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r33";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -983,7 +983,7 @@ function agg(tasks, w){ const mh=sum(tasks.map(t=>t.mh));
           actMh:sum(tasks.map(t=>t.mh*actAt(t,w)))}; }
 const unitTasks = u=>u.jobs.flatMap(j=>j.tasks),
       secTasks = s=>s.units.flatMap(unitTasks), allTasks = DATA.flatMap(secTasks);
-const CFG={warn:2,crit:7};
+const CFG={warn:0,crit:7};   /* ไม่เผื่อ tolerance: ตามแผนเฉพาะเมื่อผลจริง ≥ แผน · ตามหลังแม้แต่จุดเดียว = เสี่ยงทันที */
 function statusOf(v){ return v>=-CFG.warn?[pk(["ตามแผน","ຕາມແຜນ","On plan"]),"good"]:v>=-CFG.crit?[pk(["เสี่ยง","ສ່ຽງ","At risk"]),"warn"]:[pk(["ล่าช้า","ຊັກຊ້າ","Late"]),"crit"]; }
 const fmt1 = x=>x.toLocaleString("th-TH",{maximumFractionDigits:1,minimumFractionDigits:1});
 const fmt0 = x=>Math.round(x).toLocaleString("th-TH");
@@ -1108,9 +1108,9 @@ function renderLang(){
     pk(["หมายเหตุ: ข้อมูลจากการบันทึกรายสัปดาห์ของแต่ละแผนก (กำหนดส่งทุกวันศุกร์) ซิงก์ผ่าน Google Sheet · แผนตามไฟล์เป้าหมายงานซ่อม 2569",
         "ໝາຍເຫດ: ຂໍ້ມູນຈາກການບັນທຶກປະຈຳວັນຂອງແຕ່ລະໜ່ວຍງານ ຊິງຜ່ານ Google Sheet",
         "Note: Data from daily unit entries, synced via Google Sheet · Plan per 2026 target file"])+"<br>"+
-    pk(["เกณฑ์สถานะ (ผลต่างจากแผนสะสม): 🟢 ตามแผน ≥ −2 จุด · 🟡 เสี่ยง −2 ถึง −7 จุด · 🔴 ล่าช้า < −7 จุด · % ถ่วงน้ำหนักด้วยจำนวนแรง",
-        "ເກນສະຖານະ (ຜົນຕ່າງຈາກແຜນສະສົມ): 🟢 ຕາມແຜນ ≥ −2 ຈຸດ · 🟡 ສ່ຽງ −2 ຫາ −7 ຈຸດ · 🔴 ຊັກຊ້າ < −7 ຈຸດ · % ຖ່ວງນ້ຳໜັກດ້ວຍຈຳນວນແຮງ",
-        "Status criteria (variance vs cumulative plan): 🟢 On plan ≥ −2 pts · 🟡 At risk −2 to −7 pts · 🔴 Late < −7 pts · man-days weighted"])
+    pk(["เกณฑ์สถานะ (ผลต่างจากแผนสะสม): 🟢 ตามแผน = ผลจริง ≥ แผน · 🟡 เสี่ยง = ตามหลังแผน 0–7 จุด · 🔴 ล่าช้า = ตามหลัง > 7 จุด · % ถ่วงน้ำหนักด้วยจำนวนแรง",
+        "ເກນສະຖານະ (ຜົນຕ່າງຈາກແຜນສະສົມ): 🟢 ຕາມແຜນ = ຜົນຈິງ ≥ ແຜນ · 🟡 ສ່ຽງ = ຊ້າກວ່າ 0–7 ຈຸດ · 🔴 ຊັກຊ້າ = ຊ້າ > 7 ຈຸດ",
+        "Status criteria (variance vs cumulative plan): 🟢 On plan = actual ≥ plan · 🟡 At risk = 0–7 pts behind · 🔴 Late = > 7 pts behind · man-days weighted"])
     +'<br><span class="num" style="opacity:.55">'+BUILD+'</span>';
 }
 function go(p){ PAGE=p; SUBVIEW=false; if(p==='entry'){ DEPT=""; SELJOB=null; } renderNav(); ({over:overview,jobs:jobsPage,units:unitsPage,entry:entryPage,ana:anaPage,rep:repPage})[p](); window.scrollTo(0,0); }
