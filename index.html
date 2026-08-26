@@ -212,7 +212,8 @@ td{padding:9px 8px;border-bottom:1px solid var(--line);font-size:13px;vertical-a
 th.r,td.r{text-align:right}
 tr.clickable{cursor:pointer}
 tr.clickable:hover td{background:var(--tint)}
-.tbar{height:11px;background:var(--tint2);border-radius:4px;position:relative;min-width:100px}
+.tbar{height:11px;background:var(--tint2);border-radius:4px;position:relative;width:150px}
+td.progcell{width:150px}
 .tbar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
 .tbar .mark{position:absolute;top:-3px;width:3px;height:17px;background:var(--ink);border-radius:2px}
 .scrollx{overflow-x:auto}
@@ -387,7 +388,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r20";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r21";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1214,7 +1215,7 @@ function jobsPage(){
       <td><b>${tr(x.j.name)}</b></td><td class="small">${un(x.u.name)}</td>
       <td class="r num small">${fmt1(x.a.plan)}%</td><td class="r num"><b>${fmt1(x.a.act)}%</b></td>
       <td class="r num" style="color:${SCc[x.st[1]]};font-weight:700">${x.varc>=0?"+":"−"}${fmt1(Math.abs(x.varc))}</td>
-      <td><div class="tbar"><div class="fill" style="width:${x.a.act}%;background:${SCc[x.st[1]]}"></div><div class="mark" style="left:${x.a.plan}%"></div></div></td>
+      <td class="progcell"><div class="tbar"><div class="fill" style="width:${x.a.act}%;background:${SCc[x.st[1]]}"></div><div class="mark" style="left:${x.a.plan}%"></div></div></td>
       <td class="r num small">${fmt0(x.a.mh)}</td>
       <td><span class="chip c-${x.st[1]}">${x.st[0]}</span></td></tr>`).join("")}
   </table></div></div>`;
@@ -1267,7 +1268,7 @@ function unitView(secId, uname){
           return `<tr><td>${tr(t.name)}</td><td class="r num">${fmt0(t.mh)}</td>
           <td class="r num small">${Math.max(1,Math.round(t.s))}–${Math.min(WEEKS,Math.round(t.e))}</td>
           <td class="r num">${fmt1(tp)}%</td><td class="r num"><b>${fmt1(ta)}%</b></td>
-          <td><div class="tbar"><div class="fill" style="width:${ta}%;background:${SCc[tst[1]]}"></div><div class="mark" style="left:${tp}%"></div></div></td>
+          <td class="progcell"><div class="tbar"><div class="fill" style="width:${ta}%;background:${SCc[tst[1]]}"></div><div class="mark" style="left:${tp}%"></div></div></td>
           <td><span class="chip c-${tst[1]}">${tst[0]}</span></td></tr>`;}).join("")}
       </table></div></div></div>`;}).join("")}
   <div style="margin-top:16px"><button class="backbtn" onclick="go('${backTo}')">← ${pk(["กลับ","ກັບຄືນ","Back"])}</button></div>`;
