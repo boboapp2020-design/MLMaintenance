@@ -388,7 +388,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r21";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r22";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -851,9 +851,11 @@ async function syncFromSheet(attempt){
     ENTRIES=data.map(e=>({date:normDate(e.date), taskId:String(e.taskId), pct:Number(e.pct), mh:Number(e.mh)||0, by:e.by||"", note:e.note||""}));
     saveEntries(ENTRIES); applyEntries(); SYNC_STATE="ok";
     SYNC_TIME=new Date();
-    /* ไม่ re-render ขณะฟอร์มบันทึกเปิดอยู่ กันข้อมูลที่กำลังพิมพ์หาย */
-    const m=document.getElementById("taskModal");
-    if(!m || !m.classList.contains("open")) go(PAGE);
+    /* re-render เฉพาะเมื่อข้อมูลเปลี่ยนจริง และไม่ได้อยู่ในหน้าย่อย/ฟอร์มบันทึก (กันเด้งกลับเอง) */
+    const sig=entriesSig(), changed=(sig!==LAST_SIG); LAST_SIG=sig;
+    const m=document.getElementById("taskModal"), modalOpen=m&&m.classList.contains("open");
+    if(changed && !modalOpen && !SUBVIEW) go(PAGE);
+    else { const c=document.getElementById("syncChipBox"); if(c) c.innerHTML=syncChip(); }
   }catch(err){
     /* Apps Script อาจตอบช้า (cold start) — ลองซ้ำอัตโนมัติสูงสุด 4 ครั้ง */
     if(attempt<4){ SYNC_STATE="connecting"; setTimeout(function(){ syncFromSheet(attempt+1); }, 4000*attempt); }
@@ -1042,6 +1044,9 @@ function saveChart(btn){
 /* ============ shell ============ */
 const app=document.getElementById("app"), navi=document.getElementById("navi");
 let PAGE="over";
+let SUBVIEW=false;   // อยู่ในหน้าย่อย (เจาะรายหน่วย/บันทึกของแผนก) → ห้าม auto re-render เด้งออก
+let LAST_SIG=null;   // ลายเซ็นข้อมูลล่าสุด — sync แล้ว re-render เฉพาะเมื่อข้อมูลเปลี่ยนจริง
+function entriesSig(){ return ENTRIES.length+"|"+ENTRIES.reduce((s,e)=>s+(+e.pct||0),0).toFixed(1); }
 const NAV=[["over",["ภาพรวม","ພາບລວມ","Overview"],"grid"],["units",["หน่วยงาน","ໜ່ວຍງານ","Units"],"units"],
  ["jobs",["งานซ่อม","ວຽກສ້ອມແປງ","Jobs"],"wrench"],["ana",["การวิเคราะห์","ການວິເຄາະ","Analytics"],"chart"],
  ["rep",["รายงาน","ລາຍງານ","Report"],"report"],["entry",["บันทึกข้อมูล","ບັນທຶກຂໍ້ມູນ","Data Entry"],"edit"]];
@@ -1075,7 +1080,7 @@ function renderLang(){
         "Status criteria (variance vs cumulative plan): 🟢 On plan ≥ −2 pts · 🟡 At risk −2 to −7 pts · 🔴 Late < −7 pts · man-days weighted"])
     +'<br><span class="num" style="opacity:.55">'+BUILD+'</span>';
 }
-function go(p){ PAGE=p; if(p==='entry'){ DEPT=""; SELJOB=null; } renderNav(); ({over:overview,jobs:jobsPage,units:unitsPage,entry:entryPage,ana:anaPage,rep:repPage})[p](); window.scrollTo(0,0); }
+function go(p){ PAGE=p; SUBVIEW=false; if(p==='entry'){ DEPT=""; SELJOB=null; } renderNav(); ({over:overview,jobs:jobsPage,units:unitsPage,entry:entryPage,ana:anaPage,rep:repPage})[p](); window.scrollTo(0,0); }
 function setWeek(w){ WNOW=parseInt(w); go(PAGE); }
 function weekChip(){
   const opts=[...Array(REALWK).keys()].map(i=>{const w=i+1;
@@ -1091,7 +1096,7 @@ function syncChip(){
   if(SYNC_STATE==="connecting") return `<span class="num" style="font-size:11.5px;color:var(--warn);white-space:nowrap">🟡 ${pk(["กำลังดึงข้อมูล…","ກຳລັງດຶງ…","syncing…"])}</span>`;
   return `<span class="num" style="font-size:11.5px;color:var(--crit);white-space:nowrap">🔴 ${pk(["เชื่อมต่อไม่ได้","ເຊື່ອມບໍ່ໄດ້","offline"])} <a style="cursor:pointer;text-decoration:underline" onclick="syncFromSheet()">${pk(["ลองใหม่","ລອງໃໝ່","retry"])}</a></span>`;
 }
-function pagehead(title,sub){ return `<div class="pagehead"><div class="phleft">${IDLOGO}<div><h1>${title}</h1><div class="sub">${sub}</div></div></div><div class="headctl">${syncChip()}${langChip()}${weekChip()}</div></div>${histBanner()}`; }
+function pagehead(title,sub){ return `<div class="pagehead"><div class="phleft">${IDLOGO}<div><h1>${title}</h1><div class="sub">${sub}</div></div></div><div class="headctl"><span id="syncChipBox">${syncChip()}</span>${langChip()}${weekChip()}</div></div>${histBanner()}`; }
 function unitBub(name,sz=22){ return IC(ICONS[UNIT_ICON[name]]||ICONS.gear,sz); }
 function riskRows(){
   /* จัดอันดับเสี่ยง/ล่าช้าเฉพาะหน่วยที่มีแผน Job/Task จริง — หน่วย blank ยังไม่นำมาจัดอันดับ (ยังไม่มีข้อมูลจริง) */
@@ -1223,6 +1228,7 @@ function jobsPage(){
 
 /* ============ เจาะรายหน่วย ============ */
 function unitView(secId, uname){
+  SUBVIEW=true;   // หน้าเจาะรายหน่วย — กัน auto-sync เด้งกลับ
   const SCc={good:"#16A34A",warn:"#D97706",crit:"#EF4444"};
   const s=DATA.find(x=>x.id===secId), u=s.units.find(x=>x.name===uname);
   const a=agg(unitTasks(u),WNOW), v=a.act-a.plan, [stL,stC]=statusOf(v);
@@ -1371,6 +1377,7 @@ function jobDetailHtml(){
 }
 function entryDeptPage(){
   const u=unitByCode(DEPT); if(!u){ setDept(""); return; }
+  SUBVIEW=true;   // หน้าบันทึกของแผนก — กัน auto-sync เด้งกลับ
   const jl=visJobs(u);
   if(SELJOB && !jl.some(j=>j.id===SELJOB)) SELJOB=null;
   if(!SELJOB && jl.length) SELJOB=jl[0].id;
