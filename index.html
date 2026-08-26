@@ -387,7 +387,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r12";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r13";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -653,23 +653,14 @@ let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
     });
     return {...u, jobs, real:true};
   }
-  const jobs = u.jobs.map(([jname, jmh], ji) => {
-    const nT = 5 + Math.floor(rng()*6);
-    const idx = Array.from({length:nT},(_,i)=>Math.round(i*(PHASES.length-1)/(nT-1)));
-    const wsum = idx.reduce((s,i)=>s+PHASES[i][1],0);
-    const jStart = 1 + Math.floor(rng()*6) + ji*4;
-    const jEnd = Math.min(WEEKS, jStart + 16 + Math.floor(rng()*10));
-    const span = jEnd - jStart;
-    const tasks = idx.map((pi,ti)=>{
-      const mh = Math.round(jmh*PHASES[pi][1]/wsum);
-      const s = jStart + span*ti/nT, e = jStart + span*(ti+1)/nT + span*0.15;
-      const plan = w => Math.max(0, Math.min(1,(w-s)/(e-s)));
-      let act = 0;   /* ล้างข้อมูลจำลอง: เริ่มที่ 0% ทุก Task (โครงสร้าง/แผนคงไว้) รอข้อมูลจริงจากการบันทึก */
-      return {name:PHASES[pi][0], mh, s, e, plan, act};
-    });
-    return {name:jname, tasks, mh:tasks.reduce((a,t)=>a+t.mh,0)};
-  });
-  return {...u, jobs};
+  /* หน่วยงานที่ยังไม่มีแผน Job/Task จริง: เว้นว่างไว้ (blank) แต่คงแผน %/แรงระดับหน่วยตาม R1
+     ใช้ task ตัวแทน 1 ตัวถือน้ำหนักทั้งหน่วย + เส้นแผนทางการ เพื่อให้ยอดรวมส่วน/โรงงานยังถูกต้อง
+     task ตัวแทนนี้ถูกซ่อนจากทุกหน้ารายการ Job/Task (placeholder) รอนำเข้าของจริงภายหลัง */
+  const sw=UNIT_STARTW[u.code];
+  const ptask={name:"(รอนำเข้าแผนงานจริง)", wt:100, mh:Math.max(1,Math.round(FORCE_TOTAL[u.code]*8)),
+               s:sw, e:WEEKS, plan:w=>planU(u.code,w), act:0, placeholder:true};
+  const jobs=[{name:"(รอนำเข้าแผนงานจริง)", tasks:[ptask], mh:ptask.mh, placeholder:true}];
+  return {...u, jobs, blank:true};
 })}));
 
 /* ผูกแผนจริงเข้ากับโครงสร้าง:
@@ -678,17 +669,7 @@ let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
    - ช่วงสัปดาห์ของ Task บีบให้อยู่ในหน้าต่างทำงานจริงของแผนก (BLR/GEN เริ่มสัปดาห์ 6) */
 DATA.forEach(sec=>sec.units.forEach(u=>{
   const tks=u.jobs.flatMap(j=>j.tasks);
-  if(!u.real){
-    const f=FORCE_TOTAL[u.code]*8/tks.reduce((s,t)=>s+t.mh,0);
-    const sw=UNIT_STARTW[u.code], k=(WEEKS-sw+1)/30;
-    tks.forEach(t=>{
-      t.mh=Math.max(1,Math.round(t.mh*f));
-      t.s=sw+(t.s-1)*k; t.e=Math.min(WEEKS, Math.max(t.s+1, sw+(t.e-1)*k));
-      t.plan=w=>planU(u.code,w);
-    });
-    u.jobs.forEach(j=>{ j.mh=j.tasks.reduce((a,t)=>a+t.mh,0); });
-  }
-  /* แต้มน้ำหนักของ Task (% ของแผนก) — แผนกแผนจริงมี wt จากไฟล์แล้ว แผนก mock คิดจากสัดส่วน man-hr */
+  /* แต้มน้ำหนักของ Task (% ของแผนก) — แผนจริงมี wt จากไฟล์แล้ว · หน่วย blank ตั้ง 100 ไว้แล้ว */
   const tot=tks.reduce((s,t)=>s+t.mh,0);
   tks.forEach(t=>{ if(t.wt==null) t.wt=Math.round(t.mh/tot*10000)/100; });
 }));
@@ -787,9 +768,11 @@ function unitsRecordedOn(dateStr){
   ENTRIES.forEach(e=>{ if(e.date===dateStr) set.add(e.taskId.split("-")[0]); });
   return set;
 }
+/* Job/Task ที่แสดงจริง (ตัด placeholder ของหน่วยที่ยังไม่มีแผนงานจริงออก) */
+function visJobs(u){ return u.blank ? [] : u.jobs; }
 /* Task ที่ยังต้องบันทึก (เริ่มแล้ว ยังไม่เสร็จ) ของหน่วยงาน ณ สัปดาห์ปัจจุบัน */
 function activeTasksOf(u){
-  return unitTasks(u).filter(t=> t.s<=WNOW && actAt(t,WNOW)<1 );
+  return unitTasks(u).filter(t=> !t.placeholder && t.s<=WNOW && actAt(t,WNOW)<1 );
 }
 /* สถานะการบันทึกวันนี้: none=ไม่บันทึก, partial=ไม่ครบ, full=ครบ (ระดับ Task) */
 function complianceToday(){
@@ -799,7 +782,8 @@ function complianceToday(){
     const code=e.taskId.split("-")[0];
     (tasksByUnit[code]=tasksByUnit[code]||new Set()).add(e.taskId);
   }});
-  return DATA.flatMap(s=>s.units.map(u=>{
+  /* เช็คเฉพาะหน่วยที่มีแผน Job/Task จริงแล้ว — หน่วย blank ยังไม่นับว่าต้องบันทึก */
+  return DATA.flatMap(s=>s.units.filter(u=>!u.blank).map(u=>{
     const active=activeTasksOf(u).length;
     const logged=tasksByUnit[u.code]?tasksByUnit[u.code].size:0;
     const state = logged===0 ? "none" : (logged>=active ? "full" : "partial");
@@ -966,7 +950,8 @@ function syncChip(){
 function pagehead(title,sub){ return `<div class="pagehead"><div class="phleft">${IDLOGO}<div><h1>${title}</h1><div class="sub">${sub}</div></div></div><div class="headctl">${syncChip()}${langChip()}${weekChip()}</div></div>${histBanner()}`; }
 function unitBub(name,sz=22){ return IC(ICONS[UNIT_ICON[name]]||ICONS.gear,sz); }
 function riskRows(){
-  return DATA.flatMap(s=>s.units.map(u=>({sec:s,u,a:agg(unitTasks(u),WNOW)})))
+  /* จัดอันดับเสี่ยง/ล่าช้าเฉพาะหน่วยที่มีแผน Job/Task จริง — หน่วย blank ยังไม่นำมาจัดอันดับ (ยังไม่มีข้อมูลจริง) */
+  return DATA.flatMap(s=>s.units.filter(u=>!u.blank).map(u=>({sec:s,u,a:agg(unitTasks(u),WNOW)})))
     .map(x=>({...x,varc:x.a.act-x.a.plan,st:statusOf(x.a.act-x.a.plan)}));
 }
 
@@ -976,7 +961,7 @@ function overview(){
   const f=agg(allTasks,WNOW), varc=f.act-f.plan, [fLbl,fTone]=statusOf(varc);
   const rows=riskRows();
   const late=rows.filter(r=>r.st[1]==="crit"), risk=rows.filter(r=>r.st[1]==="warn");
-  const jobsAll=DATA.flatMap(s=>s.units.flatMap(u=>u.jobs));
+  const jobsAll=DATA.flatMap(s=>s.units.flatMap(u=>visJobs(u)));
   const jobsDone=jobsAll.filter(j=>agg(j.tasks,WNOW).act>=99.5).length;
   const daysLeft=Math.max(0,Math.round((SEASON_END-wkEnd(WNOW))/86400000));
   const compAll=complianceToday();
@@ -1009,7 +994,7 @@ function overview(){
     <div class="kpi"><div class="label">${pk(["หน่วยล่าช้า · เสี่ยง","ໜ່ວຍຊັກຊ້າ · ສ່ຽງ","Late · at-risk units"])}</div>
       <div class="icrow"><span class="icbub" style="background:var(--warn-bg);color:var(--warn)">${IC(ICONS.alert)}</span>
         <div><div class="value num" style="font-size:28px;margin:0"><span style="color:var(--crit)">${late.length}</span> <span class="unit">· ${risk.length}</span></div></div></div>
-      <div class="note" style="margin-top:6px">${pk(["จาก 9 หน่วยงาน","ຈາກ 9 ໜ່ວຍງານ","of 9 units"])}</div></div>
+      <div class="note" style="margin-top:6px">${pk(["จาก "+rows.length+" หน่วยที่มีแผนแล้ว","ຈາກ "+rows.length+" ໜ່ວຍ","of "+rows.length+" units w/ plan"])}</div></div>
     <div class="kpi"><div class="label">${pk(["ก่อนเปิดหีบ","ກ່ອນເປີດຫີບ","To crushing start"])}</div>
       <div class="icrow"><span class="icbub">${IC(ICONS.cal)}</span>
         <div><div class="value num" style="font-size:28px;margin:0">${daysLeft} <span class="unit">${pk(["วัน","ວັນ","days"])}</span></div></div></div>
@@ -1075,7 +1060,7 @@ function unitsPage(){
 /* ============ งานซ่อม ============ */
 function jobsPage(){
   const SCc={good:"#16A34A",warn:"#D97706",crit:"#EF4444"};
-  const jobs=DATA.flatMap(s=>s.units.flatMap(u=>u.jobs.map(j=>({s,u,j,a:agg(j.tasks,WNOW)}))))
+  const jobs=DATA.flatMap(s=>s.units.flatMap(u=>visJobs(u).map(j=>({s,u,j,a:agg(j.tasks,WNOW)}))))
     .map(x=>({...x,varc:x.a.act-x.a.plan,st:statusOf(x.a.act-x.a.plan)})).sort((a,b)=>a.varc-b.varc);
   app.innerHTML = pagehead(pk(["งานซ่อมทั้งหมด","ວຽກສ້ອມແປງທັງໝົດ","All Jobs"])+" · "+jobs.length+" Job",
     pk(["เรียงจากล่าช้าที่สุด · คลิกแถวเพื่อไปหน้าหน่วยงาน","ຮຽງຈາກຊັກຊ້າທີ່ສຸດ · ຄລິກແຖວເພື່ອໄປໜ້າໜ່ວຍງານ","Sorted worst-first · click a row to drill down"])) + `
@@ -1116,11 +1101,12 @@ function unitView(secId, uname){
       <div class="value num" style="font-size:28px">${fmt0(a.actMh)}<span class="unit">man-hr</span></div>
       <div class="note num">${pk(["แผนทั้งฤดู","ແຜນທັງລະດູ","Season plan"])} ${fmt0(a.mh)}</div></div>
     <div class="kpi"><div class="label">${pk(["ขอบเขตงาน","ຂອບເຂດວຽກ","Scope"])}</div>
-      <div class="value num" style="font-size:28px">${u.jobs.length}<span class="unit">job · ${unitTasks(u).length} task</span></div>
+      <div class="value num" style="font-size:28px">${visJobs(u).length}<span class="unit">job · ${visJobs(u).flatMap(j=>j.tasks).length} task</span></div>
       <div class="note">${pk(["คลิก Job เพื่อดู Task","ຄລິກ Job ເພື່ອເບິ່ງ Task","Click a job to see tasks"])}</div></div>
   </div>
   <div class="card"><h2>S-CURVE <span class="thin">· ${un(u.name)}</span></h2>${sCurve(unitTasks(u))}</div>
-  ${u.jobs.map((j,ji)=>{const ja=agg(j.tasks,WNOW), jv=ja.act-ja.plan, jst=statusOf(jv);
+  ${u.blank ? `<div class="card" style="text-align:center;padding:34px 20px;color:var(--mut)">📋 ${pk(["ยังไม่มีแผน Job/Task ของหน่วยงานนี้ — คงเส้นแผน %/แรงระดับหน่วยตามไฟล์เป้าหมาย รอนำเข้ารายละเอียดงานจริง","ຍັງບໍ່ມີແຜນ Job/Task ຂອງໜ່ວຍນີ້ — ຄົງເສັ້ນແຜນ ລໍຖ້ານຳເຂົ້າຂໍ້ມູນຈິງ","No Job/Task plan for this unit yet — unit-level plan curve kept; awaiting real work breakdown"])}</div>` : ""}
+  ${visJobs(u).map((j,ji)=>{const ja=agg(j.tasks,WNOW), jv=ja.act-ja.plan, jst=statusOf(jv);
     const done=j.tasks.filter(t=>actAt(t,WNOW)>=1).length;
     return `<div class="job b-${jst[1]}" id="job${ji}">
       <div class="jobhead" tabindex="0" onclick='document.getElementById("job${ji}").classList.toggle("open")'>
@@ -1237,16 +1223,18 @@ function jobDetailHtml(){
 }
 function entryDeptPage(){
   const u=unitByCode(DEPT); if(!u){ setDept(""); return; }
-  if(SELJOB && !u.jobs.some(j=>j.id===SELJOB)) SELJOB=null;
-  if(!SELJOB && u.jobs.length) SELJOB=u.jobs[0].id;
+  const jl=visJobs(u);
+  if(SELJOB && !jl.some(j=>j.id===SELJOB)) SELJOB=null;
+  if(!SELJOB && jl.length) SELJOB=jl[0].id;
   const allTasksToday=unitTasks(u).filter(t=>recordedToday(t.id)).length;
   const totalActive=activeTasksOf(u).length;
-  const left=u.jobs.map(j=>{
+  const left=jl.length? jl.map(j=>{
     const act=jobActiveTasks(j), dn=act.filter(t=>recordedToday(t.id)).length, conf=isJobConfirmed(j.id);
     const st = conf?`<span style="color:var(--good)">✓</span>` : (act.length&&dn>=act.length?`<span style="color:var(--warn)">●</span>` : dn>0?`<span style="color:var(--warn)">◐</span>` : `<span style="color:var(--crit)">○</span>`);
     return `<div class="joblistitem ${j.id===SELJOB?'active':''}" tabindex="0" onclick="selectJob('${j.id}')">
       <span class="jl-nm">${tr(j.name)}<span class="num">${pk(["วันนี้","ມື້ນີ້","today"])} ${dn}/${act.length} task</span></span>
-      <span class="jl-st">${st}</span></div>`;}).join("");
+      <span class="jl-st">${st}</span></div>`;}).join("")
+    : `<div class="small" style="padding:14px 10px;color:var(--mut)">📋 ${pk(["ยังไม่มีแผนงานของหน่วยนี้ รอนำเข้าข้อมูลจริง","ຍັງບໍ່ມີແຜນວຽກ ລໍຖ້ານຳເຂົ້າ","No work plan yet — awaiting real data"])}</div>`;
   const right = jobDetailHtml();
   app.innerHTML = pagehead(un(u.name)+" — "+pk(["บันทึกงาน","ບັນທຶກງານ","Record work"]),
     un(DATA.find(s=>s.units.includes(u)).name)+" · "+u.owner) + `
@@ -1500,7 +1488,8 @@ function exportExcel(){
     let rows = xlRow(xlS(un(u.name)+" · "+un(s.name)+" · "+u.owner,"title"));
     rows += xlRow(xlS(pk(["ความคืบหน้ารวม","ຄວາມຄືບໜ້າ","Progress"],0)+" "+fmt1(a.act)+"% / "+pk(["แผน","ແຜນ","plan"],0)+" "+fmt1(a.plan)+"% · "+st[0],"sub"));
     rows += xlRow(["รหัส Job","ชื่อ Job","รหัส Task","ชื่อ Task","น้ำหนัก (แต้ม)","แต้มที่ทำได้","man-hr","สัปดาห์เริ่ม","สัปดาห์เสร็จ","% แผน","% ผลจริง","สถานะ","บันทึกล่าสุด","ผู้บันทึกล่าสุด"].map(h=>xlS(h,"hdr")).join(""));
-    u.jobs.forEach(j=>{
+    if(u.blank){ rows += xlRow(xlS(pk(["ยังไม่มีแผน Job/Task — รอนำเข้าข้อมูลจริง (คงเส้นแผน %/แรงระดับหน่วยตามไฟล์เป้าหมาย)","ຍັງບໍ່ມີແຜນ Job/Task","No Job/Task plan yet — awaiting real data"],0),"sub")); }
+    visJobs(u).forEach(j=>{
       const ja=agg(j.tasks,WNOW), jv=ja.act-ja.plan, jst=statusOf(jv);
       const jwt=+j.tasks.reduce((s,t)=>s+t.wt,0).toFixed(2), jpts=+j.tasks.reduce((s,t)=>s+actAt(t,WNOW)*t.wt,0).toFixed(2);
       rows += xlRow(xlS(j.id,"sec")+xlS(tr(j.name),"sec")+xlS("","sec")+xlS(pk(["(รวมงาน)","(ລວມ)","(job total)"],0),"sec")+xlN(jwt,"sec")+xlN(jpts,"sec")+xlN(Math.round(ja.mh),"sec")+xlS("","sec")+xlS("","sec")+xlN(+ja.plan.toFixed(1),"secp")+xlN(+ja.act.toFixed(1),"secp")+xlS(jst[0],"sec")+xlS("","sec")+xlS("","sec"));
@@ -1550,7 +1539,7 @@ function anaPage(){
   const paceNow=f.act/WNOW, paceNeed=(100-f.act)/wkLeft;
   const forecast=Math.min(100,f.act+paceNow*wkLeft);
   const rows=riskRows().sort((a,b)=>a.varc-b.varc);
-  const jobs=DATA.flatMap(s=>s.units.flatMap(u=>u.jobs.map(j=>({u,j,a:agg(j.tasks,WNOW)}))))
+  const jobs=DATA.flatMap(s=>s.units.flatMap(u=>visJobs(u).map(j=>({u,j,a:agg(j.tasks,WNOW)}))))
     .map(x=>({...x,varc:x.a.act-x.a.plan})).sort((a,b)=>a.varc-b.varc).slice(0,5);
   const maxAbs=Math.max(...rows.map(r=>Math.abs(r.varc)),1);
   const PTS=pk(["จุด","ຈຸດ","pts"]), WKU=pk(["% / สัปดาห์","% / ສັບປະດາ","% / week"]);
@@ -1629,9 +1618,9 @@ function repPage(){
   const SCc={good:"#16A34A",warn:"#D97706",crit:"#EF4444"};
   const rows=riskRows();
   const late=rows.filter(r=>r.st[1]==="crit"), risk=rows.filter(r=>r.st[1]==="warn");
-  const jobsAll=DATA.flatMap(s=>s.units.flatMap(u=>u.jobs.map(j=>({u,j,a:agg(j.tasks,WNOW)}))));
+  const jobsAll=DATA.flatMap(s=>s.units.flatMap(u=>visJobs(u).map(j=>({u,j,a:agg(j.tasks,WNOW)}))));
   const done=jobsAll.filter(x=>x.a.act>=99.5);
-  const dueSoon=DATA.flatMap(s=>s.units.flatMap(u=>u.jobs.flatMap(j=>j.tasks.filter(t=>t.e<=WNOW+2&&actAt(t,WNOW)<1).map(t=>({u,j,t})))))
+  const dueSoon=DATA.flatMap(s=>s.units.flatMap(u=>visJobs(u).flatMap(j=>j.tasks.filter(t=>!t.placeholder&&t.e<=WNOW+2&&actAt(t,WNOW)<1).map(t=>({u,j,t})))))
     .sort((a,b)=>a.t.e-b.t.e).slice(0,8);
   const PTS=pk(["จุด","ຈຸດ","pts"]);
   app.innerHTML = pagehead(pk(["รายงานประจำสัปดาห์ที่","ລາຍງານປະຈຳສັບປະດາທີ","Weekly Report — Week"])+" "+WNOW,
