@@ -387,7 +387,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r15";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r16";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -761,8 +761,17 @@ function applyEntries(){
 }
 applyEntries();
 
-/* ---- การเช็คการบันทึกรายวัน (compliance) ---- */
+/* ---- การเช็คการบันทึกรายสัปดาห์ (compliance) · กำหนดส่งทุกวันศุกร์ ---- */
 function dateISO(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+/* แปลงวันที่ (yyyy-mm-dd) → เลขสัปดาห์ของฤดูซ่อม (1..WEEKS) · 0 = นอกช่วง */
+function seasonWeekOf(dateStr){
+  const p=String(dateStr).slice(0,10).split("-"); if(p.length<3) return 0;
+  const t=Date.UTC(+p[0], +p[1]-1, +p[2]);
+  const w=Math.floor((t-Date.UTC(2026,3,20))/(7*86400000))+1;
+  return (w>=1 && w<=WEEKS) ? w : 0;
+}
+/* วันศุกร์ (กำหนดส่ง) ของสัปดาห์ที่กำลังดู */
+function weekFriday(w){ return new Date(2026,3,20+(w-1)*7+4); }
 function unitsRecordedOn(dateStr){
   const set=new Set();
   ENTRIES.forEach(e=>{ if(e.date===dateStr) set.add(e.taskId.split("-")[0]); });
@@ -774,11 +783,10 @@ function visJobs(u){ return u.blank ? [] : u.jobs; }
 function activeTasksOf(u){
   return unitTasks(u).filter(t=> !t.placeholder && t.s<=WNOW && actAt(t,WNOW)<1 );
 }
-/* สถานะการบันทึกวันนี้: none=ไม่บันทึก, partial=ไม่ครบ, full=ครบ (ระดับ Task) */
+/* สถานะการบันทึกของ "สัปดาห์ที่กำลังดู": none=ไม่บันทึก, partial=ไม่ครบ, full=ครบ (ระดับ Task) */
 function complianceToday(){
-  const today=dateISO(new Date());
-  const tasksByUnit={};   // code -> Set(taskId ที่บันทึกวันนี้)
-  ENTRIES.forEach(e=>{ if(e.date===today){
+  const tasksByUnit={};   // code -> Set(taskId ที่บันทึกในสัปดาห์นี้)
+  ENTRIES.forEach(e=>{ if(seasonWeekOf(e.date)===WNOW){
     const code=e.taskId.split("-")[0];
     (tasksByUnit[code]=tasksByUnit[code]||new Set()).add(e.taskId);
   }});
@@ -923,7 +931,7 @@ function renderLang(){
   document.getElementById("logoSub").textContent=pk(["น้ำตาลมิตรลาว","ນ້ຳຕານມິດລາວ","Mitr Lao Sugar"]);
   document.getElementById("adminName").textContent=pk(["งานซ่อมฝ่ายโรงงาน","ວຽກສ້ອມແປງຝ່າຍໂຮງງານ","Factory Maintenance"]);
   document.getElementById("foot").innerHTML=
-    pk(["หมายเหตุ: ข้อมูลจากการบันทึกประจำวันของแต่ละแผนก ซิงก์ผ่าน Google Sheet · แผนตามไฟล์เป้าหมายงานซ่อม 2569",
+    pk(["หมายเหตุ: ข้อมูลจากการบันทึกรายสัปดาห์ของแต่ละแผนก (กำหนดส่งทุกวันศุกร์) ซิงก์ผ่าน Google Sheet · แผนตามไฟล์เป้าหมายงานซ่อม 2569",
         "ໝາຍເຫດ: ຂໍ້ມູນຈາກການບັນທຶກປະຈຳວັນຂອງແຕ່ລະໜ່ວຍງານ ຊິງຜ່ານ Google Sheet",
         "Note: Data from daily unit entries, synced via Google Sheet · Plan per 2026 target file"])+"<br>"+
     pk(["เกณฑ์สถานะ (ผลต่างจากแผนสะสม): 🟢 ตามแผน ≥ −2 จุด · 🟡 เสี่ยง −2 ถึง −7 จุด · 🔴 ล่าช้า < −7 จุด · % ถ่วงน้ำหนักด้วยจำนวนแรง",
@@ -966,9 +974,10 @@ function overview(){
   const daysLeft=Math.max(0,Math.round((SEASON_END-wkEnd(WNOW))/86400000));
   const compAll=complianceToday();
   const noneU=compAll.filter(x=>x.state==="none"), partU=compAll.filter(x=>x.state==="partial");
+  const dueTxt=pk(["กำหนดส่งสัปดาห์นี้ ศุกร์ "+fmtDate(weekFriday(WNOW)),"ກຳນົດສົ່ງ ວັນສຸກ "+fmtDate(weekFriday(WNOW)),"due Fri "+fmtDate(weekFriday(WNOW))]);
   const compBanner = (noneU.length===0 && partU.length===0) ? "" :
-    `<div class="compbanner">⚠️
-     ${noneU.length?`<span class="cbnum num">${noneU.length}</span> ${pk(["ไม่บันทึก","ບໍ່ບັນທຶກ","not recorded"])}: <span class="cbunits">${noneU.map(x=>un(x.u.name)).join(" · ")}</span>`:""}
+    `<div class="compbanner">📅 <b>${dueTxt}</b> ·
+     ${noneU.length?`<span class="cbnum num">${noneU.length}</span> ${pk(["ยังไม่บันทึกสัปดาห์นี้","ຍັງບໍ່ບັນທຶກ","not recorded"])}: <span class="cbunits">${noneU.map(x=>un(x.u.name)).join(" · ")}</span>`:""}
      ${partU.length?`<span class="cbnum num" style="background:var(--warn)">${partU.length}</span> ${pk(["บันทึกไม่ครบ","ບັນທຶກບໍ່ຄົບ","partial"])}: <span class="cbunits">${partU.map(x=>un(x.u.name)+" ("+x.logged+"/"+x.active+")").join(" · ")}</span>`:""}
      <a onclick="go('entry')">${pk(["บันทึก ›","ບັນທຶກ ›","Record ›"])}</a></div>`;
   app.innerHTML = pagehead(pk(["ความคืบหน้าของงานซ่อม","ຄວາມຄືບໜ້າຂອງວຽກສ້ອມແປງ","Maintenance Progress"]),
@@ -1152,7 +1161,8 @@ function clearAllData(){
   } else { alert(pk(["ล้างข้อมูลในเครื่องแล้ว","ລ້າງແລ້ວ","Cleared"])); go('entry'); }
 }
 /* ===== flow บันทึกแบบไล่ขั้น: เลือกแผนก → Job → Task → ฟอร์ม → ยืนยัน Job ===== */
-function recordedToday(tid){ return ENTRIES.some(e=>e.date===todayISO() && e.taskId===tid); }
+/* บันทึกแล้วใน "สัปดาห์ที่กำลังดู" หรือยัง (เปลี่ยนจากรายวันเป็นรายสัปดาห์) */
+function recordedToday(tid){ return ENTRIES.some(e=>e.taskId===tid && seasonWeekOf(e.date)===WNOW); }
 function jobActiveTasks(j){ return j.tasks.filter(t=> t.s<=WNOW && actAt(t,WNOW)<1 ); }
 let JOBCONF={}; try{ JOBCONF=JSON.parse(localStorage.getItem("idash_jobconf")||"{}"); }catch(e){}
 function jobConfKey(jid){ return todayISO()+"|"+jid; }
@@ -1183,10 +1193,10 @@ function entryPickerPage(){
         <div class="dc-nm">${un(u.name)}<span>${u.owner}</span></div>
         <div class="dc-st" style="color:${col}" title="${st==="blank"?pk(["รอนำเข้าแผนงานจริง","ລໍຖ້ານຳເຂົ້າ","awaiting real data"]):""}">${ic}</div></div>`;}).join("");
     return `<div class="deptcol"><div class="deptcolhd"><span class="swatch" style="background:${s.color}"></span>${un(s.name)}</div>${items}</div>`;}).join("");
-  app.innerHTML = pagehead(pk(["บันทึก % งานซ่อมประจำวัน","ບັນທຶກ % ວຽກສ້ອມແປງປະຈຳວັນ","Daily Progress Entry"]),
-    pk(["เลือกแผนกของคุณเพื่อเข้าไปบันทึกงาน","ເລືອກໜ່ວຍງານຂອງທ່ານເພື່ອບັນທຶກ","Choose your unit to start recording"])) + `
+  app.innerHTML = pagehead(pk(["บันทึก % งานซ่อมรายสัปดาห์","ບັນທຶກ % ວຽກສ້ອມແປງລາຍອາທິດ","Weekly Progress Entry"]),
+    pk(["เลือกแผนกของคุณเพื่อเข้าไปบันทึกงาน · กำหนดส่งทุกวันศุกร์","ເລືອກໜ່ວຍງານຂອງທ່ານ · ກຳນົດສົ່ງທຸກວັນສຸກ","Choose your unit to record · due every Friday"])) + `
   <div class="card"><h2>👇 ${pk(["เลือกแผนกของคุณ","ເລືອກໜ່ວຍງານຂອງທ່ານ","Select your unit"])}</h2>
-    <div class="sub">${pk(["กดแผนกของคุณ เพื่อเข้าหน้าบันทึกงานของแผนกนั้น (✓ ครบ · ◐ ไม่ครบ · ✗ ยังไม่บันทึกวันนี้)","ກົດໜ່ວຍງານ (✓ ຄົບ · ◐ ບໍ່ຄົບ · ✗ ຍັງບໍ່ບັນທຶກ)","Tap your unit (✓ full · ◐ partial · ✗ none today)"])}</div>
+    <div class="sub">${pk(["📅 บันทึกทุกสัปดาห์ · กำหนดส่งทุกวันศุกร์ — กดแผนกของคุณเพื่อบันทึก (✓ ครบ · ◐ ไม่ครบ · ✗ ยังไม่บันทึกสัปดาห์นี้)","📅 ບັນທຶກທຸກອາທິດ · ກຳນົດສົ່ງທຸກວັນສຸກ (✓ ຄົບ · ◐ ບໍ່ຄົບ · ✗ ຍັງບໍ່ບັນທຶກ)","📅 Record weekly · due every Friday — tap your unit (✓ full · ◐ partial · ✗ none this week)"])}</div>
     <div class="deptsections">${cols}</div>
     <div style="margin-top:14px;text-align:right"><button class="btn-d" style="font-size:12.5px" onclick="clearAllData()">🗑 ${pk(["ล้างข้อมูลบันทึกทั้งหมด","ລ້າງຂໍ້ມູນທັງໝົດ","Clear all records"])}</button></div>
   </div>`;
@@ -1202,7 +1212,7 @@ function jobDetailHtml(){
     const conf=isJobConfirmed(j.id), allDone=act.length>0 && doneToday>=act.length;
     const ja=agg(j.tasks,WNOW);
     right=`<h3>${tr(j.name)}</h3>
-      <div class="jd-sub num">${j.id} · ${pk(["วันนี้บันทึก","ມື້ນີ້ບັນທຶກ","today"])} ${doneToday}/${act.length} task · ${pk(["รวม","ລວມ","total"])} ${fmt1(ja.act)}% / ${pk(["แผน","ແຜນ","plan"])} ${fmt1(ja.plan)}%</div>
+      <div class="jd-sub num">${j.id} · ${pk(["สัปดาห์นี้บันทึก","ອາທິດນີ້ບັນທຶກ","this week"])} ${doneToday}/${act.length} task · ${pk(["รวม","ລວມ","total"])} ${fmt1(ja.act)}% / ${pk(["แผน","ແຜນ","plan"])} ${fmt1(ja.plan)}%</div>
       ${j.tasks.map(t=>{ const rec=recordedToday(t.id), done=actAt(t,WNOW)>=1, ta=actAt(t,WNOW)*100, tp=t.plan(WNOW)*100, cur=fmt1(ta);
         const cc=done?"#16A34A":(statusOf(ta-tp)[1]==="good"?"#16A34A":statusOf(ta-tp)[1]==="warn"?"#D97706":"#EF4444");
         return `<div class="taskrow ${rec?'rec':''}">
@@ -1212,7 +1222,7 @@ function jobDetailHtml(){
             <div class="tk-pctline num"><b style="color:${cc}">${fmt1(ta/100*t.wt)}</b>/${t.wt} ${pk(["แต้ม","ແຕ້ມ","pts"])} (${cur}%) · ${pk(["เป้า","ເປົ້າ","target"])} ${fmt1(tp/100*t.wt)} ${pk(["แต้ม","ແຕ້ມ","pts"])}${done?" · ✓":""}</div>
           </div>
           <div class="tk-ctl">${done ? `<span class="chip c-good">${pk(["เสร็จแล้ว","ສຳເລັດ","Done"])}</span>`
-            : rec ? `<span class="chip c-good">✓ ${pk(["บันทึกวันนี้","ບັນທຶກມື້ນີ້","logged today"])}</span><br><button class="btn btn-o btnsm" style="margin-top:6px" onclick="openTaskForm('${t.id}')">${pk(["แก้ไข","ແກ້ໄຂ","edit"])}</button>`
+            : rec ? `<span class="chip c-good">✓ ${pk(["บันทึกสัปดาห์นี้","ບັນທຶກອາທິດນີ້","logged this week"])}</span><br><button class="btn btn-o btnsm" style="margin-top:6px" onclick="openTaskForm('${t.id}')">${pk(["แก้ไข","ແກ້ໄຂ","edit"])}</button>`
             : `<button class="btn btn-p btnsm" onclick="openTaskForm('${t.id}')">✍ ${pk(["บันทึก","ບັນທຶກ","Record"])}</button>`}</div>
         </div>`;}).join("")}
       <div class="jconfirm">
@@ -1234,7 +1244,7 @@ function entryDeptPage(){
     const act=jobActiveTasks(j), dn=act.filter(t=>recordedToday(t.id)).length, conf=isJobConfirmed(j.id);
     const st = conf?`<span style="color:var(--good)">✓</span>` : (act.length&&dn>=act.length?`<span style="color:var(--warn)">●</span>` : dn>0?`<span style="color:var(--warn)">◐</span>` : `<span style="color:var(--crit)">○</span>`);
     return `<div class="joblistitem ${j.id===SELJOB?'active':''}" tabindex="0" onclick="selectJob('${j.id}')">
-      <span class="jl-nm">${tr(j.name)}<span class="num">${pk(["วันนี้","ມື້ນີ້","today"])} ${dn}/${act.length} task</span></span>
+      <span class="jl-nm">${tr(j.name)}<span class="num">${pk(["สัปดาห์นี้","ອາທິດນີ້","this wk"])} ${dn}/${act.length} task</span></span>
       <span class="jl-st">${st}</span></div>`;}).join("")
     : `<div class="small" style="padding:14px 10px;color:var(--mut)">📋 ${pk(["ยังไม่มีแผนงานของหน่วยนี้ รอนำเข้าข้อมูลจริง","ຍັງບໍ່ມີແຜນວຽກ ລໍຖ້ານຳເຂົ້າ","No work plan yet — awaiting real data"])}</div>`;
   const right = jobDetailHtml();
@@ -1243,7 +1253,7 @@ function entryDeptPage(){
   <div class="deptbar">
     <button class="btn btn-o btnsm" onclick="setDept('')">← ${pk(["กลับ","ກັບຄືນ","Back"])}</button>
     <span class="deptname">🔒 ${un(u.name)}</span>
-    <span class="small" style="margin-left:auto">${pk(["บันทึกวันนี้","ບັນທຶກມື້ນີ້","today"])} <b class="num" style="color:var(--ink);font-size:14px">${allTasksToday}/${totalActive}</b> task</span></div>
+    <span class="small" style="margin-left:auto">${pk(["บันทึกสัปดาห์นี้","ບັນທຶກອາທິດນີ້","this week"])} <b class="num" style="color:var(--ink);font-size:14px">${allTasksToday}/${totalActive}</b> task</span></div>
   <div class="entrysplit">
     <div class="card joblist"><div class="sub" style="padding:2px 8px 6px">${pk(["งานของแผนก","ວຽກຂອງໜ່ວຍ","Unit jobs"])}</div>${left}</div>
     <div class="card jobdetail">${right}</div>
@@ -1270,8 +1280,9 @@ function openTaskForm(tid){
     <br>${lastE?`📈 ${pk(["แต้มล่าสุด","ແຕ້ມຫຼ້າສຸດ","latest"])} <b>${lastE.pct}</b> (${pk(["บันทึกเมื่อ","ບັນທຶກເມື່ອ","on"])} ${lastE.date}) — ${pk(["กรอกต่อจากนี้","ປ້ອນຕໍ່ຈາກນີ້","continue from here"])}`:`${pk(["ยังไม่เคยบันทึก · แต้มปัจจุบัน","ຍັງບໍ່ເຄີຍບັນທຶກ · ແຕ້ມປັດຈຸບັນ","No record yet · current"])} <b>${curPts}</b>`}
     <br><span style="color:var(--warn)">🔒 ${pk(["กรอกได้ไม่ต่ำกว่า","ປ້ອນໄດ້ບໍ່ຕ່ຳກວ່າ","must be ≥"])} ${fl} ${pk(["แต้ม (สะสม ห้ามถอยหลัง)","ແຕ້ມ","pts"])}</span></div>
     <input type="hidden" id="tfTid" value="${tid}">
+    <div class="small" style="margin:-4px 0 10px;color:var(--mut)">📅 ${pk(["บันทึกของสัปดาห์ที่","ບັນທຶກຂອງອາທິດທີ","Recording for week"])} ${WNOW} (${fmtDate(wkStart(WNOW))}–${fmtDate(wkEnd(WNOW))}) · ${pk(["กำหนดส่งศุกร์","ກຳນົດສົ່ງວັນສຸກ","due Fri"])} ${fmtDate(weekFriday(WNOW))}</div>
     <div class="formgrid">
-      <div class="fld"><label>📅 ${pk(["วันที่บันทึก","ວັນທີ","Date"])}</label><input id="tfDate" type="date" value="${todayISO()}" max="${todayISO()}"></div>
+      <div class="fld"><label>📅 ${pk(["วันที่บันทึก","ວັນທີ","Date"])}</label><input id="tfDate" type="date" value="${dateISO(new Date(Math.min(weekFriday(WNOW).getTime(), Date.now())))}" max="${todayISO()}"></div>
       <div class="fld"><label>⚖️ ${pk(["แต้มสะสมที่ทำได้","ແຕ້ມສະສົມທີ່ເຮັດໄດ້","Points earned (cum.)"])} <span class="num">(0–${wt})</span></label><input id="tfPct" type="number" min="${fl}" max="${wt}" step="0.01" value="${Math.max(fl,prefill)}" oninput="tfPctHint(this.value,${wt})"><div id="tfPctHint" class="small num"></div></div>
       <div class="fld"><label>${pk(["man-hr วันนั้น","man-hr","Man-hours"])}</label><input id="tfMh" type="number" min="0" step="1" placeholder="24"></div>
       <div class="fld"><label>${pk(["ผู้บันทึก","ຜູ້ບັນທຶກ","By"])}</label><input id="tfBy" type="text"></div>
@@ -1659,19 +1670,22 @@ function repPage(){
         :`<div class="small">${pk(["ไม่มี Task ใกล้ครบกำหนด","ບໍ່ມີ Task ໃກ້ຄົບກຳນົດ","None due soon"])}</div>`}
     </div>
   </div>
-  <div class="card"><h2>6. ${pk(["วินัยการบันทึกข้อมูลรายวัน (7 วันล่าสุด)","ວິໄນການບັນທຶກຂໍ້ມູນລາຍວັນ (7 ວັນຫຼ້າສຸດ)","Daily entry compliance (last 7 days)"])}</h2>
+  <div class="card"><h2>6. ${pk(["วินัยการบันทึกรายสัปดาห์ (กำหนดส่งทุกวันศุกร์)","ວິໄນການບັນທຶກລາຍອາທິດ (ກຳນົດສົ່ງທຸກວັນສຸກ)","Weekly entry compliance (due every Friday)"])}</h2>
     ${(function(){
-      const days7=[...Array(7).keys()].map(i=>{const d=new Date();d.setDate(d.getDate()-(6-i));return d;});
-      const rows7=DATA.flatMap(s=>s.units).map(u=>{
-        const n=days7.filter(d=>unitsRecordedOn(dateISO(d)).has(u.code)).length;
-        return {u,n,pct:Math.round(n/7*100)};
-      }).sort((a,b)=>a.pct-b.pct);
-      const missToday=complianceToday().filter(x=>!x.done);
-      return (missToday.length? `<div class="repline"><span class="bullet" style="color:var(--crit)">⚠</span>
-        <span><b>${pk(["วันนี้ยังไม่บันทึก:","ມື້ນີ້ຍັງບໍ່ບັນທຶກ:","Not recorded today:"])}</b> ${missToday.map(x=>un(x.u.name)+" ("+x.u.owner+")").join(" · ")}</span></div>`:
-        `<div class="repline"><span class="bullet" style="color:var(--good)">✓</span><span>${pk(["วันนี้บันทึกครบทั้ง 9 หน่วย","ມື້ນີ້ບັນທຶກຄົບ 9 ໜ່ວຍ","All 9 units recorded today"])}</span></div>`)
-      + rows7.map(x=>`<div class="repline"><span class="bullet num" style="color:${x.pct>=80?'var(--good)':x.pct>=50?'var(--warn)':'var(--crit)'}">${x.pct}%</span>
-        <span>${un(x.u.name)} <span class="small">· ${x.n}/7 ${pk(["วัน","ວັນ","days"])} · ${x.u.owner}</span></span></div>`).join("");
+      const N=Math.min(WNOW,8);   // ดูย้อนหลังไม่เกิน 8 สัปดาห์
+      const wks=[...Array(N).keys()].map(i=>WNOW-N+1+i);
+      const recWk={};             // code -> Set(สัปดาห์ที่บันทึก)
+      ENTRIES.forEach(e=>{ const w=seasonWeekOf(e.date); if(w>0){ const c=e.taskId.split("-")[0]; (recWk[c]=recWk[c]||new Set()).add(w);} });
+      const units=DATA.flatMap(s=>s.units).filter(u=>!u.blank);
+      const rowsW=units.map(u=>{ const set=recWk[u.code]||new Set();
+        const n=wks.filter(w=>set.has(w)).length; return {u,set,n,pct:Math.round(n/N*100)};}).sort((a,b)=>a.pct-b.pct);
+      const missWk=complianceToday().filter(x=>!x.done);
+      const head=(missWk.length? `<div class="repline"><span class="bullet" style="color:var(--crit)">⚠</span>
+        <span><b>${pk(["สัปดาห์นี้ยังไม่บันทึก:","ອາທິດນີ້ຍັງບໍ່ບັນທຶກ:","Not recorded this week:"])}</b> ${missWk.map(x=>un(x.u.name)+" ("+x.u.owner+")").join(" · ")} — ${pk(["กำหนดส่งศุกร์","ກຳນົດສົ່ງວັນສຸກ","due Fri"])} ${fmtDate(weekFriday(WNOW))}</span></div>`:
+        `<div class="repline"><span class="bullet" style="color:var(--good)">✓</span><span>${pk(["สัปดาห์นี้บันทึกครบทุกหน่วยที่มีแผนแล้ว","ອາທິດນີ້ບັນທຶກຄົບແລ້ວ","All active units recorded this week"])}</span></div>`);
+      return head + rowsW.map(x=>`<div class="repline"><span class="bullet num" style="color:${x.pct>=80?'var(--good)':x.pct>=50?'var(--warn)':'var(--crit)'}">${x.pct}%</span>
+        <span>${un(x.u.name)} <span class="small">· ${x.n}/${N} ${pk(["สัปดาห์","ອາທິດ","wk"])} · ${x.u.owner}</span>
+        <span class="num" style="margin-left:8px;letter-spacing:2px">${wks.map(w=>x.set.has(w)?'<span style="color:var(--good)">●</span>':'<span style="color:var(--crit)">○</span>').join("")}</span></span></div>`).join("");
     })()}
   </div>`;
 }
