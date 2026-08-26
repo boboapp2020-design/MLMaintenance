@@ -387,7 +387,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r13";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r14";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1174,12 +1174,14 @@ function entryPickerPage(){
   const cols=DATA.map(s=>{
     const items=s.units.map(u=>{
       const c=comp.find(x=>x.u.code===u.code);
-      const col=c.state==="full"?"var(--good)":c.state==="partial"?"var(--warn)":"var(--crit)";
-      const ic=c.state==="full"?"✓":c.state==="partial"?"◐":"✗";
+      /* หน่วย blank (ยังไม่มีแผนจริง) ไม่มีสถานะบันทึก แสดงจุดเทา "รอข้อมูล" */
+      const st=c?c.state:"blank";
+      const col=st==="full"?"var(--good)":st==="partial"?"var(--warn)":st==="blank"?"var(--mut)":"var(--crit)";
+      const ic=st==="full"?"✓":st==="partial"?"◐":st==="blank"?"·":"✗";
       return `<div class="deptcard" tabindex="0" onclick="setDept('${u.code}')">
         <div class="dc-ic">${unitBub(u.name,20)}</div>
         <div class="dc-nm">${un(u.name)}<span>${u.owner}</span></div>
-        <div class="dc-st" style="color:${col}">${ic}</div></div>`;}).join("");
+        <div class="dc-st" style="color:${col}" title="${st==="blank"?pk(["รอนำเข้าแผนงานจริง","ລໍຖ້ານຳເຂົ້າ","awaiting real data"]):""}">${ic}</div></div>`;}).join("");
     return `<div class="deptcol"><div class="deptcolhd"><span class="swatch" style="background:${s.color}"></span>${un(s.name)}</div>${items}</div>`;}).join("");
   app.innerHTML = pagehead(pk(["บันทึก % งานซ่อมประจำวัน","ບັນທຶກ % ວຽກສ້ອມແປງປະຈຳວັນ","Daily Progress Entry"]),
     pk(["เลือกแผนกของคุณเพื่อเข้าไปบันทึกงาน","ເລືອກໜ່ວຍງານຂອງທ່ານເພື່ອບັນທຶກ","Choose your unit to start recording"])) + `
