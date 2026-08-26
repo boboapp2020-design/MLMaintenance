@@ -387,7 +387,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r18";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r19";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1601,7 +1601,11 @@ ${sheets}
 /* ============ การวิเคราะห์ ============ */
 function anaPage(){
   const SCc={good:"#16A34A",warn:"#D97706",crit:"#EF4444"};
-  const f=agg(allTasks,WNOW), gap=f.act-f.plan;
+  /* วิเคราะห์เฉพาะหน่วยงานที่มีข้อมูลจริงแล้ว (ตัดหน่วย blank ที่ยังไม่รายงานออก ไม่ให้ฉุดภาพรวมจนอ่านไม่ได้) */
+  const realUnits=DATA.flatMap(s=>s.units).filter(u=>!u.blank);
+  const realTasks=realUnits.flatMap(unitTasks);
+  const nRep=realUnits.length, nAll=DATA.flatMap(s=>s.units).length;
+  const f=agg(realTasks.length?realTasks:allTasks,WNOW), gap=f.act-f.plan;
   const wkLeft=WEEKS-WNOW;
   const paceNow=f.act/WNOW, paceNeed=(100-f.act)/wkLeft;
   const forecast=Math.min(100,f.act+paceNow*wkLeft);
@@ -1611,7 +1615,8 @@ function anaPage(){
   const maxAbs=Math.max(...rows.map(r=>Math.abs(r.varc)),1);
   const PTS=pk(["จุด","ຈຸດ","pts"]), WKU=pk(["% / สัปดาห์","% / ສັບປະດາ","% / week"]);
   app.innerHTML = pagehead(pk(["การวิเคราะห์ · แนวโน้มและคาดการณ์","ການວິເຄາະ · ແນວໂນ້ມ ແລະ ຄາດຄະເນ","Analytics · Trend & Forecast"]),
-    pk(["วิเคราะห์จากข้อมูลสะสมถึงสัปดาห์ที่","ວິເຄາະຈາກຂໍ້ມູນສະສົມຮອດສັບປະດາທີ","Based on data through week"])+" "+WNOW+" · "+pk(["เหลือ","ເຫຼືອ","remaining"])+" "+wkLeft+" "+pk(["สัปดาห์","ສັບປະດາ","weeks"])) + `
+    pk(["วิเคราะห์จากข้อมูลสะสมถึงสัปดาห์ที่","ວິເຄາະຈາກຂໍ້ມູນສະສົມຮອດສັບປະດາທີ","Based on data through week"])+" "+WNOW+" · "+pk(["เหลือ","ເຫຼືອ","remaining"])+" "+wkLeft+" "+pk(["สัปดาห์","ສັບປະດາ","weeks"])
+    + (nRep<nAll ? " · "+pk(["เฉพาะ "+nRep+"/"+nAll+" หน่วยที่รายงานแล้ว","ສະເພາະ "+nRep+"/"+nAll+" ໜ່ວຍ","only "+nRep+"/"+nAll+" units reported"]) : "")) + `
   <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
     <div class="kpi"><div class="label">${pk(["ห่างจากแผนสะสม","ຫ່າງຈາກແຜນສະສົມ","Gap vs plan"])}</div>
       <div class="value num" style="color:${gap<0?'var(--crit)':'var(--good)'};font-size:30px">${gap>=0?"+":"−"}${fmt1(Math.abs(gap))}<span class="unit">${PTS}</span></div>
