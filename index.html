@@ -392,7 +392,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r30";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r31";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -850,12 +850,14 @@ function normDate(d){
   if(!isNaN(dt.getTime())) return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
   return String(d);
 }
-async function syncFromSheet(attempt){
+async function syncFromSheet(attempt, silent){
   attempt=attempt||1;
   if(!SHEET_API){ SYNC_STATE="off"; return; }
+  /* silent = การดึงเบื้องหลัง (poll/สลับแท็บ) ไม่ต้องโชว์สถานะ "กำลังดึง" ให้กวนใจ — คงสถานะเขียวไว้ ข้อมูลเดิมยังใช้ได้ */
   try{
     const res=await fetch(SHEET_API+(SHEET_API.includes("?")?"&":"?")+"action=list",{method:"GET",cache:"no-store"});
-    const data=await res.json();
+    const txt=await res.text();
+    let data; try{ data=JSON.parse(txt); }catch(_){ throw new Error("non-json"); }   /* บางครั้ง Google ตอบหน้า HTML ชั่วคราว */
     if(!Array.isArray(data)) throw new Error("bad payload");
     /* เกราะกันข้อมูลหาย: ถ้าเซิร์ฟเวอร์ตอบว่างแต่เครื่องเรามีข้อมูลอยู่ ให้ลองซ้ำก่อนยอมรับ (กันจังหวะ Sheet สะดุด) */
     if(data.length===0 && ENTRIES.length>0 && attempt<4) throw new Error("empty while local has data");
@@ -868,17 +870,18 @@ async function syncFromSheet(attempt){
     if(changed && !modalOpen && !SUBVIEW) go(PAGE);
     else { const c=document.getElementById("syncChipBox"); if(c) c.innerHTML=syncChip(); }
   }catch(err){
-    /* Apps Script อาจตอบช้า (cold start) — ลองซ้ำอัตโนมัติสูงสุด 4 ครั้ง */
-    if(attempt<4){ SYNC_STATE="connecting"; setTimeout(function(){ syncFromSheet(attempt+1); }, 4000*attempt); }
-    else { SYNC_STATE="error"; if(PAGE==="entry") entryPage(); }
+    /* ลองซ้ำอัตโนมัติสูงสุด 5 ครั้ง — retry แบบเงียบ ไม่โชว์ "กำลังดึง" (คงสถานะเดิม/เขียว เพราะข้อมูลเดิมยังดี) */
+    if(attempt<5){ if(!silent && attempt===1 && ENTRIES.length===0){ SYNC_STATE="connecting"; const c=document.getElementById("syncChipBox"); if(c) c.innerHTML=syncChip(); }
+      setTimeout(function(){ syncFromSheet(attempt+1, silent); }, 2500*attempt); }
+    else if(ENTRIES.length===0){ SYNC_STATE="error"; if(PAGE==="entry") entryPage(); }
+    /* ถ้ามีข้อมูลอยู่แล้ว ปล่อยสถานะเป็น ok เดิม ไม่ต้องแจ้ง error */
   }
 }
-/* ดึงข้อมูลใหม่ทุก 5 นาที ให้ทุกเครื่องเห็นข้อมูลล่าสุดโดยไม่ต้องรีโหลด */
-/* ดึงข้อมูลใหม่ทุก 20 วินาที ให้ใกล้เคียง real-time (re-render เฉพาะเมื่อข้อมูลเปลี่ยนจริง จึงไม่กระตุก) */
-setInterval(function(){ if(SHEET_API && SYNC_STATE!=="connecting" && !document.hidden) syncFromSheet(); }, 20000);
-/* กลับมาที่แท็บ/เปิดจอมือถือ → ดึงข้อมูลใหม่ทันที (มือถือชอบพักแท็บจนข้อมูลค้าง) */
+/* ดึงข้อมูลใหม่ทุก 20 วินาที (เบื้องหลังแบบเงียบ) — re-render เฉพาะเมื่อข้อมูลเปลี่ยนจริง ไม่โชว์ spinner กวนใจ */
+setInterval(function(){ if(SHEET_API && !document.hidden) syncFromSheet(1,true); }, 20000);
+/* กลับมาที่แท็บ/เปิดจอมือถือ → ดึงข้อมูลใหม่ทันที (เงียบ) */
 document.addEventListener("visibilitychange", function(){
-  if(!document.hidden && SHEET_API && SYNC_STATE!=="connecting") syncFromSheet();
+  if(!document.hidden && SHEET_API) syncFromSheet(1,true);
 });
 function pushToSheet(entry){
   if(!SHEET_API) return;
