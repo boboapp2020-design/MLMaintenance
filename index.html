@@ -332,16 +332,26 @@ details.card>summary::marker{content:""}
 .backbtn:focus-visible,.urow:focus-visible,.jobhead:focus-visible,.nitem:focus-visible,.lbtn:focus-visible{outline:2.5px solid var(--blue);outline-offset:2px}
 /* ---- responsive: fit all devices ---- */
 img,svg,table{max-width:100%}
+/* แท็บเล็ต (≤1024): KPI 3 คอลัมน์ · การ์ดคู่เป็นคอลัมน์เดียว */
+@media(max-width:1024px){
+  .kpis{grid-template-columns:repeat(3,1fr)}
+  .kpi.hero{grid-column:1 / -1}
+}
 @media(max-width:820px){
   .main{padding:16px 14px 40px}
   .pagehead{flex-direction:column;align-items:stretch;gap:10px}
   .pagehead h1{font-size:18px}
-  .headctl{margin-left:0;justify-content:flex-start}
+  .headctl{margin-left:0;justify-content:flex-start;flex-wrap:wrap}
   .kpi.hero .value{font-size:38px}
   .kpi .value{font-size:28px}
   .deptbar{flex-wrap:wrap}
   .deptbar .deptname{font-size:16px}
   .modal-box{padding:16px 16px 18px}
+  /* หัว Job: ชื่อขึ้นบรรทัดเต็ม · บาร์+% เรียงบรรทัดถัดไปให้กระชับ */
+  .jobhead{gap:6px 10px}
+  .jname{flex:1 1 100%}
+  .jbar{flex:1 1 120px}
+  .jchip{flex:0 0 auto}
 }
 @media(max-width:480px){
   .main{padding:12px 10px 36px}
@@ -354,6 +364,14 @@ img,svg,table{max-width:100%}
   .taskrow .tk-ctl{width:100%;text-align:left;margin-top:6px}
   .btn,.btn-save{padding:9px 16px;font-size:14px}
   .risk .ic,.icbub{display:none}
+  /* หัว Job มือถือ: บาร์ยืดเต็ม · % และป้ายชิดขวา */
+  .jobhead .jbar{flex:1 1 80px;min-width:70px}
+  .jobhead .jpct{flex:0 0 auto;font-size:15px}
+  .jobhead .jmeta{flex:0 0 100%;order:3}
+  /* ตารางเลื่อนแนวนอนได้ พร้อมบอกใบ้ */
+  .scrollx{-webkit-overflow-scrolling:touch}
+  .prow .pl{flex-basis:120px;font-size:12px}
+  .prow .pv{flex-basis:70px;font-size:12.5px}
 }
 </style>
 
@@ -392,7 +410,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r31";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r32";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
