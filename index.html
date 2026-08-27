@@ -440,7 +440,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r43";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r44";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1240,7 +1240,9 @@ function overview(){
   const late=rows.filter(r=>r.st[1]==="crit"), risk=rows.filter(r=>r.st[1]==="warn");
   const jobsAll=DATA.flatMap(s=>s.units.flatMap(u=>visJobs(u)));
   const jobsDone=jobsAll.filter(j=>agg(j.tasks,WNOW).act>=99.5).length;
-  const daysLeft=Math.max(0,Math.round((SEASON_END-wkEnd(WNOW))/86400000));
+  /* นับถอยหลังทีละวันจาก "วันนี้จริง" ถึงวันเปิดหีบ (31 ต.ค. 2569) — เปิดเว็บวันไหนเลขลดทุกวัน */
+  const _n=new Date(), _today=new Date(_n.getFullYear(),_n.getMonth(),_n.getDate());
+  const daysLeft=Math.max(0,Math.ceil((SEASON_END-_today)/86400000));
   const compAll=complianceToday();
   const noneU=compAll.filter(x=>x.state==="none"), partU=compAll.filter(x=>x.state==="partial");
   const dueTxt=pk(["update สัปดาห์นี้ เสาร์ "+fmtDate(weekSaturday(WNOW)),"ອັບເດດ ວັນເສົາ "+fmtDate(weekSaturday(WNOW)),"update Sat "+fmtDate(weekSaturday(WNOW))]);
