@@ -457,7 +457,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r61";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r62";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -728,35 +728,35 @@ const REAL_JOBS_WK = { BLR: [
    น้ำหนัก Job (rj.w) = %รวมของแผนก (คอลัมน์ Wieght รวม=100) · แผนก MEC รวม 63.58% */
 MEC: [
  /* Job ลูกหีบ: แผน Gantt ราย Task จริง (ชีต "ลูกหีบ") — Rotary wk1–2 · น้ำพรม wk3–4 · Cooling กลับ wk5 */
- {name:"ซ่อมบำรุงรักษาเครื่องจักรแผนกลูกหีบ", owner:"หน.ซ่อมบำรุงเครื่องกล", w:4.90, realPlan:true, tasks:[
+ {name:"ซ่อมบำรุงรักษาเครื่องจักรแผนกลูกหีบ", owner:"หน.ซ่อมบำรุงเครื่องกล", w:4.90, realPlan:true, p18:100, tasks:[
    ["ระบบปั๊มน้ำอ้อยขึ้น Rotary",1,2,40,20],["ระบบปั๊มน้ำพรม",3,4,40,36],["ระบบปั๊ม Cooling กลับ",5,5,20,18]]},
  /* Job หม้อต้ม: แผน Gantt ราย Task จริง (ชีต "ต้ม") */
- {name:"ซ่อมบำรุงรักษาเครื่องจักรแผนกหม้อต้ม", owner:"หน.ซ่อมบำรุงเครื่องกล", w:25.94, realPlan:true, tasks:[
+ {name:"ซ่อมบำรุงรักษาเครื่องจักรแผนกหม้อต้ม", owner:"หน.ซ่อมบำรุงเครื่องกล", w:25.94, realPlan:true, p18:62.41, tasks:[
    ["ระบบปั๊มน้ำอ้อย",6,10,25,16.95],["ระบบปั๊มน้ำเชื่อม",11,12,10,9],["ระบบปั๊มน้ำร้อน",13,14,15,12.81],
    ["ระบบ Vaccuum",15,16,15,11.5],["ระบบปั๊มเคมี (เก่า)",17,18,15,12.9],
    ["ระบบจัดเตรียมและส่งจ่ายน้ำปูนขาว (ใหม่)",23,24,10,8.2],["ระบบ Filter Cake",23,26,10,4.55]]},
  /* Job หม้อเคี่ยว: แผน Gantt ราย Task จริง (ชีต "เคี่ยว") */
- {name:"ซ่อมบำรุงรักษาเครื่องจักรแผนกหม้อเคี่ยว", owner:"หน.ซ่อมบำรุงเครื่องกล", w:11.11, realPlan:true, tasks:[
+ {name:"ซ่อมบำรุงรักษาเครื่องจักรแผนกหม้อเคี่ยว", owner:"หน.ซ่อมบำรุงเครื่องกล", w:11.11, realPlan:true, p18:100, tasks:[
    ["ระบบชุด Gear ขับใบกวนหัวหม้อ",1,2,30,22.13],["ระบบ Gear ขับรางกวน",3,4,30,27],["ระบบปั๊มหม้อเคี่ยว",5,10,40,12.36]]},
  /* Job หม้อปั่น: แผน Gantt ราย Task จริง (ชีต "ปั่น") */
- {name:"ซ่อมบำรุงรักษาเครื่องจักรแผนกหม้อปั่น", owner:"หน.ซ่อมบำรุงเครื่องกล", w:19.60, realPlan:true, tasks:[
+ {name:"ซ่อมบำรุงรักษาเครื่องจักรแผนกหม้อปั่น", owner:"หน.ซ่อมบำรุงเครื่องกล", w:19.60, realPlan:true, p18:50.24, tasks:[
    ["ระบบปั๊ม Molasse",11,16,30,19.75],["ระบบปั๊ม Magma",17,20,30,14.57],["ระบบปั๊มน้ำร้อน",21,24,10,5.25],
    ["ระบบชุดขับระบบลำเลียง",25,25,20,16],["ระบบ Rotary & Cyclone",26,26,10,3]]},
  /* Job Cooling tower: แผน Gantt ราย Task จริง (ชีต "คุลลิ่ง") · ผลจริงยึดตาม Sheet 18 Q=84.99 (กระจาย 3 Task ตามสัดส่วน) */
- {name:"ซ่อมบำรุงรักษาเครื่องจักรระบบ Cooling tower", owner:"หน.ซ่อมบำรุงเครื่องกล", w:11.20, realPlan:true, tasks:[
+ {name:"ซ่อมบำรุงรักษาเครื่องจักรระบบ Cooling tower", owner:"หน.ซ่อมบำรุงเครื่องกล", w:11.20, realPlan:true, p18:100, tasks:[
    ["ระบบ Injection Pump Process",1,5,50,43.20],["ระบบ Cooling เครื่องจักร",6,8,20,16.50],["ระบบ Cooling ขายไฟฟ้า",8,10,30,25.29]]},
  /* Job ผลิตน้ำ: แผน Gantt ราย Task จริง (ชีต "ระบบน้ำ") */
- {name:"ซ่อมบำรุงรักษาเครื่องจักรระบบผลิตน้ำ", owner:"หน.ซ่อมบำรุงเครื่องกล", w:17.08, realPlan:true, tasks:[
+ {name:"ซ่อมบำรุงรักษาเครื่องจักรระบบผลิตน้ำ", owner:"หน.ซ่อมบำรุงเครื่องกล", w:17.08, realPlan:true, p18:57.65, tasks:[
    ["ระบบกรองน้ำ",11,12,10,0],["ระบบผลิต/จัดเก็บน้ำประปาและน้ำ Soft",13,14,15,0],["ระบบผสมเคมีผลิตน้ำ",15,18,20,9.38],
    ["ระบบปั๊มส่งน้ำประปาและน้ำชอบ",17,20,25,14.72],["ระบบปั๊มส่งจ่ายน้ำดิบ",21,25,30,22.37]]},
  /* Job Waste water: แผน Gantt ราย Task จริง (ชีต "Wastewater") */
- {name:"ซ่อมบำรุงรักษาเครื่องจักรระบบ Waste water", owner:"หน.ซ่อมบำรุงเครื่องกล", w:9.43, realPlan:true, tasks:[
+ {name:"ซ่อมบำรุงรักษาเครื่องจักรระบบ Waste water", owner:"หน.ซ่อมบำรุงเครื่องกล", w:9.43, realPlan:true, p18:0, tasks:[
    ["ระบบส่งจ่ายน้ำทิ้งจากการผลิต",25,28,70,28.88],["ระบบบำบัดน้ำทิ้งจากการผลิต",27,28,30,16]]},
  /* Job ผลิต/ส่งลม: แผน Gantt ราย Task จริง (ชีต "Air com") — ทุก Task ที่ wk21 (Air Compressor/Air dryer/Separator รวมใน Air dryer) */
- {name:"ซ่อมบำรุงรักษาเครื่องจักรระบบผลิตและส่งจ่ายลม", owner:"หน.ซ่อมบำรุงเครื่องกล", w:0.33, realPlan:true, tasks:[
+ {name:"ซ่อมบำรุงรักษาเครื่องจักรระบบผลิตและส่งจ่ายลม", owner:"หน.ซ่อมบำรุงเครื่องกล", w:0.33, realPlan:true, p18:0, tasks:[
    ["Air Compressor",21,21,70,14],["Air dryer",21,21,30,3]]},
  /* Job Machine Shop: แผน wk1 (ชีต "Shop") */
- {name:"ซ่อมบำรุงรักษาเครื่องจักร Machine Shop", owner:"หน.ซ่อมบำรุงเครื่องกล", w:0.42, realPlan:true, tasks:[
+ {name:"ซ่อมบำรุงรักษาเครื่องจักร Machine Shop", owner:"หน.ซ่อมบำรุงเครื่องกล", w:0.42, realPlan:true, p18:100, tasks:[
    ["ระบบเครื่องจักร Machine Shop",1,1,100,100]]},
 ]};
 
@@ -923,13 +923,23 @@ let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
       const mhArr = exactMh.map(x=>Math.floor(x));
       let rem = jobMh - mhArr.reduce((x,y)=>x+y,0);
       exactMh.map((x,i)=>[i,x-Math.floor(x)]).sort((p,q)=>q[1]-p[1]).forEach(o=>{ if(rem>0){ mhArr[o[0]]++; rem--; } });
+      /* เส้นแผนราย Job: ถ้ามี rj.p18 (=%เป้าหมายสะสมถึงสัปดาห์ 18 ตาม Sheet 18) → เส้น 2 ช่วง (0→P ที่ wk18 → 100% ที่สิ้นงาน)
+         ให้ plan(18)=P เป๊ะ · ทุก Task ใน Job ใช้เส้นเดียวกัน (แสดง "กำหนด" ราย Task ตามช่วงจริง) */
+      const js=Math.min(...rj.tasks.map(a=>off+a[1])), je=Math.max(...rj.tasks.map(a=>off+a[2]));
+      let jobPlan;
+      if(rj.p18!=null){
+        const P=rj.p18/100;
+        jobPlan = (je<=18 || js>18)
+          ? (w=>Math.max(0,Math.min(1,(w+1-js)/((je+1)-js))))                         // ไม่คาบสัปดาห์ 18 → ramp ปกติ (plan(18)=100 หรือ 0 = P)
+          : (w=> w<js ? 0 : (w+1<=18 ? Math.max(0,P*(w+1-js)/(18+1-js)) : Math.min(1,P+(1-P)*(w-18)/(je-18))));
+      }
       const tasks = rj.tasks.map((a,i)=>{
         const s=off+a[1], e=off+a[2];                   // สัปดาห์ฤดู เริ่ม–จบ (แบบรวมสัปดาห์จบ เพื่อให้แสดง "กำหนด" ตรง)
         const wt=Math.round(a[3]/rawTot*rj.w*100)/100;  // % ของแผนก · a[3]=เป้าหมาย(น้ำหนักในJob)
         const mh=mhArr[i];
         const seedAct = a[4]!=null ? a[4] : null;        // a[4]=เกิดจริง(%ในJob) มีเฉพาะ Job ที่ดึงผลจริงราย Task แล้ว
-        /* plan ramp: ถึง 100% เมื่อสิ้นสัปดาห์ e (ตัวหารใช้ e+1-s เพื่อให้ผลเท่าเดิมกับตอน e เป็นสัปดาห์จบ+1) */
-        const plan = useDept ? (w=>planU(u.code,w)) : (w=>Math.max(0,Math.min(1,(w+1-s)/((e+1)-s))));
+        /* เลือกเส้นแผน: p18 (ตาม Sheet 18) > ramp ราย Task (Gantt) > เส้นแผนแผนก (planU) */
+        const plan = jobPlan ? jobPlan : (useDept ? (w=>planU(u.code,w)) : (w=>Math.max(0,Math.min(1,(w+1-s)/((e+1)-s)))));
         return {name:a[0], wt, mh, s, e, seedAct, plan, act:0};
       });
       return {name:rj.name, owner:rj.owner, cur:rj.cur, tasks, mh:jobMh, real:true};
