@@ -246,9 +246,11 @@ td.progcell{width:150px}
 .wkbadge{background:linear-gradient(90deg,#DC2626,#EF4444);color:#fff;border-radius:10px;padding:9px 13px;font-size:13.5px;font-weight:700;margin-bottom:10px;box-shadow:0 3px 10px rgba(220,38,38,.28)}
 .wkbadge b{font-size:16px}
 .wkbadge .num{opacity:.9;font-weight:600}
-.modalbtns{display:flex;gap:10px;justify-content:flex-end;align-items:center}
+.modalbtns{display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap}
 .modalbtns .btn-o{flex:0 0 auto}
-.modalbtns .btn-save{flex:0 0 auto;width:auto;padding-left:20px;padding-right:20px}
+.modalbtns .btn-save{flex:0 0 auto;width:auto;padding-left:18px;padding-right:18px}
+.btn-keep{flex:0 0 auto;background:#EEF2FF;color:#3730A3;border:1px solid #C7D2FE;font-weight:700;border-radius:10px;padding:9px 16px;font-size:14px;cursor:pointer}
+.btn-keep:hover{background:#E0E7FF}
 .wknav{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:3px 6px}
 .wknav .wkbtn{border:none;background:var(--tint);color:var(--blue);border-radius:7px;width:26px;height:26px;font-size:13px;cursor:pointer;font-weight:800}
 .wknav .wkbtn:disabled{opacity:.35;cursor:default}
@@ -440,7 +442,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r44";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r45";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1567,13 +1569,13 @@ function openTaskForm(tid){
     <div class="formgrid">
       <div class="fld"><label>📅 ${pk(["วันที่บันทึก","ວັນທີ","Date"])}</label><input id="tfDate" type="date" value="${dateISO(new Date(Math.min(weekSaturday(WNOW).getTime(), Date.now())))}" max="${todayISO()}"></div>
       <div class="fld"><label>⚖️ ${pk(["แต้มสะสมที่ทำได้","ແຕ້ມສະສົມທີ່ເຮັດໄດ້","Points earned (cum.)"])} <span class="num">(0–${wt})</span></label><input id="tfPct" type="number" min="${fl}" max="${wt}" step="0.01" value="${Math.max(fl,prefill)}" oninput="tfPctHint(this.value,${wt})"><div id="tfPctHint" class="small num"></div></div>
-      <div class="fld"><label>${pk(["man-hr วันนั้น","man-hr","Man-hours"])}</label><input id="tfMh" type="number" min="0" step="1" placeholder="24"></div>
       <div class="fld"><label>${pk(["ผู้บันทึก","ຜູ້ບັນທຶກ","By"])}</label><input id="tfBy" type="text"></div>
     </div>
     <div class="fld" style="margin-bottom:12px"><label>${pk(["หมายเหตุ","ໝາຍເຫດ","Note"])}</label><input id="tfNote" type="text"></div>
     <div class="modalbtns">
       <button class="btn btn-o" onclick="closeTaskForm()">${pk(["ยกเลิก","ຍົກເລີກ","Cancel"])}</button>
-      <button class="btn-save" onclick="saveTaskForm()">💾 ${pk(["บันทึก Task นี้","ບັນທຶກ Task ນີ້","Save this task"])}</button>
+      <button class="btn btn-keep" onclick="keepTaskForm()" title="${pk(["ไม่มีการเปลี่ยนแปลง คงค่าเดิม แค่เช็คอินว่ามา update แล้ว","ຄົງຄ່າເດີມ ພຽງເຊັກອິນ","No change — check-in only"])}">↔️ ${pk(["คงตัวเดิม","ຄົງເດີມ","Keep as-is"])}</button>
+      <button class="btn-save" onclick="saveTaskForm()">💾 ${pk(["บันทึก","ບັນທຶກ","Save"])}</button>
     </div>`;
   document.getElementById("taskModal").classList.add("open");
   tfPctHint(Math.max(fl,prefill), wt);
@@ -1593,11 +1595,25 @@ function saveTaskForm(){
   if(floor!=null && pct<floor){ alert(pk(["แต้มสะสมต้องไม่น้อยกว่าค่าล่าสุด ("+floor+" แต้ม)","ຕ້ອງບໍ່ໜ້ອຍກວ່າ ("+floor+" ແຕ້ມ)","Must be ≥ latest ("+floor+" pts)"])); return; }
   const d=document.getElementById("tfDate").value||todayISO();
   if(d>todayISO()){ alert(pk(["เลือกวันอนาคตไม่ได้","ບໍ່ໄດ້","No future date"])); return; }
-  const entry={date:d, taskId:tid, pct:pct, mh:parseFloat(document.getElementById("tfMh").value)||0,
+  const entry={date:d, taskId:tid, pct:pct, mh:0,
     by:document.getElementById("tfBy").value.trim(), note:document.getElementById("tfNote").value.trim()};
   ENTRIES.push(entry); saveEntries(ENTRIES); applyEntries(); pushToSheet(entry);
   closeTaskForm(); entryDeptPage();
   const t=document.getElementById("entryToast"); if(t){ t.innerHTML=`<div class="toast">✓ ${pk(["บันทึกแล้ว","ບັນທຶກແລ້ວ","Saved"])}</div>`; setTimeout(()=>t.innerHTML="",2500); }
+}
+/* คงตัวเดิม = ไม่มีการเปลี่ยนแปลง คงค่า % เดิมไว้ แต่เช็คอินว่าสัปดาห์นี้มา update แล้ว (นับเป็นบันทึกของสัปดาห์) */
+function keepTaskForm(){
+  const tid=document.getElementById("tfTid").value;
+  const x=TASK_INDEX[tid]; if(!x) return;
+  const wt=x.t.wt;
+  const floor=latestPctFor(tid);
+  const pct=(floor!=null)?floor:Math.round(x.t.act*wt*100)/100;   // ค่าเดิม (แต้มสะสมล่าสุด/ปัจจุบัน)
+  const d=dateISO(new Date(Math.min(weekSaturday(WNOW).getTime(), Date.now())));
+  const by=(document.getElementById("tfBy").value||"").trim();
+  const entry={date:d, taskId:tid, pct:pct, mh:0, by:by, note:pk(["คงค่าเดิม (เช็คอิน)","ຄົງຄ່າເດີມ","keep (check-in)"])};
+  ENTRIES.push(entry); saveEntries(ENTRIES); applyEntries(); pushToSheet(entry);
+  closeTaskForm(); entryDeptPage();
+  const t=document.getElementById("entryToast"); if(t){ t.innerHTML=`<div class="toast">↔️ ${pk(["เช็คอินแล้ว (คงค่าเดิม)","ເຊັກອິນແລ້ວ","Checked in (kept)"])}</div>`; setTimeout(()=>t.innerHTML="",2500); }
 }
 
 function _unused_oldEntry(){
