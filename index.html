@@ -222,9 +222,27 @@ td.progcell{width:150px}
 .small{font-size:12px;color:var(--mut)}
 .chartwrap{position:relative}
 .chartwrap svg{cursor:zoom-in}
+/* ตารางเช็คชื่อรายสัปดาห์ */
+.attend{border-collapse:collapse;width:100%;font-size:13px}
+.attend th,.attend td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:center}
+.attend th{font-size:11.5px;color:var(--mut);font-weight:700;vertical-align:bottom}
+.attend td.r,.attend th.r{text-align:center}
+.attend .wkcur{background:var(--tint)}
+.attend th.wkcur{color:var(--blue);border-bottom:2px solid var(--blue)}
+.attend tr:hover td{background:var(--tint2)}
+.attend tr:hover td.wkcur{background:#DCE9FF}
 .modal-ov{position:fixed;inset:0;background:rgba(12,22,40,.6);display:none;align-items:center;justify-content:center;z-index:200;padding:20px}
 .modal-ov.open{display:flex}
 .modal-box{background:var(--card);border-radius:16px;padding:20px 24px 22px;max-width:1040px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.4);position:relative}
+/* modal บันทึก Task แบบกระชับ (เล็กลง) */
+#taskModal .modal-box{padding:15px 18px 17px}
+#taskModal h3{font-size:16px;margin:0 0 9px;padding-right:30px}
+#taskModal .taskinfo{font-size:11.8px;padding:8px 11px;line-height:1.65;border-radius:9px}
+#taskModal .formgrid{gap:9px 10px;margin-bottom:9px}
+#taskModal .fld label{font-size:11px}
+#taskModal input{padding:8px 10px;font-size:13.5px;border-radius:8px}
+#taskModal .btn-save{padding:10px;font-size:14px}
+#taskModal .modal-close{top:12px;right:12px}
 .modal-box h3{margin:0 34px 14px 0;font-size:16px;font-weight:800;color:var(--ink)}
 .modal-close{position:absolute;top:14px;right:16px;width:34px;height:34px;border:none;background:var(--tint);border-radius:9px;cursor:pointer;font-size:17px;color:var(--mut);line-height:1}
 .modal-close:hover{background:var(--tint2);color:var(--ink)}
@@ -402,7 +420,7 @@ img,svg,table{max-width:100%}
   </div>
 </div>
 <div class="modal-ov" id="taskModal" onclick="if(event.target===this)closeTaskForm()">
-  <div class="modal-box" style="max-width:560px">
+  <div class="modal-box" style="max-width:440px">
     <button class="modal-close" onclick="closeTaskForm()" aria-label="close">✕</button>
     <h3 id="taskModalTitle"></h3>
     <div id="taskModalBody"></div>
@@ -410,7 +428,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r38";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r39";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1874,22 +1892,34 @@ function repPage(){
         :`<div class="small">${pk(["ไม่มี Task ใกล้ครบกำหนด","ບໍ່ມີ Task ໃກ້ຄົບກຳນົດ","None due soon"])}</div>`}
     </div>
   </div>
-  <div class="card"><h2>6. ${pk(["วินัยการบันทึกรายสัปดาห์ (กำหนดส่งทุกวันศุกร์)","ວິໄນການບັນທຶກລາຍອາທິດ (ກຳນົດສົ່ງທຸກວັນສຸກ)","Weekly entry compliance (due every Friday)"])}</h2>
+  <div class="card"><h2>6. ${pk(["ตารางเช็คการบันทึกรายสัปดาห์ (กำหนดส่งทุกวันศุกร์)","ຕາຕະລາງກວດການບັນທຶກລາຍອາທິດ","Weekly entry attendance (due every Friday)"])}</h2>
+    <div class="sub">${pk(["✓ บันทึกแล้ว · ✗ ยังไม่บันทึก · — ยังไม่มีแผน/ยังไม่เริ่มงาน · คอลัมน์ฟ้า = สัปดาห์ปัจจุบัน","✓ ບັນທຶກແລ້ວ · ✗ ຍັງບໍ່ບັນທຶກ · — ຍັງບໍ່ມີແຜນ","✓ recorded · ✗ not yet · — no plan/not started · blue col = current week"])}</div>
     ${(function(){
-      const N=Math.min(WNOW,8);   // ดูย้อนหลังไม่เกิน 8 สัปดาห์
+      const N=Math.min(WNOW,10);
       const wks=[...Array(N).keys()].map(i=>WNOW-N+1+i);
-      const recWk={};             // code -> Set(สัปดาห์ที่บันทึก)
+      const recWk={};   // code -> Set(สัปดาห์ที่บันทึก)
       ENTRIES.forEach(e=>{ const w=seasonWeekOf(e.date); if(w>0){ const c=e.taskId.split("-")[0]; (recWk[c]=recWk[c]||new Set()).add(w);} });
-      const units=DATA.flatMap(s=>s.units).filter(u=>!u.blank);
-      const rowsW=units.map(u=>{ const set=recWk[u.code]||new Set();
-        const n=wks.filter(w=>set.has(w)).length; return {u,set,n,pct:Math.round(n/N*100)};}).sort((a,b)=>a.pct-b.pct);
+      const units=DATA.flatMap(s=>s.units);
+      const th=wks.map(w=>`<th class="r ${w===WNOW?'wkcur':''}" title="${fmtDate(wkStart(w))}–${fmtDate(wkEnd(w))}">W${w}<br><span class="small num" style="font-weight:400">${wkEnd(w).getDate()}/${wkEnd(w).getMonth()+1}</span></th>`).join("");
+      const rows=units.map(u=>{
+        const set=recWk[u.code]||new Set();
+        const startW=u.blank?999:Math.min(...unitTasks(u).filter(t=>!t.placeholder).map(t=>Math.ceil(t.s)),999);
+        let done=0, due=0;
+        const cells=wks.map(w=>{
+          if(u.blank || w<startW) return `<td class="r ${w===WNOW?'wkcur':''}" style="color:var(--mut)">—</td>`;
+          due++; const rec=set.has(w); if(rec) done++;
+          return `<td class="r ${w===WNOW?'wkcur':''}" style="color:${rec?'var(--good)':'var(--crit)'};font-weight:800">${rec?'✓':'✗'}</td>`;
+        }).join("");
+        const sum=u.blank?`<span style="color:var(--mut)">${pk(["รอแผน","ລໍຖ້າ","—"])}</span>`:`${done}/${due}`;
+        return `<tr><td style="white-space:nowrap"><b>${un(u.name)}</b><div class="small">${u.owner}</div></td>${cells}<td class="r num">${sum}</td></tr>`;
+      }).join("");
       const missWk=complianceToday().filter(x=>!x.done);
-      const head=(missWk.length? `<div class="repline"><span class="bullet" style="color:var(--crit)">⚠</span>
-        <span><b>${pk(["สัปดาห์นี้ยังไม่บันทึก:","ອາທິດນີ້ຍັງບໍ່ບັນທຶກ:","Not recorded this week:"])}</b> ${missWk.map(x=>un(x.u.name)+" ("+x.u.owner+")").join(" · ")} — ${pk(["กำหนดส่งศุกร์","ກຳນົດສົ່ງວັນສຸກ","due Fri"])} ${fmtDate(weekFriday(WNOW))}</span></div>`:
-        `<div class="repline"><span class="bullet" style="color:var(--good)">✓</span><span>${pk(["สัปดาห์นี้บันทึกครบทุกหน่วยที่มีแผนแล้ว","ອາທິດນີ້ບັນທຶກຄົບແລ້ວ","All active units recorded this week"])}</span></div>`);
-      return head + rowsW.map(x=>`<div class="repline"><span class="bullet num" style="color:${x.pct>=80?'var(--good)':x.pct>=50?'var(--warn)':'var(--crit)'}">${x.pct}%</span>
-        <span>${un(x.u.name)} <span class="small">· ${x.n}/${N} ${pk(["สัปดาห์","ອາທິດ","wk"])} · ${x.u.owner}</span>
-        <span class="num" style="margin-left:8px;letter-spacing:2px">${wks.map(w=>x.set.has(w)?'<span style="color:var(--good)">●</span>':'<span style="color:var(--crit)">○</span>').join("")}</span></span></div>`).join("");
+      const banner=missWk.length
+        ? `<div class="compbanner" style="margin:12px 0 0">⚠️ <b>${pk(["สัปดาห์ที่","ອາທິດທີ","Week"])} ${WNOW} ยังไม่บันทึก:</b> <span class="cbunits">${missWk.map(x=>un(x.u.name)).join(" · ")}</span> — ${pk(["กำหนดส่งศุกร์","ກຳນົດສົ່ງວັນສຸກ","due Fri"])} ${fmtDate(weekFriday(WNOW))}</div>`
+        : `<div class="repline" style="margin-top:12px"><span class="bullet" style="color:var(--good)">✓</span><span>${pk(["สัปดาห์ที่","ອາທິດທີ","Week"])} ${WNOW} ${pk(["บันทึกครบทุกหน่วยที่มีแผนแล้ว","ບັນທຶກຄົບແລ້ວ","all active units recorded"])}</span></div>`;
+      return `<div class="scrollx"><table class="attend">
+        <tr><th style="text-align:left">${pk(["แผนก","ໜ່ວຍ","Unit"])}</th>${th}<th class="r">${pk(["รวม","ລວມ","Total"])}</th></tr>
+        ${rows}</table></div>${banner}`;
     })()}
   </div>`;
 }
