@@ -410,7 +410,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r37";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r38";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -868,7 +868,7 @@ function saveEntries(a){ try{ localStorage.setItem("idash_entries",JSON.stringif
 let ENTRIES = loadEntries();
 
 /* ===== เชื่อมต่อ Google Sheet ผ่าน Apps Script Web App ===== */
-const SHEET_API_DEFAULT = "https://script.google.com/macros/s/AKfycbyMO9a9oj-0SmXC4-ley3zHj-4KDZQ6_ue-faTs57RmZpkamm2bTh24cBtsneu3xR5kIg/exec";
+const SHEET_API_DEFAULT = "https://script.google.com/macros/s/AKfycbx7w75j1Ccb98w9300YNaYKaWUphzzlQjMNtPNUFpBYEElCD2RMO_lEeG9bwxYlOkXEzQ/exec";
 /* ใช้ URL ที่ฝังตายตัวเสมอ — ล้างค่า URL เก่าที่เคยบันทึกไว้ในเครื่องทิ้ง (เคยทำให้บางเครื่องเชื่อม deployment เก่าที่ใช้ไม่ได้ → ข้อมูลเป็น 0) */
 let SHEET_API = SHEET_API_DEFAULT;
 try{ localStorage.removeItem("idash_api"); }catch(e){}
