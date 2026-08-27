@@ -457,7 +457,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r46";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r47";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -594,6 +594,8 @@ Object.entries(PLAN_FORCE).forEach(([c,a])=>{
   UNIT_STARTW[c]=a.findIndex(v=>v>0)+1;
 });
 const WEEK_FORCE = PLAN_DAYS.map((_,i)=>Object.values(PLAN_FORCE).reduce((s,a)=>s+a[i],0));
+/* แรงรวมทั้งฤดูกาลตามไฟล์ R1 (17,473) — ใช้แสดง "ยอดรวมตามแผน" ให้ตรงไฟล์ ไม่ใช่ผลรวม mh ราย task ที่ปัดเศษ */
+const SEASON_FORCE = Math.round(Object.values(FORCE_TOTAL).reduce((a,b)=>a+b,0));
 /* % แผนสะสมทางการของแผนก ณ สัปดาห์ w (เศษสัปดาห์ = เทียบบัญญัติไตรยางศ์ในสัปดาห์นั้น) */
 function planU(code,w){
   const cum=PLAN_CUM[code]; if(!cum) return 0;
@@ -603,7 +605,14 @@ function planU(code,w){
 }
 const REALWK = Math.max(1, Math.min(WEEKS, Math.floor((Date.now()-SEASON_START.getTime())/(7*86400000))+1));
 const BASELINE_WK = 18;   // สัปดาห์ที่นำเข้าข้อมูลย้อนหลังถึง — สัปดาห์ ≤ นี้ ถือว่าบันทึกครบแล้ว (ในตารางเช็คชื่อ)
-let WNOW = REALWK;   // สัปดาห์ที่กำลังดู (เปลี่ยนได้จากตัวเลือกวันที่)
+/* สัปดาห์รายงาน (ภาพรวม) = สัปดาห์ล่าสุดที่ "ผ่านวันเสาร์ (วัน update)" แล้ว — ใช้เป็นฐานเทียบแผนในหน้าภาพรวม
+   ตอนนี้ผลจริง update ถึงสัปดาห์ 18 → โชว์เป้าสัปดาห์ 18 · พอถึงเสาร์ของสัปดาห์ 19 (29 ส.ค.) เลื่อนเป็น 19 อัตโนมัติ */
+const REPORT_WK = Math.max(1, Math.min(WEEKS, (function(){
+  const t=Date.now(); let w=1;
+  for(let k=1;k<=WEEKS;k++){ const sat=SEASON_START.getTime()+((k-1)*7+5)*86400000; if(sat<=t) w=k; else break; }
+  return w;
+})()));
+let WNOW = REALWK;   // สัปดาห์ที่กำลังดู/บันทึก (เปลี่ยนได้จากตัวเลือกวันที่)
 
 /* ===== แผนงานจริงราย Job/Task (ไฟล์ "แผนบำรุงรักษา และซ่อมแซมเครื่องจักรประจำ") =====
    ระบบแต้มน้ำหนัก: แผนกเต็ม 100 แต้ม · น้ำหนัก Task = วันทำงาน × 50/164 (2 กลุ่มงาน กลุ่มละ 50)
@@ -1094,8 +1103,9 @@ function complianceToday(){
 
 /* ---- ผลจริง ณ สัปดาห์ y้อนหลัง: สเกลตามรูปทรงแผน ---- */
 function actAt(t,w){
-  if(w>=REALWK) return t.act;
-  const p0=t.plan(REALWK);
+  /* anchor ที่สัปดาห์รายงาน (ข้อมูลจริง update ถึง REPORT_WK) — w≥REPORT_WK คืนค่าจริงเต็ม · ก่อนหน้านั้นประมาณตามสัดส่วนแผน (ใช้วาดเส้น S-curve ย้อนหลัง) */
+  if(w>=REPORT_WK) return t.act;
+  const p0=t.plan(REPORT_WK);
   if(p0<=0) return 0;
   return Math.min(t.act, t.act*Math.min(1, t.plan(w)/p0));
 }
@@ -1128,9 +1138,10 @@ function donut(pct, color="#2563EB", size=92){
     </g>
   </svg>`;
 }
-function sCurve(tasks, lineColor="#2563EB", w=720, h=260){
+function sCurve(tasks, lineColor="#2563EB", w=720, h=260, curW){
+  curW = curW||WNOW;
   const P=[...Array(WEEKS+1).keys()].map(i=>agg(tasks,i).plan);
-  const Act=[...Array(WNOW+1).keys()].map(wk=>agg(tasks,wk).act);
+  const Act=[...Array(curW+1).keys()].map(wk=>agg(tasks,wk).act);
   const mL=42,mR=16,mT=18,mB=32, iw=w-mL-mR, ih=h-mT-mB;
   const X=wk=>mL+iw*wk/WEEKS, Y=v=>mT+ih*(1-v/100);
   const path=(arr,n)=>arr.slice(0,n+1).map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+","+Y(v).toFixed(1)).join(" ");
@@ -1139,19 +1150,19 @@ function sCurve(tasks, lineColor="#2563EB", w=720, h=260){
   for(let v=0;v<=100;v+=25) g+=`<line x1="${mL}" x2="${w-mR}" y1="${Y(v)}" y2="${Y(v)}" stroke="#EAF0F8" stroke-width="1"/>
       <text x="${mL-8}" y="${Y(v)+4}" font-size="11" fill="#64748B" text-anchor="end">${v}</text>`;
   months.forEach((m,i)=>{ const wk=i*WEEKS/7+WEEKS/14; g+=`<text x="${X(wk)}" y="${h-9}" font-size="11" fill="#64748B" text-anchor="middle">${m}</text>`; });
-  const xN=X(WNOW), yA=Y(Act[WNOW]);
-  const area = path(Act,WNOW)+`L${X(WNOW)},${Y(0)} L${X(0)},${Y(0)} Z`;
+  const xN=X(curW), yA=Y(Act[curW]);
+  const area = path(Act,curW)+`L${X(curW)},${Y(0)} L${X(0)},${Y(0)} Z`;
   return `<div class="chartwrap"><button class="savepic noprint" title="${pk(["บันทึกกราฟเป็นรูป","ບັນທຶກກຣາຟເປັນຮູບ","Save chart as image"])}" onclick="saveChart(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M4 20h16"/></svg></button>
   <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto" role="img" onclick="openChartModal(this)"
     <text x="${mL-8}" y="10" font-size="10.5" fill="#94A3B8">(%)</text>
     ${g}
     <path d="${area}" fill="${lineColor}" opacity="0.10"/>
     <line x1="${xN}" x2="${xN}" y1="${mT}" y2="${mT+ih}" stroke="#94A3B8" stroke-width="1.3" stroke-dasharray="3 4"/>
-    <text x="${xN+7}" y="${mT+13}" font-size="11" fill="#64748B">${pk(["สัปดาห์","ສັບປະດາ","Week"])} ${WNOW}</text>
+    <text x="${xN+7}" y="${mT+13}" font-size="11" fill="#64748B">${pk(["สัปดาห์","ສັບປະດາ","Week"])} ${curW}</text>
     <path d="${path(P,WEEKS)}" fill="none" stroke="#94A3B8" stroke-width="2" stroke-dasharray="6 5"/>
-    <path d="${path(Act,WNOW)}" fill="none" stroke="${lineColor}" stroke-width="3"/>
+    <path d="${path(Act,curW)}" fill="none" stroke="${lineColor}" stroke-width="3"/>
     <circle cx="${xN}" cy="${yA}" r="5" fill="${lineColor}"/>
-    <text x="${xN-10}" y="${yA-12}" font-size="15" fill="#1E2A3A" text-anchor="end" font-weight="800">${fmt1(Act[WNOW])}%</text>
+    <text x="${xN-10}" y="${yA-12}" font-size="15" fill="#1E2A3A" text-anchor="end" font-weight="800">${fmt1(Act[curW])}%</text>
   </svg>
   <div class="legendbar"><span><span class="sw" style="background:${lineColor}"></span>${pk(["ผลจริงสะสม (% ถ่วง mh)","ຜົນຕົວຈິງສະສົມ (% ຖ່ວງ mh)","Cumulative actual (mh-weighted %)"])}</span>
   <span><span class="sw" style="background:none;border-top:3px dashed #94A3B8;height:0"></span>${pk(["แผนสะสมรายสัปดาห์","ແຜນສະສົມລາຍອາທິດ","Weekly plan baseline"])}</span></div></div>`;
@@ -1255,20 +1266,22 @@ function syncChip(){
 }
 function pagehead(title,sub){ return `<div class="pagehead"><div class="phleft">${IDLOGO}<div><h1>${title}</h1><div class="sub">${sub}</div></div></div><div class="headctl"><span id="syncChipBox">${syncChip()}</span>${langChip()}${weekChip()}</div></div>${histBanner()}`; }
 function unitBub(name,sz=22){ return IC(ICONS[UNIT_ICON[name]]||ICONS.gear,sz); }
-function riskRows(){
+function riskRows(w){
+  w = w||WNOW;
   /* จัดอันดับเสี่ยง/ล่าช้าเฉพาะหน่วยที่มีแผน Job/Task จริง — หน่วย blank ยังไม่นำมาจัดอันดับ (ยังไม่มีข้อมูลจริง) */
-  return DATA.flatMap(s=>s.units.filter(u=>!u.blank).map(u=>({sec:s,u,a:agg(unitTasks(u),WNOW)})))
+  return DATA.flatMap(s=>s.units.filter(u=>!u.blank).map(u=>({sec:s,u,a:agg(unitTasks(u),w)})))
     .map(x=>({...x,varc:x.a.act-x.a.plan,st:statusOf(x.a.act-x.a.plan)}));
 }
 
 /* ============ ภาพรวม ============ */
 function overview(){
   const SCc={good:"#16A34A",warn:"#D97706",crit:"#EF4444"};
-  const f=agg(allTasks,WNOW), varc=f.act-f.plan, [fLbl,fTone]=statusOf(varc);
-  const rows=riskRows();
+  const RW=REPORT_WK;   /* ภาพรวมเทียบกับ "สัปดาห์รายงาน" (ล่าสุดที่ update แล้ว) — ตอนนี้ = 18 · เลื่อนเป็น 19 เมื่อถึงเสาร์ */
+  const f=agg(allTasks,RW), varc=f.act-f.plan, [fLbl,fTone]=statusOf(varc);
+  const rows=riskRows(RW);
   const late=rows.filter(r=>r.st[1]==="crit"), risk=rows.filter(r=>r.st[1]==="warn");
   const jobsAll=DATA.flatMap(s=>s.units.flatMap(u=>visJobs(u)));
-  const jobsDone=jobsAll.filter(j=>agg(j.tasks,WNOW).act>=99.5).length;
+  const jobsDone=jobsAll.filter(j=>agg(j.tasks,RW).act>=99.5).length;
   /* นับถอยหลังทีละวันจาก "วันนี้จริง" ถึงวันเปิดหีบ (31 ต.ค. 2569) — เปิดเว็บวันไหนเลขลดทุกวัน */
   const _n=new Date(), _today=new Date(_n.getFullYear(),_n.getMonth(),_n.getDate());
   const daysLeft=Math.max(0,Math.ceil((SEASON_END-_today)/86400000));
@@ -1282,8 +1295,8 @@ function overview(){
      ${partU.length?`<span class="cbnum num" style="background:var(--warn)">${partU.length}</span> ${pk(["บันทึกไม่ครบ","ບັນທຶກບໍ່ຄົບ","partial"])}: <span class="cbunits">${partU.map(x=>un(x.u.name)+" ("+x.logged+"/"+x.active+")").join(" · ")}</span>`:""}
      <a onclick="go('entry')">${pk(["บันทึก ›","ບັນທຶກ ›","Record ›"])}</a></div>`;
   app.innerHTML = pagehead(pk(["ความคืบหน้าของงานซ่อม","ຄວາມຄືບໜ້າຂອງວຽກສ້ອມແປງ","Maintenance Progress"]),
-    pk(["ภาพรวม ณ วันที่","ພາບລວມ ນະວັນທີ","As of"])+" "+fmtDate(wkEnd(WNOW))+" · "+pk(["สัปดาห์ที่","ສັບປະດາທີ","Week"])+" "+WNOW+"/"+WEEKS
-    +" · "+pk(["ทำงาน","ເຮັດວຽກ","workdays"])+" "+PLAN_DAYS[WNOW-1]+" "+pk(["วัน","ວັນ","days"])+" · "+pk(["กำลังพลตามแผน","ກຳລັງພົນຕາມແຜນ","planned force"])+" "+fmt0(WEEK_FORCE[WNOW-1])+" "+pk(["แรง","ແຮງ","man-days"])) + compBanner + `
+    pk(["ผลจริงถึงสิ้นสัปดาห์","ຜົນຕົວຈິງຮອດທ້າຍອາທິດ","As of end of week"])+" "+RW+" ("+fmtDate(wkEnd(RW))+") · "+pk(["เทียบเป้าสัปดาห์","ທຽບເປົ້າອາທິດ","vs target wk"])+" "+RW+"/"+WEEKS
+    +" · "+pk(["ทำงาน","ເຮັດວຽກ","workdays"])+" "+PLAN_DAYS[RW-1]+" "+pk(["วัน","ວັນ","days"])+" · "+pk(["กำลังพลตามแผน","ກຳລັງພົນຕາມແຜນ","planned force"])+" "+fmt0(WEEK_FORCE[RW-1])+" "+pk(["แรง","ແຮງ","man-days"])) + compBanner + `
   <div class="kpis">
     <div class="kpi hero">
       <div>
@@ -1296,7 +1309,7 @@ function overview(){
     <div class="kpi"><div class="label">${pk(["แรงงานสะสม","ແຮງງານສະສົມ","Man-days used"])}</div>
       <div class="icrow"><span class="icbub">${IC(ICONS.people)}</span>
         <div><div class="value num" style="font-size:28px;margin:0">${fmt0(f.actMh)}</div><div class="small">${pk(["แรง","ແຮງ","man-days"])}</div></div></div>
-      <div class="note num" style="margin-top:6px">${pk(["จากแผนทั้งฤดูกาล","ຈາກແຜນທັງລະດູການ","of season plan"])} ${fmt0(f.mh)}</div></div>
+      <div class="note num" style="margin-top:6px">${pk(["จากแผนทั้งฤดูกาล","ຈາກແຜນທັງລະດູການ","of season plan"])} ${fmt0(SEASON_FORCE)}</div></div>
     <div class="kpi"><div class="label">${pk(["JOB เสร็จ","JOB ສຳເລັດ","Jobs done"])}</div>
       <div class="icrow"><span class="icbub">${IC(ICONS.check)}</span>
         <div><div class="value num" style="font-size:28px;margin:0">${jobsDone} <span class="unit">/ ${jobsAll.length}</span></div></div></div>
@@ -1325,7 +1338,7 @@ function overview(){
 
   <div class="grid2">
     <div class="card"><h2>S-CURVE <span class="thin">· ${pk(["แผนเทียบผลจริง รายสัปดาห์","ແຜນທຽບຜົນຕົວຈິງ ລາຍສັບປະດາ","Plan vs actual, weekly"])}</span></h2>
-      ${sCurve(allTasks)}</div>
+      ${sCurve(allTasks,"#2563EB",720,260,RW)}</div>
     <div class="card"><span class="seeall" onclick="go('units')">${pk(["ดูทั้งหมด →","ເບິ່ງທັງໝົດ →","View all →"])}</span>
       <h2>${pk(["หน่วยงานที่เสี่ยงล่าช้า","ໜ່ວຍງານທີ່ສ່ຽງຊັກຊ້າ","Units at risk"])}</h2>
       ${[...late,...risk].sort((a,b)=>a.varc-b.varc).slice(0,4).map((r,i)=>`
@@ -1976,7 +1989,7 @@ function repPage(){
     <button class="btn btn-o" onclick="exportExcel()">📊 Export Excel</button></div>
   <div class="card"><h2>1. ${pk(["สรุปภาพรวม","ສະຫຼຸບພາບລວມ","Summary"])}</h2>
     <div class="repline"><span class="bullet">•</span><span class="num">${pk(["ความคืบหน้ารวม","ຄວາມຄືບໜ້າລວມ","Overall progress"])} <b>${fmt1(f.act)}%</b> ${pk(["เทียบแผน","ທຽບແຜນ","vs plan"])} ${fmt1(f.plan)}% — <b>${gap>=0?pk(["นำแผน","ນຳແຜນ","ahead"]):pk(["ช้ากว่าแผน","ຊ້າກວ່າແຜນ","behind"])} ${fmt1(Math.abs(gap))} ${PTS} (${fLbl})</b></span></div>
-    <div class="repline"><span class="bullet">•</span><span class="num">${pk(["แรงงานสะสม","ແຮງງານສະສົມ","Man-days"])} <b>${fmt0(f.actMh)}</b> / ${fmt0(f.mh)} ${pk(["แรง","ແຮງ","man-days"])} · Job ${pk(["เสร็จ","ສຳເລັດ","done"])} <b>${done.length}/${jobsAll.length}</b></span></div>
+    <div class="repline"><span class="bullet">•</span><span class="num">${pk(["แรงงานสะสม","ແຮງງານສະສົມ","Man-days"])} <b>${fmt0(f.actMh)}</b> / ${fmt0(SEASON_FORCE)} ${pk(["แรง","ແຮງ","man-days"])} · Job ${pk(["เสร็จ","ສຳເລັດ","done"])} <b>${done.length}/${jobsAll.length}</b></span></div>
     <div class="repline"><span class="bullet">•</span><span class="num">${pk(["หน่วยล่าช้า","ໜ່ວຍຊັກຊ້າ","Late units"])} <b style="color:var(--crit)">${late.length}</b> · ${pk(["เสี่ยง","ສ່ຽງ","at-risk"])} <b style="color:var(--warn)">${risk.length}</b> / 9 · ${pk(["เหลือ","ເຫຼືອ","remaining"])} <b>${WEEKS-WNOW} ${pk(["สัปดาห์","ສັບປະດາ","weeks"])}</b></span></div>
   </div>
   <div class="card"><h2>2. ${pk(["สถานะรายหน่วยงาน","ສະຖານະລາຍໜ່ວຍງານ","Status by unit"])}</h2>
