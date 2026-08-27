@@ -457,7 +457,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r63";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r64";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -765,24 +765,49 @@ MEC: [
    9 Job (job-level) · GEN เริ่มงานสัปดาห์ 6 จบ 31 ต.ค. · ช่วง s–e = สัปดาห์ฤดูจากวันที่จริง
    [ชื่อ, wkเริ่ม, wkจบ, น้ำหนักในJob=100, เกิดจริง Q] · w=%ของแผนก(T) · p18=เป้าสะสม%ถึงสัปดาห์18(P) · แรงรวม 1517 */
 GEN: [
+ /* แต่ละ Job ลง sub-task (จาก Schedule 1-9) น้ำหนักเท่ากัน · ใช้เส้นแผน p18 + ผลจริง Q ของ Job (ไม่มีผลจริงราย sub-task)
+    task = [ชื่อ, wkเริ่ม(=ช่วง Job), wkจบ, น้ำหนักในJob, เกิดจริงแต้มในJob] · sum น้ำหนัก=100 · sum เกิดจริง=Q */
  {name:"ตรวจเช็ค/ทำความสะอาด COOLER, OIL TANK STG No.1-5", owner:"หน.ผลิตไฟฟ้า", w:15.03, realPlan:true, p18:100, tasks:[
-   ["ตรวจเช็ค/ทำความสะอาด COOLER, OIL TANK STG No.1-5",6,9,100,100]]},
+   ["Drain lube oil & cleaning lube oil system",6,9,20,20],["Drain water cooler & water cooler system",6,9,20,20],
+   ["Inspection & repair oil tank",6,9,20,20],["Inspection & repair oil-air cooler",6,9,20,20],["Close & pressure test",6,9,20,20]]},
  {name:"ซ่อมแซม VALVES, PIPE AND INSULATION", owner:"หน.ผลิตไฟฟ้า", w:42.32, realPlan:true, p18:65.97, tasks:[
-   ["ซ่อมแซม VALVES, PIPE AND INSULATION",10,22,100,57]]},
+   ["Inspection & repair valve main steam for turbine",10,22,12.5,7.13],["Inspection & repair exhaust steam valve",10,22,12.5,7.13],
+   ["Inspection & repair blow exhaust steam valve",10,22,12.5,7.13],["Inspection & repair control valve",10,22,12.5,7.13],
+   ["Inspection & repair water cooling valve",10,22,12.5,7.13],["Inspection & repair trap and bypass steam valve",10,22,12.5,7.13],
+   ["Inspection & repair ejector system",10,22,12.5,7.11],["Re insulation for pipe",10,22,12.5,7.11]]},
  {name:"ซ่อมแซม CONDENSER SYSTEMS", owner:"หน.ผลิตไฟฟ้า", w:5.60, realPlan:true, p18:100, tasks:[
-   ["ซ่อมแซม CONDENSER SYSTEMS",11,13,100,55]]},
+   ["เปิดตรวจสอบและทำความสะอาด Condenser Tank",11,13,20,11],["ตรวจสอบซ่อมแซม Ejector Systems",11,13,20,11],
+   ["ตรวจสอบซ่อมแซม Condensate Pumps",11,13,20,11],["ตรวจสอบซ่อมแซม Condensate system",11,13,20,11],["Close & water test leak",11,13,20,11]]},
  {name:"ตรวจเช็ค Turbine, Gear, Generator No.1-5", owner:"หน.ผลิตไฟฟ้า", w:6.33, realPlan:true, p18:100, tasks:[
-   ["ตรวจเช็ค Turbine, Gear, Generator No.1-5",7,10,100,100]]},
+   ["ตรวจเช็ค Steam Turbine Generator No.1",7,10,16.67,16.67],["ตรวจเช็ค Steam Turbine Generator No.2",7,10,16.67,16.67],
+   ["ตรวจเช็ค Steam Turbine Generator No.3",7,10,16.67,16.67],["ตรวจเช็ค Steam Turbine Generator No.4",7,10,16.67,16.67],
+   ["ตรวจเช็ค Governor and Valve 1-4",7,10,16.66,16.66],["ตรวจเช็ค Emergency Stop Valve 1-4",7,10,16.66,16.66]]},
  {name:"ซ่อมแซม ตู้ FEEDER, Excite, Control", owner:"หน.ผลิตไฟฟ้า", w:3.43, realPlan:true, p18:100, tasks:[
-   ["ซ่อมแซม ตู้ FEEDER, Excite, Control",14,15,100,15]]},
+   ["ตรวจเช็คซ่อมแซมตู้ Capacitor Bank",14,15,14.29,2.15],["ตรวจเช็คซ่อมแซมตู้ Control Turbine 1-5",14,15,14.29,2.15],
+   ["ตรวจเช็คซ่อมแซมตู้ Switch Gear 1-5",14,15,14.29,2.14],["ตรวจเช็คซ่อมแซมตู้ Feeder 1-12",14,15,14.29,2.14],
+   ["ตรวจเช็คซ่อมแซมตู้ Bustie 1-6",14,15,14.29,2.14],["ตรวจเช็คซ่อมแซมตู้ ระบบไฟสำรอง 110Vdc/380Vac",14,15,14.28,2.14],
+   ["ตรวจเช็คซ่อมแซมตู้ Control Excite 1-4",14,15,14.27,2.14]]},
  {name:"ตรวจเช็คซ่อมแซม DIESEL GENERATOR", owner:"หน.ผลิตไฟฟ้า", w:3.76, realPlan:true, p18:0, tasks:[
-   ["ตรวจเช็คซ่อมแซม DIESEL GENERATOR",23,23,100,70]]},
+   ["ตรวจเช็คซ่อมแซมระบบ Diesel Engine",23,23,20,14],["ตรวจเช็ค ระบบกรอง และ Cooling System",23,23,20,14],
+   ["ตรวจเช็ค Generator",23,23,20,14],["ตรวจเช็ค ระบบไฟฟ้าและตู้จ่ายไฟ",23,23,20,14],["ตรวจเช็ค ระบบ Air compressor pump",23,23,20,14]]},
  {name:"ซ่อมแซมประกอบ TURBINE No.1-5", owner:"หน.ผลิตไฟฟ้า", w:9.10, realPlan:true, p18:0, tasks:[
-   ["ซ่อมแซมประกอบ TURBINE No.1-5",24,25,100,45]]},
+   ["ประกอบ Bearing Turbine No.1",24,25,6.67,3],["ประกอบ Bearing Turbine No.2",24,25,6.67,3],["ประกอบ Bearing Turbine No.3",24,25,6.67,3],
+   ["ประกอบ Bearing Turbine No.4",24,25,6.67,3],["ประกอบ Rotor Blade/Diaphragm No.1",24,25,6.67,3],["ประกอบ Rotor Blade/Diaphragm No.2",24,25,6.67,3],
+   ["ประกอบ Rotor Blade/Diaphragm No.3",24,25,6.67,3],["ประกอบ Rotor Blade/Diaphragm No.4",24,25,6.67,3],["ประกอบ Rotor Blade/Diaphragm No.5",24,25,6.66,3],
+   ["ประกอบ Thrust Bearing No.1-5",24,25,6.66,3],["ประกอบ Emergency Stop Valve No.1-5",24,25,6.66,3],["ประกอบ Governor Valve No.1-5",24,25,6.66,3],
+   ["ประกอบ Governor Control No.1-5",24,25,6.66,3],["Final alignment TURBINE No.1-5",24,25,6.66,3],["Connect lube oil & steam pipe",24,25,6.66,3]]},
  {name:"ซ่อมแซมประกอบ GEAR BOX No.1-5", owner:"หน.ผลิตไฟฟ้า", w:10.68, realPlan:true, p18:0, tasks:[
-   ["ซ่อมแซมประกอบ GEAR BOX No.1-5",26,27,100,15]]},
+   ["ประกอบ Bearing Gear/Pinion No.1",26,27,5.56,0.84],["ประกอบ Bearing Gear/Pinion No.2",26,27,5.56,0.84],["ประกอบ Bearing Gear/Pinion No.3",26,27,5.56,0.84],
+   ["ประกอบ Bearing Gear/Pinion No.5",26,27,5.56,0.84],["ประกอบ Wheel Gear No.1",26,27,5.56,0.83],["ประกอบ Wheel Gear No.2",26,27,5.56,0.83],
+   ["ประกอบ Wheel Gear No.3",26,27,5.56,0.83],["ประกอบ Wheel Gear No.5",26,27,5.56,0.83],["ประกอบ Pinion Gear No.1",26,27,5.56,0.83],
+   ["ประกอบ Pinion Gear No.2",26,27,5.55,0.83],["ประกอบ Pinion Gear No.3",26,27,5.55,0.83],["ประกอบ Pinion Gear No.5",26,27,5.55,0.83],
+   ["ประกอบ Main Lube Oil Pump No.1",26,27,5.55,0.83],["ประกอบ Main Lube Oil Pump No.2",26,27,5.55,0.83],["ประกอบ Main Lube Oil Pump No.3",26,27,5.55,0.83],
+   ["ประกอบ Main Lube Oil Pump No.5",26,27,5.55,0.83],["Final alignment GEAR BOX No.1-5",26,27,5.55,0.83],["Connect lube oil pipe",26,27,5.55,0.83]]},
  {name:"ซ่อมแซมประกอบ Generator No.1-5", owner:"หน.ผลิตไฟฟ้า", w:3.76, realPlan:true, p18:0, tasks:[
-   ["ซ่อมแซมประกอบ Generator No.1-5",28,28,100,40]]},
+   ["ประกอบ Bearing Gen 1",28,28,8.34,3.34],["ประกอบ Bearing Gen 2",28,28,8.34,3.34],["ประกอบ Bearing Gen 3",28,28,8.33,3.33],
+   ["ประกอบ Bearing Gen 4",28,28,8.33,3.33],["ประกอบ Bearing Gen 5",28,28,8.33,3.33],["ปิดประกอบ Generator No.1",28,28,8.33,3.33],
+   ["ปิดประกอบ Generator No.2",28,28,8.33,3.33],["ปิดประกอบ Generator No.3",28,28,8.33,3.33],["ปิดประกอบ Generator No.4",28,28,8.33,3.33],
+   ["ปิดประกอบ Generator No.5",28,28,8.33,3.33],["Final alignment Generator No.1-5",28,28,8.33,3.34],["Connect lube oil pipe",28,28,8.32,3.34]]},
 ]};
 
 /* ===== ซ่อมบำรุงไฟฟ้า (ELE) — ไฟล์ P18 (เป้า/ผลจริง/น้ำหนักราย Job) + แผนช่อม (task + col K %สำเร็จ) =====
