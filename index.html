@@ -243,7 +243,7 @@ td.progcell{width:150px}
 #taskModal input{padding:8px 10px;font-size:13.5px;border-radius:8px}
 #taskModal .btn-save{padding:10px;font-size:14px}
 #taskModal .modal-close{top:12px;right:12px}
-.wkbadge{background:linear-gradient(90deg,var(--blue),#3B82F6);color:#fff;border-radius:10px;padding:9px 13px;font-size:13.5px;font-weight:700;margin-bottom:10px;box-shadow:0 3px 10px rgba(37,99,235,.28)}
+.wkbadge{background:linear-gradient(90deg,#DC2626,#EF4444);color:#fff;border-radius:10px;padding:9px 13px;font-size:13.5px;font-weight:700;margin-bottom:10px;box-shadow:0 3px 10px rgba(220,38,38,.28)}
 .wkbadge b{font-size:16px}
 .wkbadge .num{opacity:.9;font-weight:600}
 .modalbtns{display:flex;gap:10px;justify-content:flex-end;align-items:center}
@@ -440,7 +440,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r42";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r43";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -647,6 +647,10 @@ const wkOf=(m,d)=>((Date.UTC(2026,m-1,d)-Date.UTC(2026,3,20))/86400000)/7+1;
    สัปดาห์ในไฟล์หม้อไอน้ำ: สัปดาห์ 1 = 25 พ.ค. = สัปดาห์ 6 ของฤดู → สัปดาห์ฤดู = 5 + สัปดาห์ไฟล์
    job: {name, w(น้ำหนัก%ของแผนก), cur(% ปัจจุบันจาก P13 สัปดาห์ 13), tasks:[[ชื่อ, สัปดาห์เริ่ม(ไฟล์), สัปดาห์จบ(ไฟล์), น้ำหนักดิบ]]}
    น้ำหนัก Task ปรับสัดส่วนให้รวม = น้ำหนัก Job · ผลจริงกระจายตามลำดับแผน (P13 = สัปดาห์ฤดู 18) */
+/* ระยะเลื่อนสัปดาห์ไฟล์ → สัปดาห์ฤดู สำหรับแผนกแบบอิงสัปดาห์ (REAL_JOBS_WK) */
+const WK_OFFSET = { BLR:5, MEC:0 };
+/* แผนกที่ช่วงสัปดาห์ Task มาจาก activity จริง (ไม่ใช่แผน Gantt) → ใช้เส้นแผนทางการของแผนก (planU) ในการเทียบ */
+const WK_DEPTPLAN = { MEC:true };
 const REAL_JOBS_WK = { BLR: [
  /* Job1-2: [ชื่อ, สัปดาห์เริ่ม, สัปดาห์จบ, เป้าหมาย(น้ำหนักในJob), เกิดจริง] — จาก sheet B1/B2 (เลขหน้า=เป้า เลขหลัง=จริง) */
  {name:"งานซ่อมแซมหม้อไอน้ำ No.1", owner:"แผนกผลิตไฟฟ้า B", w:18, tasks:[
@@ -687,6 +691,34 @@ const REAL_JOBS_WK = { BLR: [
    ["สะพานขี้เถ้า Boiler2 No.6",16,17,10,9],["สะพานขี้เถ้า Boiler2 No.7",17,18,10,8.82],["สะพานขี้เถ้า Boiler3 No.1",18,19,5,0],
    ["สะพานขี้เถ้า Boiler3 No.2",19,20,5,0],["สะพานขี้เถ้า Boiler3 No.3",20,21,5,0],["สะพานขี้เถ้า Boiler3 No.4",21,22,10,0],
    ["Test ระบบสะพานลำเลียงขี้เถ้า",22,23,5,0]]},
+],
+/* ===== ซ่อมบำรุงเครื่องกล (MEC) — ไฟล์ "แผนซ่อมแซมแผนกเครื่องกล" แท็บ %จริง =====
+   9 Job · เอาเฉพาะ Task ระดับ "ไฮไลท์สีฟ้า" (ไม่ลงลึกถึงปั๊มรายตัว)
+   สัปดาห์ไฟล์ = สัปดาห์ฤดู (off=0) · [ชื่อ, สัปดาห์เริ่ม, สัปดาห์จบ, น้ำหนักในJob, เกิดจริง(แต้มในJob รวม=%Job)]
+   น้ำหนัก Job (rj.w) = %รวมของแผนก (คอลัมน์ Wieght รวม=100) · แผนก MEC รวม 63.58% */
+MEC: [
+ {name:"ซ่อมบำรุงรักษาเครื่องจักรแผนกลูกหีบ", owner:"หน.ซ่อมบำรุงเครื่องกล", w:4.90, tasks:[
+   ["ระบบปั๊มน้ำอ้อยขึ้น Rotary",4,6,40,20],["ระบบปั๊มน้ำพรม",1,7,40,36],["ระบบปั๊ม Cooling กลับ",4,7,20,18]]},
+ {name:"ซ่อมบำรุงรักษาเครื่องจักรแผนกหม้อต้ม", owner:"หน.ซ่อมบำรุงเครื่องกล", w:25.94, tasks:[
+   ["ระบบปั๊มน้ำอ้อย",2,16,25,16.95],["ระบบปั๊มน้ำเชื่อม",7,11,10,9],["ระบบปั๊มน้ำร้อน",2,16,15,12.81],
+   ["ระบบ Vaccuum",7,17,15,11.5],["ระบบปั๊มเคมี (เก่า)",7,18,15,12.9],
+   ["ระบบจัดเตรียมและส่งจ่ายน้ำปูนขาว (ใหม่)",13,15,10,8.2],["ระบบ Filter Cake",15,18,10,4.55]]},
+ {name:"ซ่อมบำรุงรักษาเครื่องจักรแผนกหม้อเคี่ยว", owner:"หน.ซ่อมบำรุงเครื่องกล", w:11.11, tasks:[
+   ["ระบบชุด Gear ขับใบกวนหัวหม้อ",10,12,30,22.13],["ระบบ Gear ขับรางกวน",7,10,30,27],["ระบบปั๊มหม้อเคี่ยว",1,15,40,12.36]]},
+ {name:"ซ่อมบำรุงรักษาเครื่องจักรแผนกหม้อปั่น", owner:"หน.ซ่อมบำรุงเครื่องกล", w:19.60, tasks:[
+   ["ระบบปั๊ม Molasse",5,18,30,19.75],["ระบบปั๊ม Magma",3,18,30,14.57],["ระบบปั๊มน้ำร้อน",1,18,10,5.25],
+   ["ระบบชุดขับระบบลำเลียง",16,18,20,16],["ระบบ Rotary & Cyclone",18,18,10,3]]},
+ {name:"ซ่อมบำรุงรักษาเครื่องจักรระบบ Cooling tower", owner:"หน.ซ่อมบำรุงเครื่องกล", w:11.20, tasks:[
+   ["ระบบ Injection Pump Process",1,15,50,42.28],["ระบบ Cooling เครื่องจักร",3,14,20,16.15],["ระบบ Cooling ขายไฟฟ้า",7,18,30,24.75]]},
+ {name:"ซ่อมบำรุงรักษาเครื่องจักรระบบผลิตน้ำ", owner:"หน.ซ่อมบำรุงเครื่องกล", w:17.08, tasks:[
+   ["ระบบกรองน้ำ",2,17,10,0],["ระบบผลิต/จัดเก็บน้ำประปาและน้ำ Soft",2,17,15,0],["ระบบผสมเคมีผลิตน้ำ",13,17,20,9.38],
+   ["ระบบปั๊มส่งน้ำประปาและน้ำชอบ",4,17,25,14.72],["ระบบปั๊มส่งจ่ายน้ำดิบ",2,17,30,22.37]]},
+ {name:"ซ่อมบำรุงรักษาเครื่องจักรระบบ Waste water", owner:"หน.ซ่อมบำรุงเครื่องกล", w:9.43, tasks:[
+   ["ระบบส่งจ่ายน้ำทิ้งจากการผลิต",4,15,70,28.88],["ระบบบำบัดน้ำทิ้งจากการผลิต",4,15,30,16]]},
+ {name:"ซ่อมบำรุงรักษาเครื่องจักรระบบผลิตและส่งจ่ายลม", owner:"หน.ซ่อมบำรุงเครื่องกล", w:0.33, tasks:[
+   ["Air Compressor",15,15,70,14],["Air dryer",15,15,30,3]]},
+ {name:"ซ่อมบำรุงรักษาเครื่องจักร Machine Shop", owner:"หน.ซ่อมบำรุงเครื่องกล", w:0.42, tasks:[
+   ["ระบบเครื่องจักร Machine Shop",1,1,100,100]]},
 ]};
 
 /* ===== แผนงานจริงหม้อต้ม (EVP) — ไฟล์ "แผนบำรุงรักษา และซ่อมแซมหม้อต้ม 2026" (แท็บ แผนช่อมแผนก) =====
@@ -838,15 +870,19 @@ let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
     return {...u, jobs, real:true};
   }
   if(REAL_JOBS_WK[u.code]){
-    /* แผนกแบบอิงสัปดาห์ (หม้อไอน้ำ): สัปดาห์ฤดู = 5 + สัปดาห์ไฟล์ · น้ำหนัก Task ปรับให้รวม = น้ำหนัก Job (rj.w) */
+    /* แผนกแบบอิงสัปดาห์: สัปดาห์ฤดู = off + สัปดาห์ไฟล์ · น้ำหนัก Task ปรับให้รวม = น้ำหนัก Job (rj.w)
+       off = ระยะเลื่อนสัปดาห์ไฟล์→สัปดาห์ฤดู (หม้อไอน้ำเริ่มสัปดาห์ 6 → off=5 · เครื่องกลเริ่มสัปดาห์ 1 → off=0) */
+    const off = WK_OFFSET[u.code]||0;
+    const deptPlan = WK_DEPTPLAN[u.code];   // true = ไม่มีแผนราย Task (เครื่องกล) → ใช้เส้นแผนทางการของแผนก
     const jobs = REAL_JOBS_WK[u.code].map(rj=>{
       const rawTot = rj.tasks.reduce((x,t)=>x+t[3],0);
       const tasks = rj.tasks.map(a=>{
-        const s=5+a[1], e=5+a[2]+1;                     // สัปดาห์ฤดู เริ่ม–จบ (จบสิ้นสัปดาห์ 5+a[2])
+        const s=off+a[1], e=off+a[2]+1;                 // สัปดาห์ฤดู เริ่ม–จบ (จบสิ้นสัปดาห์ off+a[2])
         const wt=Math.round(a[3]/rawTot*rj.w*100)/100;  // % ของแผนก · a[3]=เป้าหมาย(น้ำหนักในJob)
         const mh=Math.round(FORCE_TOTAL[u.code]*wt/100);
         const seedAct = a[4]!=null ? a[4] : null;        // a[4]=เกิดจริง(%ในJob) มีเฉพาะ Job ที่ดึงผลจริงราย Task แล้ว
-        return {name:a[0], wt, mh, s, e, seedAct, plan:w=>Math.max(0,Math.min(1,(w+1-s)/(e-s))), act:0};
+        const plan = deptPlan ? (w=>planU(u.code,w)) : (w=>Math.max(0,Math.min(1,(w+1-s)/(e-s))));
+        return {name:a[0], wt, mh, s, e, seedAct, plan, act:0};
       });
       return {name:rj.name, owner:rj.owner, cur:rj.cur, tasks, mh:tasks.reduce((x,t)=>x+t.mh,0), real:true};
     });
@@ -894,7 +930,11 @@ DATA.forEach(s=>s.units.forEach(u=>u.jobs.forEach((j,ji)=>{
   j.id = u.code+"-J"+(ji+1);
   j.tasks.forEach((t,ti)=>{ t.id = j.id+"-T"+(ti+1); t.mockAct = t.act; TASK_INDEX[t.id] = {t,u,j,secId:DATA.find(x=>x.units.includes(u)).id}; });
 })));
-function loadEntries(){ try{ return JSON.parse(localStorage.getItem("idash_entries")||"[]"); }catch(e){ return []; } }
+/* รายการบันทึกค้าง/ทดสอบที่ต้องมองข้าม (taskId|วันที่) — ลบไม่ได้จาก Sheet จึงกรองฝั่งหน้าเว็บ
+   EVP-J1-T14 วันที่ 2026-08-26 = รายการทดสอบค้าง (ไม่ใช่ผลจริงสัปดาห์ 19) ทำให้หม้อต้มขึ้นว่าบันทึกสัปดาห์ 19 ผิด */
+const IGNORE_ENTRIES = { "EVP-J1-T14|2026-08-26": 1 };
+function ignoredEntry(e){ return !!IGNORE_ENTRIES[String(e.taskId)+"|"+normDate(e.date)]; }
+function loadEntries(){ try{ return JSON.parse(localStorage.getItem("idash_entries")||"[]").filter(e=>!ignoredEntry(e)); }catch(e){ return []; } }
 function saveEntries(a){ try{ localStorage.setItem("idash_entries",JSON.stringify(a)); }catch(e){} }
 let ENTRIES = loadEntries();
 
@@ -928,7 +968,7 @@ async function syncFromSheet(attempt, silent){
     if(!Array.isArray(data)) throw new Error("bad payload");
     /* เกราะกันข้อมูลหาย: ถ้าเซิร์ฟเวอร์ตอบว่างแต่เครื่องเรามีข้อมูลอยู่ ให้ลองซ้ำก่อนยอมรับ (กันจังหวะ Sheet สะดุด) */
     if(data.length===0 && ENTRIES.length>0 && attempt<4) throw new Error("empty while local has data");
-    ENTRIES=data.map(e=>({date:normDate(e.date), taskId:String(e.taskId), pct:Number(e.pct), mh:Number(e.mh)||0, by:e.by||"", note:e.note||""}));
+    ENTRIES=data.map(e=>({date:normDate(e.date), taskId:String(e.taskId), pct:Number(e.pct), mh:Number(e.mh)||0, by:e.by||"", note:e.note||""})).filter(e=>!ignoredEntry(e));
     saveEntries(ENTRIES); applyEntries(); SYNC_STATE="ok";
     SYNC_TIME=new Date();
     /* re-render เฉพาะเมื่อข้อมูลเปลี่ยนจริง และไม่ได้อยู่ในหน้าย่อย/ฟอร์มบันทึก (กันเด้งกลับเอง) */
@@ -981,7 +1021,7 @@ function applyEntries(){
 }
 applyEntries();
 
-/* ---- การเช็คการบันทึกรายสัปดาห์ (compliance) · กำหนดส่งทุกวันศุกร์ ---- */
+/* ---- การเช็คการบันทึกรายสัปดาห์ (compliance) · update ทุกวันเสาร์ ---- */
 function dateISO(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 /* แปลงวันที่ (yyyy-mm-dd) → เลขสัปดาห์ของฤดูซ่อม (1..WEEKS) · 0 = นอกช่วง */
 function seasonWeekOf(dateStr){
@@ -990,8 +1030,12 @@ function seasonWeekOf(dateStr){
   const w=Math.floor((t-Date.UTC(2026,3,20))/(7*86400000))+1;
   return (w>=1 && w<=WEEKS) ? w : 0;
 }
-/* วันศุกร์ (กำหนดส่ง) ของสัปดาห์ที่กำลังดู */
-function weekFriday(w){ return new Date(2026,3,20+(w-1)*7+4); }
+/* วันเสาร์ (วัน update ประจำสัปดาห์) ของสัปดาห์ที่กำลังดู */
+function weekSaturday(w){ return new Date(2026,3,20+(w-1)*7+5); }
+/* entry ที่มาจากการนำเข้าข้อมูลย้อนหลัง (ไม่ใช่การบันทึกจริงของผู้ใช้) */
+function isImportEntry(e){ return /นำเข้า|แก้วันที่|^\s*test/i.test(e.by||""); }
+/* entry นี้นับเป็น "บันทึกของสัปดาห์ w" ไหม — สัปดาห์ baseline(≤18) นับข้อมูลนำเข้าด้วย · สัปดาห์ live(19+) นับเฉพาะบันทึกจริง */
+function countsForWeek(e, w){ if(seasonWeekOf(e.date)!==w) return false; return w<=BASELINE_WK || !isImportEntry(e); }
 function unitsRecordedOn(dateStr){
   const set=new Set();
   ENTRIES.forEach(e=>{ if(e.date===dateStr) set.add(e.taskId.split("-")[0]); });
@@ -1005,8 +1049,8 @@ function activeTasksOf(u){
 }
 /* สถานะการบันทึกของ "สัปดาห์ที่กำลังดู": none=ไม่บันทึก, partial=ไม่ครบ, full=ครบ (ระดับ Task) */
 function complianceToday(){
-  const tasksByUnit={};   // code -> Set(taskId ที่บันทึกในสัปดาห์นี้)
-  ENTRIES.forEach(e=>{ if(seasonWeekOf(e.date)===WNOW){
+  const tasksByUnit={};   // code -> Set(taskId ที่บันทึกในสัปดาห์นี้ — สัปดาห์ live นับเฉพาะบันทึกจริง)
+  ENTRIES.forEach(e=>{ if(countsForWeek(e,WNOW)){
     const code=e.taskId.split("-")[0];
     (tasksByUnit[code]=tasksByUnit[code]||new Set()).add(e.taskId);
   }});
@@ -1154,7 +1198,7 @@ function renderLang(){
   document.getElementById("logoSub").textContent=pk(["น้ำตาลมิตรลาว","ນ້ຳຕານມິດລາວ","Mitr Lao Sugar"]);
   document.getElementById("adminName").textContent=pk(["งานซ่อมฝ่ายโรงงาน","ວຽກສ້ອມແປງຝ່າຍໂຮງງານ","Factory Maintenance"]);
   document.getElementById("foot").innerHTML=
-    pk(["หมายเหตุ: ข้อมูลจากการบันทึกรายสัปดาห์ของแต่ละแผนก (กำหนดส่งทุกวันศุกร์) ซิงก์ผ่าน Google Sheet · แผนตามไฟล์เป้าหมายงานซ่อม 2569",
+    pk(["หมายเหตุ: ข้อมูลจากการบันทึกรายสัปดาห์ของแต่ละแผนก (update ทุกวันเสาร์) ซิงก์ผ่าน Google Sheet · แผนตามไฟล์เป้าหมายงานซ่อม 2569",
         "ໝາຍເຫດ: ຂໍ້ມູນຈາກການບັນທຶກປະຈຳວັນຂອງແຕ່ລະໜ່ວຍງານ ຊິງຜ່ານ Google Sheet",
         "Note: Data from daily unit entries, synced via Google Sheet · Plan per 2026 target file"])+"<br>"+
     pk(["เกณฑ์สถานะ (ผลต่างจากแผนสะสม): 🟢 ตามแผน = ผลจริง ≥ แผน · 🟡 เสี่ยง = ตามหลังแผน 0–7 จุด · 🔴 ล่าช้า = ตามหลัง > 7 จุด · % ถ่วงน้ำหนักด้วยจำนวนแรง",
@@ -1199,7 +1243,7 @@ function overview(){
   const daysLeft=Math.max(0,Math.round((SEASON_END-wkEnd(WNOW))/86400000));
   const compAll=complianceToday();
   const noneU=compAll.filter(x=>x.state==="none"), partU=compAll.filter(x=>x.state==="partial");
-  const dueTxt=pk(["กำหนดส่งสัปดาห์นี้ ศุกร์ "+fmtDate(weekFriday(WNOW)),"ກຳນົດສົ່ງ ວັນສຸກ "+fmtDate(weekFriday(WNOW)),"due Fri "+fmtDate(weekFriday(WNOW))]);
+  const dueTxt=pk(["update สัปดาห์นี้ เสาร์ "+fmtDate(weekSaturday(WNOW)),"ອັບເດດ ວັນເສົາ "+fmtDate(weekSaturday(WNOW)),"update Sat "+fmtDate(weekSaturday(WNOW))]);
   const wkTxt=pk(["สัปดาห์ที่ "+WNOW+"/"+WEEKS,"ອາທິດທີ "+WNOW+"/"+WEEKS,"Week "+WNOW+"/"+WEEKS]);
   const compBanner = (noneU.length===0 && partU.length===0) ? "" :
     `<div class="compbanner">📅 <b>${wkTxt}</b> · <b>${dueTxt}</b> ·
@@ -1393,7 +1437,7 @@ function clearAllData(){
 }
 /* ===== flow บันทึกแบบไล่ขั้น: เลือกแผนก → Job → Task → ฟอร์ม → ยืนยัน Job ===== */
 /* บันทึกแล้วใน "สัปดาห์ที่กำลังดู" หรือยัง (เปลี่ยนจากรายวันเป็นรายสัปดาห์) */
-function recordedToday(tid){ return ENTRIES.some(e=>e.taskId===tid && seasonWeekOf(e.date)===WNOW); }
+function recordedToday(tid){ return ENTRIES.some(e=>e.taskId===tid && countsForWeek(e,WNOW)); }
 function jobActiveTasks(j){ return j.tasks.filter(t=> t.s<=WNOW && actAt(t,WNOW)<1 ); }
 let JOBCONF={}; try{ JOBCONF=JSON.parse(localStorage.getItem("idash_jobconf")||"{}"); }catch(e){}
 function jobConfKey(jid){ return todayISO()+"|"+jid; }
@@ -1425,9 +1469,9 @@ function entryPickerPage(){
         <div class="dc-st" style="color:${col}" title="${st==="blank"?pk(["รอนำเข้าแผนงานจริง","ລໍຖ້ານຳເຂົ້າ","awaiting real data"]):""}">${ic}</div></div>`;}).join("");
     return `<div class="deptcol"><div class="deptcolhd"><span class="swatch" style="background:${s.color}"></span>${un(s.name)}</div>${items}</div>`;}).join("");
   app.innerHTML = pagehead(pk(["บันทึก % งานซ่อมรายสัปดาห์","ບັນທຶກ % ວຽກສ້ອມແປງລາຍອາທິດ","Weekly Progress Entry"]),
-    pk(["เลือกแผนกของคุณเพื่อเข้าไปบันทึกงาน · กำหนดส่งทุกวันศุกร์","ເລືອກໜ່ວຍງານຂອງທ່ານ · ກຳນົດສົ່ງທຸກວັນສຸກ","Choose your unit to record · due every Friday"])) + `
+    pk(["เลือกแผนกของคุณเพื่อเข้าไปบันทึกงาน · update ทุกวันเสาร์","ເລືອກໜ່ວຍງານຂອງທ່ານ · ອັບເດດທຸກວັນເສົາ","Choose your unit to record · update every Saturday"])) + `
   <div class="card"><h2>👇 ${pk(["เลือกแผนกของคุณ","ເລືອກໜ່ວຍງານຂອງທ່ານ","Select your unit"])}</h2>
-    <div class="sub">${pk(["📅 บันทึกทุกสัปดาห์ · กำหนดส่งทุกวันศุกร์ — กดแผนกของคุณเพื่อบันทึก (✓ ครบ · ◐ ไม่ครบ · ✗ ยังไม่บันทึกสัปดาห์นี้)","📅 ບັນທຶກທຸກອາທິດ · ກຳນົດສົ່ງທຸກວັນສຸກ (✓ ຄົບ · ◐ ບໍ່ຄົບ · ✗ ຍັງບໍ່ບັນທຶກ)","📅 Record weekly · due every Friday — tap your unit (✓ full · ◐ partial · ✗ none this week)"])}</div>
+    <div class="sub">${pk(["📅 บันทึกทุกสัปดาห์ · update ทุกวันเสาร์ — กดแผนกของคุณเพื่อบันทึก (✓ ครบ · ◐ ไม่ครบ · ✗ ยังไม่บันทึกสัปดาห์นี้)","📅 ບັນທຶກທຸກອາທິດ · ອັບເດດທຸກວັນເສົາ (✓ ຄົບ · ◐ ບໍ່ຄົບ · ✗ ຍັງບໍ່ບັນທຶກ)","📅 Record weekly · update every Saturday — tap your unit (✓ full · ◐ partial · ✗ none this week)"])}</div>
     <div class="deptsections">${cols}</div>
   </div>`;
 }
@@ -1512,14 +1556,14 @@ function openTaskForm(tid){
   const tgtPts=Math.round(x.t.plan(REALWK)*wt*100)/100;
   document.getElementById("taskModalTitle").textContent=tr(x.t.name);
   document.getElementById("taskModalBody").innerHTML=`
-    <div class="wkbadge">🗓️ ${pk(["กำลังบันทึกของ สัปดาห์ที่","ກຳລັງບັນທຶກ ອາທິດທີ","Recording for Week"])} <b>${WNOW}</b> <span class="num">(${fmtDate(wkStart(WNOW))}–${fmtDate(wkEnd(WNOW))})</span> · ${pk(["ส่งภายในศุกร์","ສົ່ງພາຍໃນວັນສຸກ","due Fri"])} ${fmtDate(weekFriday(WNOW))}</div>
+    <div class="wkbadge">🗓️ ${pk(["กำลังบันทึกของ สัปดาห์ที่","ກຳລັງບັນທຶກ ອາທິດທີ","Recording for Week"])} <b>${WNOW}</b> <span class="num">(${fmtDate(wkStart(WNOW))}–${fmtDate(wkEnd(WNOW))})</span> · ${pk(["update ภายในเสาร์","ອັບເດດພາຍໃນວັນເສົາ","update by Sat"])} ${fmtDate(weekSaturday(WNOW))}</div>
     <div class="taskinfo num">⚖️ ${pk(["น้ำหนัก Task นี้","ນ້ຳໜັກ Task ນີ້","Task weight"])} <b>${wt}</b> ${pk(["แต้ม (แผนกเต็ม 100)","ແຕ້ມ (ໜ່ວຍເຕັມ 100)","pts (unit = 100)"])} · ${pk(["สัปดาห์","ສັບປະດາ","wk"])} ${Math.max(1,Math.round(x.t.s))}–${Math.min(WEEKS,Math.round(x.t.e))}
     <br>🎯 ${pk(["เป้าสะสมถึงตอนนี้","ເປົ້າສະສົມຮອດຕອນນີ້","Target to date"])} <b>${tgtPts}</b> ${pk(["แต้ม","ແຕ້ມ","pts"])} (${fmt1(x.t.plan(REALWK)*100)}% ${pk(["ของ Task","ຂອງ Task","of task"])})
     <br>${lastE?`📈 ${pk(["แต้มล่าสุด","ແຕ້ມຫຼ້າສຸດ","latest"])} <b>${lastE.pct}</b> (${pk(["บันทึกเมื่อ","ບັນທຶກເມື່ອ","on"])} ${lastE.date}) — ${pk(["กรอกต่อจากนี้","ປ້ອນຕໍ່ຈາກນີ້","continue from here"])}`:`${pk(["ยังไม่เคยบันทึก · แต้มปัจจุบัน","ຍັງບໍ່ເຄີຍບັນທຶກ · ແຕ້ມປັດຈຸບັນ","No record yet · current"])} <b>${curPts}</b>`}
     <br><span style="color:var(--warn)">🔒 ${pk(["กรอกได้ไม่ต่ำกว่า","ປ້ອນໄດ້ບໍ່ຕ່ຳກວ່າ","must be ≥"])} ${fl} ${pk(["แต้ม (สะสม ห้ามถอยหลัง)","ແຕ້ມ","pts"])}</span></div>
     <input type="hidden" id="tfTid" value="${tid}">
     <div class="formgrid">
-      <div class="fld"><label>📅 ${pk(["วันที่บันทึก","ວັນທີ","Date"])}</label><input id="tfDate" type="date" value="${dateISO(new Date(Math.min(weekFriday(WNOW).getTime(), Date.now())))}" max="${todayISO()}"></div>
+      <div class="fld"><label>📅 ${pk(["วันที่บันทึก","ວັນທີ","Date"])}</label><input id="tfDate" type="date" value="${dateISO(new Date(Math.min(weekSaturday(WNOW).getTime(), Date.now())))}" max="${todayISO()}"></div>
       <div class="fld"><label>⚖️ ${pk(["แต้มสะสมที่ทำได้","ແຕ້ມສະສົມທີ່ເຮັດໄດ້","Points earned (cum.)"])} <span class="num">(0–${wt})</span></label><input id="tfPct" type="number" min="${fl}" max="${wt}" step="0.01" value="${Math.max(fl,prefill)}" oninput="tfPctHint(this.value,${wt})"><div id="tfPctHint" class="small num"></div></div>
       <div class="fld"><label>${pk(["man-hr วันนั้น","man-hr","Man-hours"])}</label><input id="tfMh" type="number" min="0" step="1" placeholder="24"></div>
       <div class="fld"><label>${pk(["ผู้บันทึก","ຜູ້ບັນທຶກ","By"])}</label><input id="tfBy" type="text"></div>
@@ -1915,13 +1959,13 @@ function repPage(){
         :`<div class="small">${pk(["ไม่มี Task ใกล้ครบกำหนด","ບໍ່ມີ Task ໃກ້ຄົບກຳນົດ","None due soon"])}</div>`}
     </div>
   </div>
-  <div class="card"><h2>6. ${pk(["ตารางเช็คการบันทึกรายสัปดาห์ (กำหนดส่งทุกวันศุกร์)","ຕາຕະລາງກວດການບັນທຶກລາຍອາທິດ","Weekly entry attendance (due every Friday)"])}</h2>
+  <div class="card"><h2>6. ${pk(["ตารางเช็คการบันทึกรายสัปดาห์ (update ทุกวันเสาร์)","ຕາຕະລາງກວດການບັນທຶກລາຍອາທິດ","Weekly entry attendance (update every Saturday)"])}</h2>
     <div class="sub">${pk(["✓ บันทึกแล้ว · ✗ ยังไม่บันทึก · — ยังไม่มีแผน/ยังไม่เริ่มงาน · คอลัมน์ฟ้า = สัปดาห์ปัจจุบัน","✓ ບັນທຶກແລ້ວ · ✗ ຍັງບໍ່ບັນທຶກ · — ຍັງບໍ່ມີແຜນ","✓ recorded · ✗ not yet · — no plan/not started · blue col = current week"])}</div>
     ${(function(){
       const N=Math.min(WNOW,10);
       const wks=[...Array(N).keys()].map(i=>WNOW-N+1+i);
       const recWk={};   // code -> Set(สัปดาห์ที่บันทึก)
-      ENTRIES.forEach(e=>{ const w=seasonWeekOf(e.date); if(w>0){ const c=e.taskId.split("-")[0]; (recWk[c]=recWk[c]||new Set()).add(w);} });
+      ENTRIES.forEach(e=>{ const w=seasonWeekOf(e.date); if(w>0 && (w<=BASELINE_WK || !isImportEntry(e))){ const c=e.taskId.split("-")[0]; (recWk[c]=recWk[c]||new Set()).add(w);} });
       const units=DATA.flatMap(s=>s.units);
       const th=wks.map(w=>`<th class="r ${w===WNOW?'wkcur':''}" title="${fmtDate(wkStart(w))}–${fmtDate(wkEnd(w))}">W${w}<br><span class="small num" style="font-weight:400">${wkEnd(w).getDate()}/${wkEnd(w).getMonth()+1}</span></th>`).join("");
       const rows=units.map(u=>{
@@ -1941,7 +1985,7 @@ function repPage(){
       }).join("");
       const missWk=complianceToday().filter(x=>!x.done);
       const banner=missWk.length
-        ? `<div class="compbanner" style="margin:12px 0 0">⚠️ <b>${pk(["สัปดาห์ที่","ອາທິດທີ","Week"])} ${WNOW} ยังไม่บันทึก:</b> <span class="cbunits">${missWk.map(x=>un(x.u.name)).join(" · ")}</span> — ${pk(["กำหนดส่งศุกร์","ກຳນົດສົ່ງວັນສຸກ","due Fri"])} ${fmtDate(weekFriday(WNOW))}</div>`
+        ? `<div class="compbanner" style="margin:12px 0 0">⚠️ <b>${pk(["สัปดาห์ที่","ອາທິດທີ","Week"])} ${WNOW} ยังไม่บันทึก:</b> <span class="cbunits">${missWk.map(x=>un(x.u.name)).join(" · ")}</span> — ${pk(["update ภายในเสาร์","ອັບເດດພາຍໃນວັນເສົາ","update by Sat"])} ${fmtDate(weekSaturday(WNOW))}</div>`
         : `<div class="repline" style="margin-top:12px"><span class="bullet" style="color:var(--good)">✓</span><span>${pk(["สัปดาห์ที่","ອາທິດທີ","Week"])} ${WNOW} ${pk(["บันทึกครบทุกหน่วยที่มีแผนแล้ว","ບັນທຶກຄົບແລ້ວ","all active units recorded"])}</span></div>`;
       return `<div class="scrollx"><table class="attend">
         <tr><th style="text-align:left">${pk(["แผนก","ໜ່ວຍ","Unit"])}</th>${th}<th class="r">${pk(["รวม","ລວມ","Total"])}</th></tr>
