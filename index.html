@@ -231,6 +231,21 @@ td.progcell{width:150px}
 .attend th.wkcur{color:var(--blue);border-bottom:2px solid var(--blue)}
 .attend tr:hover td{background:var(--tint2)}
 .attend tr:hover td.wkcur{background:#DCE9FF}
+/* ---- Audit (แท็บรายงาน ข้อ 7) ---- */
+.auditsum{display:flex;gap:16px;flex-wrap:wrap;align-items:center;background:var(--tint);border-radius:10px;padding:9px 14px;margin:4px 0 14px;font-size:13.5px;font-weight:600}
+.auditsec{margin:0 0 16px}
+.auditsecname{display:flex;align-items:center;gap:7px;font-weight:800;font-size:14.5px;color:var(--ink);margin:14px 0 8px;padding-bottom:5px;border-bottom:2px solid var(--line)}
+.auditsecname .swatch{width:12px;height:12px;border-radius:3px}
+.auditunit{margin:0 0 10px 2px;padding-left:10px;border-left:3px solid var(--line)}
+.auditunitname{font-weight:700;font-size:13.5px;color:var(--ink);margin:8px 0 6px}
+.auditjob{margin:0 0 8px 6px}
+.auditjobname{font-weight:600;font-size:12.5px;color:var(--mut);margin:6px 0 3px}
+.audittbl{border-collapse:collapse;width:100%;font-size:12.5px;min-width:640px}
+.audittbl th,.audittbl td{padding:6px 9px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+.audittbl th.r,.audittbl td.r{text-align:right}
+.audittbl th{font-size:11px;color:var(--mut);font-weight:700}
+.audittbl tr:hover td{background:var(--tint2)}
+.tagkeep{display:inline-block;background:#EEF2FF;color:#3730A3;border-radius:6px;padding:0 6px;font-size:10.5px;font-weight:700;margin-left:4px}
 .modal-ov{position:fixed;inset:0;background:rgba(12,22,40,.6);display:none;align-items:center;justify-content:center;z-index:200;padding:20px}
 .modal-ov.open{display:flex}
 .modal-box{background:var(--card);border-radius:16px;padding:20px 24px 22px;max-width:1040px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,.4);position:relative}
@@ -442,7 +457,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r45";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r46";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1038,6 +1053,18 @@ function weekSaturday(w){ return new Date(2026,3,20+(w-1)*7+5); }
 function isImportEntry(e){ return /นำเข้า|แก้วันที่|^\s*test/i.test(e.by||""); }
 /* entry นี้นับเป็น "บันทึกของสัปดาห์ w" ไหม — สัปดาห์ baseline(≤18) นับข้อมูลนำเข้าด้วย · สัปดาห์ live(19+) นับเฉพาะบันทึกจริง */
 function countsForWeek(e, w){ if(seasonWeekOf(e.date)!==w) return false; return w<=BASELINE_WK || !isImportEntry(e); }
+/* ---- Audit: entry ล่าสุดของ Task ในสัปดาห์ w (ที่ user กรอกจริง) + ค่าสะสมก่อนหน้าสัปดาห์ w ---- */
+function taskWeekEntry(tid, w){
+  let best=null;
+  ENTRIES.forEach(e=>{ if(e.taskId===tid && countsForWeek(e,w) && (!best || e.date>=best.date)) best=e; });
+  return best;
+}
+function taskPrevPct(tid, w, wt){
+  let best=null;
+  ENTRIES.forEach(e=>{ const ew=seasonWeekOf(e.date); if(e.taskId===tid && ew>0 && ew<w && (ew<=BASELINE_WK||!isImportEntry(e)) && (!best||e.date>=best.date)) best=e; });
+  return best ? best.pct/(wt||1)*100 : 0;
+}
+function isKeepEntry(e){ return /คงค่าเดิม|keep|ຄົງຄ່າ/.test(e&&e.note||""); }
 function unitsRecordedOn(dateStr){
   const set=new Set();
   ENTRIES.forEach(e=>{ if(e.date===dateStr) set.add(e.taskId.split("-")[0]); });
@@ -2008,6 +2035,46 @@ function repPage(){
       return `<div class="scrollx"><table class="attend">
         <tr><th style="text-align:left">${pk(["แผนก","ໜ່ວຍ","Unit"])}</th>${th}<th class="r">${pk(["รวม","ລວມ","Total"])}</th></tr>
         ${rows}</table></div>${banner}`;
+    })()}
+  </div>
+  <div class="card"><h2>7. ${pk(["Audit ตรวจการกรอกผลงาน","Audit ກວດການປ້ອນຜົນງານ","Audit — entry verification"])} <span class="thin">· ${pk(["สัปดาห์ที่","ອາທິດທີ","Week"])} ${WNOW}</span></h2>
+    <div class="sub">${pk(["ตรวจว่า % ที่แต่ละแผนกกรอกในสัปดาห์นี้ ถึงเป้าหมายของสัปดาห์ที่ "+WNOW+" หรือไม่ · แสดงเฉพาะ Task ที่มีการบันทึกในสัปดาห์นี้ (แยกส่วน → แผนก → Job)","ກວດ % ທີ່ປ້ອນທຽບເປົ້າອາທິດ "+WNOW,"Checks entered cumulative % against the week "+WNOW+" target · only tasks recorded this week"])}</div>
+    ${(function(){
+      if(WNOW<19) return `<div class="small" style="padding:10px 0;color:var(--mut)">${pk(["Audit เริ่มที่สัปดาห์ 19 (สัปดาห์ ≤18 เป็นข้อมูลนำเข้าย้อนหลัง)","Audit ເລີ່ມອາທິດ 19","Audit starts at week 19"])}</div>`;
+      let nTask=0,nOk=0,nLow=0,nKeep=0;
+      const secBlocks=DATA.map(sec=>{
+        const unitBlocks=sec.units.map(u=>{
+          const jobBlocks=visJobs(u).map(j=>{
+            const trows=j.tasks.filter(t=>!t.placeholder).map(t=>{
+              const e=taskWeekEntry(t.id,WNOW); if(!e) return "";
+              const wt=t.wt||1, cur=e.pct/wt*100, prev=taskPrevPct(t.id,WNOW,wt), tgt=t.plan(WNOW)*100;
+              const inc=cur-prev, dvar=cur-tgt, ok=cur>=tgt-0.05, keep=isKeepEntry(e);
+              nTask++; if(ok) nOk++; else nLow++; if(keep) nKeep++;
+              return `<tr>
+                <td>${tr(t.name)}${keep?` <span class="tagkeep">${pk(["คงเดิม","ຄົງ","kept"])}</span>`:""}</td>
+                <td class="r num">${fmt1(prev)}%</td>
+                <td class="r num"><b>${fmt1(cur)}%</b></td>
+                <td class="r num" style="color:${inc>0.05?'var(--good)':'var(--mut)'}">${inc>0.05?"+"+fmt1(inc):"—"}</td>
+                <td class="r num">${fmt1(tgt)}%</td>
+                <td class="r num" style="color:${ok?'var(--good)':'var(--crit)'};font-weight:700">${dvar>=0?"+":"−"}${fmt1(Math.abs(dvar))}</td>
+                <td><span class="chip c-${ok?'good':'crit'}">${ok?pk(["ตามแผน","ຕາມແຜນ","on plan"]):pk(["ต่ำกว่าเป้า","ຕ່ຳກວ່າ","below"])}</span></td>
+                <td class="small">${e.by||"—"}</td></tr>`;
+            }).join("");
+            if(!trows) return "";
+            return `<div class="auditjob"><div class="auditjobname">📋 ${tr(j.name)}</div>
+              <div class="scrollx"><table class="audittbl">
+                <tr><th style="text-align:left">Task</th><th class="r">${pk(["ค่าเดิม","ຄ່າເດີມ","prev"])}</th><th class="r">${pk(["กรอกสัปดาห์นี้","ປ້ອນອາທິດນີ້","entered"])}</th><th class="r">${pk(["เพิ่ม","ເພີ່ມ","+"])}</th><th class="r">${pk(["เป้า W","ເປົ້າ W","target W"])}${WNOW}</th><th class="r">${pk(["ผลต่าง","ຜົນຕ່າງ","var"])}</th><th>${pk(["สถานะ","ສະຖານະ","status"])}</th><th>${pk(["ผู้บันทึก","ຜູ້ບັນທຶກ","by"])}</th></tr>
+                ${trows}</table></div></div>`;
+          }).join("");
+          if(!jobBlocks) return "";
+          return `<div class="auditunit"><div class="auditunitname">🔧 ${pk(["แผนก","ໜ່ວຍ","Unit"])} ${un(u.name)} <span class="small">· ${u.owner}</span></div>${jobBlocks}</div>`;
+        }).join("");
+        if(!unitBlocks) return "";
+        return `<div class="auditsec"><div class="auditsecname"><span class="swatch" style="background:${sec.color}"></span>${pk(["ส่วน","ພາກ","Section"])} ${un(sec.name)}</div>${unitBlocks}</div>`;
+      }).join("");
+      if(!nTask) return `<div class="small" style="padding:10px 0;color:var(--mut)">${pk(["ยังไม่มีแผนกใดกรอก Progress ของสัปดาห์ "+WNOW+" — เมื่อมีการบันทึก รายการจะปรากฏที่นี่เพื่อตรวจเทียบเป้า","ຍັງບໍ່ມີການປ້ອນຂອງອາທິດ "+WNOW,"No entries for week "+WNOW+" yet — records will appear here for audit"])}</div>`;
+      const head=`<div class="auditsum"><span class="asum-i">📝 ${pk(["กรอกแล้ว","ປ້ອນແລ້ວ","entered"])} <b class="num">${nTask}</b> task</span> <span class="asum-i" style="color:var(--good)">✓ ${pk(["ตามแผน","ຕາມແຜນ","on plan"])} <b class="num">${nOk}</b></span> <span class="asum-i" style="color:var(--crit)">✗ ${pk(["ต่ำกว่าเป้า","ຕ່ຳກວ່າ","below"])} <b class="num">${nLow}</b></span>${nKeep?` <span class="asum-i" style="color:var(--mut)">↔️ ${pk(["คงเดิม","ຄົງ","kept"])} <b class="num">${nKeep}</b></span>`:""}</div>`;
+      return head+secBlocks;
     })()}
   </div>`;
 }
