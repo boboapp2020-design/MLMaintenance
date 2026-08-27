@@ -457,7 +457,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r65";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r66";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -683,6 +683,8 @@ const wkOf=(m,d)=>((Date.UTC(2026,m-1,d)-Date.UTC(2026,3,20))/86400000)/7+1;
 const WK_OFFSET = { BLR:5, MEC:0 };
 /* แผนกที่ช่วงสัปดาห์ Task มาจาก activity จริง (ไม่ใช่แผน Gantt) → ใช้เส้นแผนทางการของแผนก (planU) ในการเทียบ */
 const WK_DEPTPLAN = { MEC:true };
+/* แผนกที่บังคับใช้เส้นแผนทางการ (planU) ทุก Job — ยอดรวมแผนกอิงเส้น R1 ตามรายงาน (เครื่องมือควบคุม: รายงานรวม 62.53 = planU(INS,18)) */
+const USE_PLANU = { INS:true };
 const REAL_JOBS_WK = { BLR: [
  /* Job1-2: [ชื่อ, สัปดาห์เริ่ม, สัปดาห์จบ, เป้าหมาย(น้ำหนักในJob), เกิดจริง] — จาก sheet B1/B2 (เลขหน้า=เป้า เลขหลัง=จริง) */
  {name:"งานซ่อมแซมหม้อไอน้ำ No.1", owner:"แผนกผลิตไฟฟ้า B", w:18, tasks:[
@@ -1052,7 +1054,8 @@ let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
         const mh=mhArr[i];
         const seedAct = a[4]!=null ? a[4] : null;        // a[4]=เกิดจริง(%ในJob) มีเฉพาะ Job ที่ดึงผลจริงราย Task แล้ว
         /* เลือกเส้นแผน: p18 (ตาม Sheet 18) > ramp ราย Task (Gantt) > เส้นแผนแผนก (planU) */
-        const plan = jobPlan ? jobPlan : (useDept ? (w=>planU(u.code,w)) : (w=>Math.max(0,Math.min(1,(w+1-s)/((e+1)-s)))));
+        /* USE_PLANU[dept]=true → บังคับใช้เส้นแผนทางการของแผนก (planU) ทุก Job (ยอดรวมแผนก = ตามรายงาน/R1) แม้ตั้ง p18 ไว้ */
+        const plan = USE_PLANU[u.code] ? (w=>planU(u.code,w)) : (jobPlan ? jobPlan : (useDept ? (w=>planU(u.code,w)) : (w=>Math.max(0,Math.min(1,(w+1-s)/((e+1)-s))))));
         return {name:a[0], wt, mh, s, e, seedAct, plan, act:0};
       });
       return {name:rj.name, owner:rj.owner, cur:rj.cur, tasks, mh:jobMh, real:true};
