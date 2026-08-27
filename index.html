@@ -457,7 +457,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r47";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r48";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -723,8 +723,9 @@ const REAL_JOBS_WK = { BLR: [
    สัปดาห์ไฟล์ = สัปดาห์ฤดู (off=0) · [ชื่อ, สัปดาห์เริ่ม, สัปดาห์จบ, น้ำหนักในJob, เกิดจริง(แต้มในJob รวม=%Job)]
    น้ำหนัก Job (rj.w) = %รวมของแผนก (คอลัมน์ Wieght รวม=100) · แผนก MEC รวม 63.58% */
 MEC: [
- {name:"ซ่อมบำรุงรักษาเครื่องจักรแผนกลูกหีบ", owner:"หน.ซ่อมบำรุงเครื่องกล", w:4.90, tasks:[
-   ["ระบบปั๊มน้ำอ้อยขึ้น Rotary",4,6,40,20],["ระบบปั๊มน้ำพรม",1,7,40,36],["ระบบปั๊ม Cooling กลับ",4,7,20,18]]},
+ /* Job ลูกหีบ: แผน Gantt ราย Task จริง (ชีต "ลูกหีบ" แถบสีฟ้า) — Rotary wk1–2 · น้ำพรม wk3–4 · Cooling กลับ wk5 */
+ {name:"ซ่อมบำรุงรักษาเครื่องจักรแผนกลูกหีบ", owner:"หน.ซ่อมบำรุงเครื่องกล", w:4.90, realPlan:true, tasks:[
+   ["ระบบปั๊มน้ำอ้อยขึ้น Rotary",1,2,40,20],["ระบบปั๊มน้ำพรม",3,4,40,36],["ระบบปั๊ม Cooling กลับ",5,5,20,18]]},
  {name:"ซ่อมบำรุงรักษาเครื่องจักรแผนกหม้อต้ม", owner:"หน.ซ่อมบำรุงเครื่องกล", w:25.94, tasks:[
    ["ระบบปั๊มน้ำอ้อย",2,16,25,16.95],["ระบบปั๊มน้ำเชื่อม",7,11,10,9],["ระบบปั๊มน้ำร้อน",2,16,15,12.81],
    ["ระบบ Vaccuum",7,17,15,11.5],["ระบบปั๊มเคมี (เก่า)",7,18,15,12.9],
@@ -899,15 +900,17 @@ let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
     /* แผนกแบบอิงสัปดาห์: สัปดาห์ฤดู = off + สัปดาห์ไฟล์ · น้ำหนัก Task ปรับให้รวม = น้ำหนัก Job (rj.w)
        off = ระยะเลื่อนสัปดาห์ไฟล์→สัปดาห์ฤดู (หม้อไอน้ำเริ่มสัปดาห์ 6 → off=5 · เครื่องกลเริ่มสัปดาห์ 1 → off=0) */
     const off = WK_OFFSET[u.code]||0;
-    const deptPlan = WK_DEPTPLAN[u.code];   // true = ไม่มีแผนราย Task (เครื่องกล) → ใช้เส้นแผนทางการของแผนก
+    const deptPlan = WK_DEPTPLAN[u.code];   // true = แผนกยังไม่มีแผนราย Task → ใช้เส้นแผนทางการของแผนก (planU)
     const jobs = REAL_JOBS_WK[u.code].map(rj=>{
       const rawTot = rj.tasks.reduce((x,t)=>x+t[3],0);
+      /* rj.realPlan=true → Job นี้มีแผน Gantt ราย Task จริง (ช่วง s–e) แม้แผนกจะตั้ง deptPlan ไว้ ก็ให้ใช้ ramp ราย Task */
+      const useDept = deptPlan && !rj.realPlan;
       const tasks = rj.tasks.map(a=>{
         const s=off+a[1], e=off+a[2]+1;                 // สัปดาห์ฤดู เริ่ม–จบ (จบสิ้นสัปดาห์ off+a[2])
         const wt=Math.round(a[3]/rawTot*rj.w*100)/100;  // % ของแผนก · a[3]=เป้าหมาย(น้ำหนักในJob)
         const mh=Math.round(FORCE_TOTAL[u.code]*wt/100);
         const seedAct = a[4]!=null ? a[4] : null;        // a[4]=เกิดจริง(%ในJob) มีเฉพาะ Job ที่ดึงผลจริงราย Task แล้ว
-        const plan = deptPlan ? (w=>planU(u.code,w)) : (w=>Math.max(0,Math.min(1,(w+1-s)/(e-s))));
+        const plan = useDept ? (w=>planU(u.code,w)) : (w=>Math.max(0,Math.min(1,(w+1-s)/(e-s))));
         return {name:a[0], wt, mh, s, e, seedAct, plan, act:0};
       });
       return {name:rj.name, owner:rj.owner, cur:rj.cur, tasks, mh:tasks.reduce((x,t)=>x+t.mh,0), real:true};
