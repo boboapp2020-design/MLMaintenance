@@ -457,7 +457,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r57";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r58";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -748,9 +748,11 @@ MEC: [
  /* Job Waste water: แผน Gantt ราย Task จริง (ชีต "Wastewater") */
  {name:"ซ่อมบำรุงรักษาเครื่องจักรระบบ Waste water", owner:"หน.ซ่อมบำรุงเครื่องกล", w:9.43, realPlan:true, tasks:[
    ["ระบบส่งจ่ายน้ำทิ้งจากการผลิต",25,28,70,28.88],["ระบบบำบัดน้ำทิ้งจากการผลิต",27,28,30,16]]},
- {name:"ซ่อมบำรุงรักษาเครื่องจักรระบบผลิตและส่งจ่ายลม", owner:"หน.ซ่อมบำรุงเครื่องกล", w:0.33, tasks:[
-   ["Air Compressor",15,15,70,14],["Air dryer",15,15,30,3]]},
- {name:"ซ่อมบำรุงรักษาเครื่องจักร Machine Shop", owner:"หน.ซ่อมบำรุงเครื่องกล", w:0.42, tasks:[
+ /* Job ผลิต/ส่งลม: แผน Gantt ราย Task จริง (ชีต "Air com") — ทุก Task ที่ wk21 (Air Compressor/Air dryer/Separator รวมใน Air dryer) */
+ {name:"ซ่อมบำรุงรักษาเครื่องจักรระบบผลิตและส่งจ่ายลม", owner:"หน.ซ่อมบำรุงเครื่องกล", w:0.33, realPlan:true, tasks:[
+   ["Air Compressor",21,21,70,14],["Air dryer",21,21,30,3]]},
+ /* Job Machine Shop: แผน wk1 (ชีต "Shop") */
+ {name:"ซ่อมบำรุงรักษาเครื่องจักร Machine Shop", owner:"หน.ซ่อมบำรุงเครื่องกล", w:0.42, realPlan:true, tasks:[
    ["ระบบเครื่องจักร Machine Shop",1,1,100,100]]},
 ]};
 
