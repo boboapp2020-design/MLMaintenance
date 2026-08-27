@@ -457,7 +457,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r62";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r63";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -760,6 +760,48 @@ MEC: [
    ["ระบบเครื่องจักร Machine Shop",1,1,100,100]]},
 ]};
 
+/* ===== ซ่อมบำรุงไฟฟ้า (ELE) — ไฟล์ P18 (เป้า/ผลจริง/น้ำหนักราย Job) + แผนช่อม (task + col K %สำเร็จ) =====
+   8 Job แบ่งตามแผนกที่ไปบริการ (ตาม P18) · เป้าราย Job = 64.65% เท่ากันทุก Job (เส้นแผนแผนก uniform)
+   ผลจริงราย Job = q (P18 คอลัมน์ Q) ← ขับตัวเลข dashboard · tasks:[[ชื่อ, %สำเร็จ(col K)]] = แสดงความคืบหน้าราย Task ประกอบ (ไม่เฉลี่ยเป็น Job)
+   md = แรง(คน-วัน)ราย Job (P18) รวม 1528 · w = md/1528×100 */
+const REAL_JOBS_ELE = { ELE: [
+ {name:"เครื่องจักรไฟฟ้า แผนกลูกหีบ", owner:"หน.ซ่อมบำรุงไฟฟ้า", md:153, q:65.07, tasks:[
+   ["ซ่อมมอเตอร์แผนกลูกหีบ",0],["ทำความสะอาด DC Motor",80],["ตรวจเช็ค MCC 4 MDB ลูกหีบ",100],
+   ["ซ่อมระบบควบคุมมอเตอร์ DC Drive MCC2,3 ลูกหีบ",100],["ตรวจเช็คระบบควบคุมเครนปั้นจั่น ลูกหีบ",0],
+   ["ซ่อมแสงสว่าง ลูกหีบ/หม้อต้ม/โรงปูนขาว",0]]},
+ {name:"เครื่องจักรไฟฟ้า แผนกหม้อต้ม", owner:"หน.ซ่อมบำรุงไฟฟ้า", md:153, q:64.61, tasks:[
+   ["ซ่อมมอเตอร์แผนกหม้อต้ม",80],["ตรวจเช็ค MCC 5 MDB หม้อต้ม",100],
+   ["ซ่อมมอเตอร์โรงปูนขาว",0],["ตรวจเช็ค โรงปูนขาว (หม้อต้ม)",0]]},
+ {name:"เครื่องจักรไฟฟ้า แผนกหม้อไอน้ำ", owner:"หน.ซ่อมบำรุงไฟฟ้า", md:153, q:64.65, tasks:[
+   ["ซ่อมมอเตอร์ Boiler No.1,2,3",60],["ตรวจเช็ค MCC 1 MDB หม้อไอน้ำ",100],
+   ["ตรวจเช็ค MCC 1/1 MDB หม้อไอน้ำ",100],["ซ่อมแสงสว่างหม้อไอน้ำ",0],
+   ["ซ่อมมอเตอร์ปั้มลม/ระบบควบคุมปั้มลม หม้อไอน้ำ",100],["ซ่อมแสงสว่างรอบกองกากอ้อย Bagashouse",0]]},
+ {name:"เครื่องจักรไฟฟ้า แผนกไฟฟ้าผลิต", owner:"หน.ซ่อมบำรุงไฟฟ้า", md:153, q:64.32, tasks:[
+   ["ซ่อมมอเตอร์แผนกไฟฟ้าผลิต",0],["ตรวจเช็ค TR1-TR10 (หม้อแปลง)",60],
+   ["ตรวจวัดระบบล่อฟ้า หม้อไอน้ำ/ไฟฟ้าผลิต/หม้อต้ม <5Ω",100]]},
+ {name:"เครื่องจักรไฟฟ้า แผนกหม้อเคี่ยว", owner:"หน.ซ่อมบำรุงไฟฟ้า", md:204, q:64.64, tasks:[
+   ["ซ่อมมอเตอร์แผนกเคี่ยว",70],["ตรวจเช็ค MCC 6 หม้อเคี่ยว",100],["ซ่อมแสงสว่างหม้อเคี่ยว",60]]},
+ {name:"เครื่องจักรไฟฟ้า แผนกหม้อปั่น", owner:"หน.ซ่อมบำรุงไฟฟ้า", md:204, q:64.47, tasks:[
+   ["ซ่อมมอเตอร์แผนกหม้อปั่น",0],["ตรวจเช็ค MCC 7 MDB หม้อปั่น",100],["ซ่อมแสงสว่างหม้อปั่น",60],
+   ["ซ่อมมอเตอร์/ระบบควบคุมเครน หม้อปั่น",100],["ซ่อมมอเตอร์ปั้มลม/ระบบควบคุมปั้มลม หม้อปั่น",100]]},
+ {name:"เครื่องจักรไฟฟ้า ระบบน้ำ บ่อน้ำดี บ่อน้ำเสีย", owner:"หน.ซ่อมบำรุงไฟฟ้า", md:203, q:64.98, tasks:[
+   ["ซ่อมมอเตอร์ระบบน้ำ",80],["ซ่อมมอเตอร์บ่อน้ำดี บ่อน้ำเสีย",80],["ตรวจเช็ค MCC 9 ระบบน้ำ",100],
+   ["ซ่อมระบบควบคุมมอเตอร์ บ่อน้ำดี/เสีย",50],["ซ่อมแสงสว่างระบบน้ำ",60],["ซ่อมแสงสว่างบ่อน้ำดี/เสีย โลจิสติก",60],
+   ["Inspection Motor TSK",50],["Inspection Control Motor TSK",50],["Inspection Solenoid Valve TSK",50]]},
+ {name:"เครื่องทำความเย็น และบริการ", owner:"หน.ซ่อมบำรุงไฟฟ้า", md:305, q:65.17, tasks:[
+   ["เครื่องปรับอากาศ MCC 4 คอนโทรลลูกหีบ",100],["เครื่องปรับอากาศ MCC 1 หม้อไอน้ำ/ไฟฟ้าผลิต",80],
+   ["เครื่องปรับอากาศ MCC 1/1 Exiter ไฟฟ้าผลิต",80],["เครื่องปรับอากาศ MCC 9/1",80],
+   ["เครื่องปรับอากาศ คอนโทรลหม้อต้ม/เคี่ยว/ปั่น",80],["เครื่องปรับอากาศ ห้องบรรจุน้ำตาล",100],
+   ["เครื่องปรับอากาศ OFFICE ยานยนต์หนัก/ซ่อมบำรุงด้านอ้อย",100],["เครื่องปรับอากาศ OFFICE ฝ่ายผลิต/ประกันคุณภาพ",100],
+   ["เครื่องปรับอากาศ OFFICE วิเคราะห์คุณภาพ",100],["เครื่องปรับอากาศ OFFICE อาคารซ่อมบำรุง",100],
+   ["เครื่องปรับอากาศ OFFICE อาคารพัสดุ",100],["เครื่องปรับอากาศ บ้านพักผู้บริหาร/หัวหน้าแผนก",100],
+   ["เครื่องปรับอากาศ OFFICE อาคารสำนักงานด้านอ้อย",0],["เครื่องปรับอากาศ OFFICE อาคารบุคคล IT",100],
+   ["ตรวจวัดระบบล่อฟ้ารอบโรงงาน <5Ω",100],["ซ่อมแสงสว่างโคมไฟถนนรอบโรงงาน",80],
+   ["ซ่อมแสงสว่างอาคารสำนักงาน/อาคารบุคคล",100],["ซ่อมแสงสว่างอาคารสำนักงาน/ยานยนต์หนัก/ด้านอ้อย",100],
+   ["ซ่อมแสงสว่างอาคารซ่อมบำรุง/อาคารพัสดุ",100],["ซ่อมแสงสว่างบ้านพักผู้บริหาร/หัวหน้าแผนก",100],
+   ["ซ่อมระบบควบคุมมอเตอร์/มอเตอร์ แผนกโลจิสติก",100]]},
+]};
+
 /* ===== แผนงานจริงหม้อต้ม (EVP) — ไฟล์ "แผนบำรุงรักษา และซ่อมแซมหม้อต้ม 2026" (แท็บ แผนช่อมแผนก) =====
    มีข้อมูลจริงครบระดับ Task ทั้ง %เป้าหมาย (=น้ำหนักในงาน) และ %เกิดจริง
    job: {name, owner, w(น้ำหนัก%ของแผนก), tasks:[[ชื่อ, เดือนเริ่ม,วันเริ่ม, เดือนจบ,วันจบ, น้ำหนัก%ในJob, ผลจริง%ในJob]]}
@@ -958,6 +1000,19 @@ let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
         return {name:a[0], wt, mh, s, e, actPct, plan:w=>Math.max(0,Math.min(1,(w+1-s)/(e-s))), act:0};
       });
       return {name:rj.name, owner:rj.owner, tasks, mh:tasks.reduce((x,t)=>x+t.mh,0), real:true};
+    });
+    return {...u, jobs, real:true};
+  }
+  if(REAL_JOBS_ELE[u.code]){
+    /* ELE: 8 Job ราย Job (P18) · % ราย Job = q (P18 Q) ผ่าน task ตัวแทน 1 ตัว/Job (seedAct=q ขับ dashboard)
+       col K ราย Task เก็บใน task.refs แสดงประกอบ (ไม่เฉลี่ยเป็น Job) · เป้า = เส้นแผนแผนก uniform (planU ≈64.65 ที่ wk18) */
+    const tot = REAL_JOBS_ELE[u.code].reduce((x,rj)=>x+rj.md,0);
+    const jobs = REAL_JOBS_ELE[u.code].map(rj=>{
+      const wt = Math.round(rj.md/tot*10000)/100;   // % ของแผนก
+      const task = {name:rj.name, wt, mh:rj.md, s:UNIT_STARTW[u.code]||1, e:WEEKS,
+                    seedAct:rj.q, plan:w=>planU(u.code,w), act:0,
+                    refs:rj.tasks.map(t=>({name:t[0], k:t[1]}))};
+      return {name:rj.name, owner:rj.owner, tasks:[task], mh:rj.md, real:true};
     });
     return {...u, jobs, real:true};
   }
@@ -1467,17 +1522,21 @@ function unitView(secId, uname){
   <div class="card"><h2>S-CURVE <span class="thin">· ${un(u.name)}</span></h2>${sCurve(unitTasks(u))}</div>
   ${u.blank ? `<div class="card" style="text-align:center;padding:34px 20px;color:var(--mut)">📋 ${pk(["ยังไม่มีแผน Job/Task ของหน่วยงานนี้ — คงเส้นแผน %/แรงระดับหน่วยตามไฟล์เป้าหมาย รอนำเข้ารายละเอียดงานจริง","ຍັງບໍ່ມີແຜນ Job/Task ຂອງໜ່ວຍນີ້ — ຄົງເສັ້ນແຜນ ລໍຖ້ານຳເຂົ້າຂໍ້ມູນຈິງ","No Job/Task plan for this unit yet — unit-level plan curve kept; awaiting real work breakdown"])}</div>` : ""}
   ${visJobs(u).map((j,ji)=>{const ja=agg(j.tasks,WNOW), jv=ja.act-ja.plan, jst=statusOf(jv);
-    const done=j.tasks.filter(t=>actAt(t,WNOW)>=1).length;
-    return `<div class="job b-${jst[1]}" id="job${ji}">
-      <div class="jobhead" tabindex="0" onclick='document.getElementById("job${ji}").classList.toggle("open")'>
-        <span class="caret">▶</span><span class="jname">${tr(j.name)}</span>
-        <span class="jmeta num">${done}/${j.tasks.length} task · ${fmt0(ja.mh)} ${pk(["แรง","ແຮງ","man-days"])}</span>
-        <span class="jbar"><span class="fill" style="width:${ja.act}%;background:${SCc[jst[1]]}"></span><span class="mark" style="left:${ja.plan}%"></span></span>
-        <span class="jpct num" style="color:${SCc[jst[1]]}">${fmt1(ja.act)}%<br><span class="small">${pk(["แผน","ແຜນ","plan"])} ${fmt1(ja.plan)}%</span></span>
-        <span class="jchip">${ja.act>=99.5?`<span class="chip c-good">✓ ${pk(["เสร็จ 100%","ສຳເລັດ 100%","100% done"])}</span>`:`<span class="chip c-${jst[1]}">${jst[0]}</span>`}</span>
-      </div>
-      <div class="jobbody"><div class="scrollx"><table>
-        <tr><th>Task</th><th class="r">${pk(["แรง","ແຮງ","man-days"])}</th><th class="r">${pk(["กำหนด (สัปดาห์)","ກຳນົດ (ສັບປະດາ)","Sched. (wk)"])}</th><th class="r">${pk(["แผน","ແຜນ","Plan"])}</th><th class="r">${pk(["ผลจริง","ຜົນຕົວຈິງ","Actual"])}</th><th style="width:150px">${pk(["ความคืบหน้า","ຄວາມຄືບໜ້າ","Progress"])}</th><th>${pk(["สถานะ","ສະຖານະ","Status"])}</th></tr>
+    const isEle = j.tasks.length===1 && j.tasks[0].refs;   // ELE: 1 task ตัวแทน (%=Q) + refs (col K ราย Task)
+    const refs = isEle ? j.tasks[0].refs : null;
+    const taskN = isEle ? refs.length : j.tasks.length;
+    const done = isEle ? refs.filter(r=>r.k>=100).length : j.tasks.filter(t=>actAt(t,WNOW)>=1).length;
+    let body;
+    if(isEle){
+      body = `<div class="scrollx"><table>
+        <tr><th>Task</th><th class="r">${pk(["%สำเร็จงาน","%ສຳເລັດ","% done"])}</th><th style="width:180px">${pk(["ความคืบหน้า","ຄວາມຄືບໜ້າ","Progress"])}</th></tr>
+        ${refs.map(rf=>{const k=rf.k, col=k>=100?SCc.good:k>=50?SCc.warn:SCc.crit;
+          return `<tr><td>${tr(rf.name)}</td><td class="r num"><b>${k}%</b></td>
+          <td class="progcell"><div class="tbar"><div class="fill" style="width:${k}%;background:${col}"></div></div></td></tr>`;}).join("")}
+      </table></div><div class="small" style="padding:6px 4px 2px;color:var(--mut)">${pk(["% ราย Job อ้างอิงผลจริงสะสมตามรายงาน (P18) · %สำเร็จงานราย Task = ความคืบหน้าของงานนั้น","% ຕໍ່ Job ອີງ P18 · %ສຳເລັດ = ຄວາມຄືບໜ້າວຽກນັ້ນ","Job % from P18 report · task %done = that item's progress"])}</div>`;
+    } else {
+      body = `<div class="scrollx"><table>
+        <tr><th>Task</th><th class="r">${pk(["แรง","ແຮງ","man-days"])}</th><th class="r">${pk(["กำหนด (สัปดาห์)","ກຳນົດ (ສັບປะດາ)","Sched. (wk)"])}</th><th class="r">${pk(["แผน","ແຜນ","Plan"])}</th><th class="r">${pk(["ผลจริง","ຜົນຕົວຈິງ","Actual"])}</th><th style="width:150px">${pk(["ความคืบหน้า","ຄວາมຄืบໜ້າ","Progress"])}</th><th>${pk(["สถานะ","ສະຖານະ","Status"])}</th></tr>
         ${j.tasks.map(t=>{const tp=t.plan(WNOW)*100, ta=actAt(t,WNOW)*100,
           tst= ta>=100?[pk(["เสร็จ ✓","ສຳເລັດ ✓","Done ✓"]),"good"]:statusOf(ta-tp);
           return `<tr><td>${tr(t.name)}</td><td class="r num">${fmt0(t.mh)}</td>
@@ -1485,7 +1544,17 @@ function unitView(secId, uname){
           <td class="r num">${fmt1(tp)}%</td><td class="r num"><b>${fmt1(ta)}%</b></td>
           <td class="progcell"><div class="tbar"><div class="fill" style="width:${ta}%;background:${SCc[tst[1]]}"></div><div class="mark" style="left:${tp}%"></div></div></td>
           <td><span class="chip c-${tst[1]}">${tst[0]}</span></td></tr>`;}).join("")}
-      </table></div></div></div>`;}).join("")}
+      </table></div>`;
+    }
+    return `<div class="job b-${jst[1]}" id="job${ji}">
+      <div class="jobhead" tabindex="0" onclick='document.getElementById("job${ji}").classList.toggle("open")'>
+        <span class="caret">▶</span><span class="jname">${tr(j.name)}</span>
+        <span class="jmeta num">${done}/${taskN} task · ${fmt0(ja.mh)} ${pk(["แรง","ແຮງ","man-days"])}</span>
+        <span class="jbar"><span class="fill" style="width:${ja.act}%;background:${SCc[jst[1]]}"></span><span class="mark" style="left:${ja.plan}%"></span></span>
+        <span class="jpct num" style="color:${SCc[jst[1]]}">${fmt1(ja.act)}%<br><span class="small">${pk(["แผน","ແຜນ","plan"])} ${fmt1(ja.plan)}%</span></span>
+        <span class="jchip">${ja.act>=99.5?`<span class="chip c-good">✓ ${pk(["เสร็จ 100%","ສຳເລັດ 100%","100% done"])}</span>`:`<span class="chip c-${jst[1]}">${jst[0]}</span>`}</span>
+      </div>
+      <div class="jobbody">${body}</div></div>`;}).join("")}
   <div style="margin-top:16px"><button class="backbtn" onclick="go('${backTo}')">← ${pk(["กลับ","ກັບຄືນ","Back"])}</button></div>`;
   window.scrollTo(0,0);
 }
