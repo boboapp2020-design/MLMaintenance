@@ -428,7 +428,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r39";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r40";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -573,6 +573,7 @@ function planU(code,w){
   return Math.min(1, lo+(hi-lo)*(w-i));
 }
 const REALWK = Math.max(1, Math.min(WEEKS, Math.floor((Date.now()-SEASON_START.getTime())/(7*86400000))+1));
+const BASELINE_WK = 18;   // สัปดาห์ที่นำเข้าข้อมูลย้อนหลังถึง — สัปดาห์ ≤ นี้ ถือว่าบันทึกครบแล้ว (ในตารางเช็คชื่อ)
 let WNOW = REALWK;   // สัปดาห์ที่กำลังดู (เปลี่ยนได้จากตัวเลือกวันที่)
 
 /* ===== แผนงานจริงราย Job/Task (ไฟล์ "แผนบำรุงรักษา และซ่อมแซมเครื่องจักรประจำ") =====
@@ -1907,7 +1908,10 @@ function repPage(){
         let done=0, due=0;
         const cells=wks.map(w=>{
           if(u.blank || w<startW) return `<td class="r ${w===WNOW?'wkcur':''}" style="color:var(--mut)">—</td>`;
-          due++; const rec=set.has(w); if(rec) done++;
+          due++;
+          /* สัปดาห์ ≤ 18 นำเข้าข้อมูลย้อนหลังแล้ว ถือว่าบันทึกครบ · สัปดาห์ 19+ เช็คการบันทึกจริง */
+          const rec = (w<=BASELINE_WK) ? true : set.has(w);
+          if(rec) done++;
           return `<td class="r ${w===WNOW?'wkcur':''}" style="color:${rec?'var(--good)':'var(--crit)'};font-weight:800">${rec?'✓':'✗'}</td>`;
         }).join("");
         const sum=u.blank?`<span style="color:var(--mut)">${pk(["รอแผน","ລໍຖ້າ","—"])}</span>`:`${done}/${due}`;
