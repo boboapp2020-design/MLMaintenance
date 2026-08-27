@@ -457,7 +457,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r59";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r60";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -593,6 +593,10 @@ Object.entries(PLAN_FORCE).forEach(([c,a])=>{
   let s=0; PLAN_CUM[c]=a.map(v=>(s+=v)/tot);
   UNIT_STARTW[c]=a.findIndex(v=>v>0)+1;
 });
+/* แก้แรงรวมเครื่องกลเป็น 2143 (ไฟล์รวม R1 เขียนผิดเป็น 2212) — แรงราย Job ตาม sheet 18:
+   ลูกหีบ105 หม้อต้ม556 หม้อเคี่ยว238 หม้อปั่น420 Cooling240 ผลิตน้ำ366 Waste202 ลม7 Shop9 = 2143
+   MEC ใช้แผน Gantt ราย Task (planU ไม่ถูกใช้แล้ว) จึงแก้เฉพาะยอดแรงที่ใช้สเกล mh ราย task/job */
+FORCE_TOTAL["MEC"]=2143;
 const WEEK_FORCE = PLAN_DAYS.map((_,i)=>Object.values(PLAN_FORCE).reduce((s,a)=>s+a[i],0));
 /* แรงรวมทั้งฤดูกาลตามไฟล์ R1 (17,473) — ใช้แสดง "ยอดรวมตามแผน" ให้ตรงไฟล์ ไม่ใช่ผลรวม mh ราย task ที่ปัดเศษ */
 const SEASON_FORCE = Math.round(Object.values(FORCE_TOTAL).reduce((a,b)=>a+b,0));
