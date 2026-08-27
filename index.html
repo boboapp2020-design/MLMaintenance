@@ -457,7 +457,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r49";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r50";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -906,11 +906,12 @@ let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
       /* rj.realPlan=true → Job นี้มีแผน Gantt ราย Task จริง (ช่วง s–e) แม้แผนกจะตั้ง deptPlan ไว้ ก็ให้ใช้ ramp ราย Task */
       const useDept = deptPlan && !rj.realPlan;
       const tasks = rj.tasks.map(a=>{
-        const s=off+a[1], e=off+a[2]+1;                 // สัปดาห์ฤดู เริ่ม–จบ (จบสิ้นสัปดาห์ off+a[2])
+        const s=off+a[1], e=off+a[2];                   // สัปดาห์ฤดู เริ่ม–จบ (แบบรวมสัปดาห์จบ เพื่อให้แสดง "กำหนด" ตรง)
         const wt=Math.round(a[3]/rawTot*rj.w*100)/100;  // % ของแผนก · a[3]=เป้าหมาย(น้ำหนักในJob)
         const mh=Math.round(FORCE_TOTAL[u.code]*wt/100);
         const seedAct = a[4]!=null ? a[4] : null;        // a[4]=เกิดจริง(%ในJob) มีเฉพาะ Job ที่ดึงผลจริงราย Task แล้ว
-        const plan = useDept ? (w=>planU(u.code,w)) : (w=>Math.max(0,Math.min(1,(w+1-s)/(e-s))));
+        /* plan ramp: ถึง 100% เมื่อสิ้นสัปดาห์ e (ตัวหารใช้ e+1-s เพื่อให้ผลเท่าเดิมกับตอน e เป็นสัปดาห์จบ+1) */
+        const plan = useDept ? (w=>planU(u.code,w)) : (w=>Math.max(0,Math.min(1,(w+1-s)/((e+1)-s))));
         return {name:a[0], wt, mh, s, e, seedAct, plan, act:0};
       });
       return {name:rj.name, owner:rj.owner, cur:rj.cur, tasks, mh:tasks.reduce((x,t)=>x+t.mh,0), real:true};
