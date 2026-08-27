@@ -246,6 +246,15 @@ td.progcell{width:150px}
 .wkbadge{background:linear-gradient(90deg,var(--blue),#3B82F6);color:#fff;border-radius:10px;padding:9px 13px;font-size:13.5px;font-weight:700;margin-bottom:10px;box-shadow:0 3px 10px rgba(37,99,235,.28)}
 .wkbadge b{font-size:16px}
 .wkbadge .num{opacity:.9;font-weight:600}
+.modalbtns{display:flex;gap:10px;justify-content:flex-end;align-items:center}
+.modalbtns .btn-o{flex:0 0 auto}
+.modalbtns .btn-save{flex:0 0 auto;width:auto;padding-left:20px;padding-right:20px}
+.wknav{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:3px 6px}
+.wknav .wkbtn{border:none;background:var(--tint);color:var(--blue);border-radius:7px;width:26px;height:26px;font-size:13px;cursor:pointer;font-weight:800}
+.wknav .wkbtn:disabled{opacity:.35;cursor:default}
+.wknav .wkbtn:not(:disabled):hover{background:var(--blue);color:#fff}
+.wknav .wklbl{font-size:12.5px;font-weight:700;color:var(--ink)}
+.wknav .wkback{background:var(--warn-bg);color:var(--warn);border-radius:6px;padding:1px 7px;font-size:11px;font-weight:800}
 .modal-box h3{margin:0 34px 14px 0;font-size:16px;font-weight:800;color:var(--ink)}
 .modal-close{position:absolute;top:14px;right:16px;width:34px;height:34px;border:none;background:var(--tint);border-radius:9px;cursor:pointer;font-size:17px;color:var(--mut);line-height:1}
 .modal-close:hover{background:var(--tint2);color:var(--ink)}
@@ -431,7 +440,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r41";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r42";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1155,6 +1164,8 @@ function renderLang(){
 }
 function go(p){ PAGE=p; SUBVIEW=false; if(p==='entry'){ DEPT=""; SELJOB=null; } renderNav(); ({over:overview,jobs:jobsPage,units:unitsPage,entry:entryPage,ana:anaPage,rep:repPage})[p](); window.scrollTo(0,0); }
 function setWeek(w){ WNOW=parseInt(w); go(PAGE); }
+/* เลื่อนสัปดาห์ที่กำลังบันทึก (สำหรับกรอกย้อนหลังสัปดาห์ก่อนๆ) — ไม่เกินสัปดาห์ปัจจุบัน */
+function entryWeek(d){ WNOW=Math.max(1,Math.min(REALWK,WNOW+d)); SELJOB=SELJOB; entryDeptPage(); }
 function weekChip(){
   const opts=[...Array(REALWK).keys()].map(i=>{const w=i+1;
     return `<option value="${w}" ${w===WNOW?"selected":""}>${pk(["สัปดาห์","ສັບປະດາ","Week"])} ${w} · ${fmtDate(wkEnd(w))}</option>`;}).join("");
@@ -1432,7 +1443,7 @@ function jobDetailHtml(){
     const ja=agg(j.tasks,WNOW);
     right=`<h3>${tr(j.name)}</h3>
       <div class="jd-sub num">${j.id} · ${pk(["สัปดาห์นี้บันทึก","ອາທິດນີ້ບັນທຶກ","this week"])} ${doneToday}/${act.length} task · ${pk(["รวม","ລວມ","total"])} ${fmt1(ja.act)}% / ${pk(["แผน","ແຜນ","plan"])} ${fmt1(ja.plan)}%</div>
-      ${j.tasks.map(t=>{ const rec=recordedToday(t.id), done=actAt(t,WNOW)>=1, ta=actAt(t,WNOW)*100, tp=t.plan(WNOW)*100, cur=fmt1(ta);
+      ${j.tasks.slice().sort((a,b)=>(actAt(a,WNOW)>=1?1:0)-(actAt(b,WNOW)>=1?1:0)).map(t=>{ const rec=recordedToday(t.id), done=actAt(t,WNOW)>=1, ta=actAt(t,WNOW)*100, tp=t.plan(WNOW)*100, cur=fmt1(ta);
         const cc=done?"#16A34A":(statusOf(ta-tp)[1]==="good"?"#16A34A":statusOf(ta-tp)[1]==="warn"?"#D97706":"#EF4444");
         return `<div class="taskrow ${rec?'rec':''}">
           <div class="tk-main">
@@ -1463,7 +1474,7 @@ function entryDeptPage(){
   const left=jl.length? jl.map(j=>{
     const act=jobActiveTasks(j), dn=act.filter(t=>recordedToday(t.id)).length, conf=isJobConfirmed(j.id);
     const jpct=agg(j.tasks,WNOW).act, jdone=jpct>=99.5;   // Job เสร็จ 100% แล้วหรือยัง
-    const st = jdone?`<span style="color:var(--good)">✔</span>` : conf?`<span style="color:var(--good)">✓</span>` : (act.length&&dn>=act.length?`<span style="color:var(--warn)">●</span>` : dn>0?`<span style="color:var(--warn)">◐</span>` : `<span style="color:var(--crit)">○</span>`);
+    const st = jdone?`<span style="color:var(--good)">✔</span>` : conf?`<span style="color:var(--good)">✓</span>` : (act.length&&dn>=act.length?`<span style="color:var(--warn);font-weight:800">●</span>` : dn>0?`<span style="color:var(--warn);font-weight:800">◐</span>` : `<span style="color:var(--crit);font-weight:900;font-size:16px">✗</span>`);
     return `<div class="joblistitem ${j.id===SELJOB?'active':''} ${jdone?'jdone':''}" tabindex="0" onclick="selectJob('${j.id}')">
       <span class="jl-nm">${tr(j.name)}<span class="num">${jdone?pk(["ทั้ง Job เสร็จแล้ว","ທັງ Job ສຳເລັດ","job complete"]):(pk(["สัปดาห์นี้","ອາທິດນີ້","this wk"])+" "+dn+"/"+act.length+" task")} · ${fmt1(jpct)}%</span></span>
       <span class="jl-st">${st}</span></div>`;}).join("")
@@ -1474,7 +1485,12 @@ function entryDeptPage(){
   <div class="deptbar">
     <button class="btn btn-o btnsm" onclick="setDept('')">← ${pk(["กลับ","ກັບຄືນ","Back"])}</button>
     <span class="deptname">🔒 ${un(u.name)}</span>
-    <span class="small" style="margin-left:auto">${pk(["บันทึกสัปดาห์นี้","ບັນທຶກອາທິດນີ້","this week"])} <b class="num" style="color:var(--ink);font-size:14px">${allTasksToday}/${totalActive}</b> task</span></div>
+    <span class="wknav">
+      <button class="wkbtn" ${WNOW<=1?'disabled':''} onclick="entryWeek(-1)" title="${pk(["สัปดาห์ก่อนหน้า (กรอกย้อนหลัง)","ອາທິດກ່ອນ","previous week"])}">◀</button>
+      <span class="wklbl">${pk(["บันทึกของสัปดาห์","ບັນທຶກຂອງອາທິດ","Recording week"])} <b>${WNOW}</b>${WNOW<REALWK?` <span class="wkback">${pk(["ย้อนหลัง","ຍ້ອນຫຼັງ","past"])}</span>`:""}</span>
+      <button class="wkbtn" ${WNOW>=REALWK?'disabled':''} onclick="entryWeek(1)" title="${pk(["สัปดาห์ถัดไป","ອາທິດຖັດໄປ","next week"])}">▶</button>
+    </span>
+    <span class="small" style="margin-left:auto">${pk(["บันทึกแล้ว","ບັນທຶກແລ້ວ","recorded"])} <b class="num" style="color:var(--ink);font-size:14px">${allTasksToday}/${totalActive}</b> task</span></div>
   <div class="entrysplit">
     <div class="card joblist"><div class="sub" style="padding:2px 8px 6px">${pk(["งานของแผนก","ວຽກຂອງໜ່ວຍ","Unit jobs"])}</div>${left}</div>
     <div class="card jobdetail">${right}</div>
@@ -1509,7 +1525,10 @@ function openTaskForm(tid){
       <div class="fld"><label>${pk(["ผู้บันทึก","ຜູ້ບັນທຶກ","By"])}</label><input id="tfBy" type="text"></div>
     </div>
     <div class="fld" style="margin-bottom:12px"><label>${pk(["หมายเหตุ","ໝາຍເຫດ","Note"])}</label><input id="tfNote" type="text"></div>
-    <button class="btn-save" onclick="saveTaskForm()">💾 ${pk(["บันทึก Task นี้","ບັນທຶກ Task ນີ້","Save this task"])}</button>`;
+    <div class="modalbtns">
+      <button class="btn btn-o" onclick="closeTaskForm()">${pk(["ยกเลิก","ຍົກເລີກ","Cancel"])}</button>
+      <button class="btn-save" onclick="saveTaskForm()">💾 ${pk(["บันทึก Task นี้","ບັນທຶກ Task ນີ້","Save this task"])}</button>
+    </div>`;
   document.getElementById("taskModal").classList.add("open");
   tfPctHint(Math.max(fl,prefill), wt);
 }
