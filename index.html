@@ -243,6 +243,9 @@ td.progcell{width:150px}
 #taskModal input{padding:8px 10px;font-size:13.5px;border-radius:8px}
 #taskModal .btn-save{padding:10px;font-size:14px}
 #taskModal .modal-close{top:12px;right:12px}
+.wkbadge{background:linear-gradient(90deg,var(--blue),#3B82F6);color:#fff;border-radius:10px;padding:9px 13px;font-size:13.5px;font-weight:700;margin-bottom:10px;box-shadow:0 3px 10px rgba(37,99,235,.28)}
+.wkbadge b{font-size:16px}
+.wkbadge .num{opacity:.9;font-weight:600}
 .modal-box h3{margin:0 34px 14px 0;font-size:16px;font-weight:800;color:var(--ink)}
 .modal-close{position:absolute;top:14px;right:16px;width:34px;height:34px;border:none;background:var(--tint);border-radius:9px;cursor:pointer;font-size:17px;color:var(--mut);line-height:1}
 .modal-close:hover{background:var(--tint2);color:var(--ink)}
@@ -428,7 +431,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-26 r40";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-26 r41";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1493,12 +1496,12 @@ function openTaskForm(tid){
   const tgtPts=Math.round(x.t.plan(REALWK)*wt*100)/100;
   document.getElementById("taskModalTitle").textContent=tr(x.t.name);
   document.getElementById("taskModalBody").innerHTML=`
+    <div class="wkbadge">🗓️ ${pk(["กำลังบันทึกของ สัปดาห์ที่","ກຳລັງບັນທຶກ ອາທິດທີ","Recording for Week"])} <b>${WNOW}</b> <span class="num">(${fmtDate(wkStart(WNOW))}–${fmtDate(wkEnd(WNOW))})</span> · ${pk(["ส่งภายในศุกร์","ສົ່ງພາຍໃນວັນສຸກ","due Fri"])} ${fmtDate(weekFriday(WNOW))}</div>
     <div class="taskinfo num">⚖️ ${pk(["น้ำหนัก Task นี้","ນ້ຳໜັກ Task ນີ້","Task weight"])} <b>${wt}</b> ${pk(["แต้ม (แผนกเต็ม 100)","ແຕ້ມ (ໜ່ວຍເຕັມ 100)","pts (unit = 100)"])} · ${pk(["สัปดาห์","ສັບປະດາ","wk"])} ${Math.max(1,Math.round(x.t.s))}–${Math.min(WEEKS,Math.round(x.t.e))}
     <br>🎯 ${pk(["เป้าสะสมถึงตอนนี้","ເປົ້າສະສົມຮອດຕອນນີ້","Target to date"])} <b>${tgtPts}</b> ${pk(["แต้ม","ແຕ້ມ","pts"])} (${fmt1(x.t.plan(REALWK)*100)}% ${pk(["ของ Task","ຂອງ Task","of task"])})
     <br>${lastE?`📈 ${pk(["แต้มล่าสุด","ແຕ້ມຫຼ້າສຸດ","latest"])} <b>${lastE.pct}</b> (${pk(["บันทึกเมื่อ","ບັນທຶກເມື່ອ","on"])} ${lastE.date}) — ${pk(["กรอกต่อจากนี้","ປ້ອນຕໍ່ຈາກນີ້","continue from here"])}`:`${pk(["ยังไม่เคยบันทึก · แต้มปัจจุบัน","ຍັງບໍ່ເຄີຍບັນທຶກ · ແຕ້ມປັດຈຸບັນ","No record yet · current"])} <b>${curPts}</b>`}
     <br><span style="color:var(--warn)">🔒 ${pk(["กรอกได้ไม่ต่ำกว่า","ປ້ອນໄດ້ບໍ່ຕ່ຳກວ່າ","must be ≥"])} ${fl} ${pk(["แต้ม (สะสม ห้ามถอยหลัง)","ແຕ້ມ","pts"])}</span></div>
     <input type="hidden" id="tfTid" value="${tid}">
-    <div class="small" style="margin:-4px 0 10px;color:var(--mut)">📅 ${pk(["บันทึกของสัปดาห์ที่","ບັນທຶກຂອງອາທິດທີ","Recording for week"])} ${WNOW} (${fmtDate(wkStart(WNOW))}–${fmtDate(wkEnd(WNOW))}) · ${pk(["กำหนดส่งศุกร์","ກຳນົດສົ່ງວັນສຸກ","due Fri"])} ${fmtDate(weekFriday(WNOW))}</div>
     <div class="formgrid">
       <div class="fld"><label>📅 ${pk(["วันที่บันทึก","ວັນທີ","Date"])}</label><input id="tfDate" type="date" value="${dateISO(new Date(Math.min(weekFriday(WNOW).getTime(), Date.now())))}" max="${todayISO()}"></div>
       <div class="fld"><label>⚖️ ${pk(["แต้มสะสมที่ทำได้","ແຕ້ມສະສົມທີ່ເຮັດໄດ້","Points earned (cum.)"])} <span class="num">(0–${wt})</span></label><input id="tfPct" type="number" min="${fl}" max="${wt}" step="0.01" value="${Math.max(fl,prefill)}" oninput="tfPctHint(this.value,${wt})"><div id="tfPctHint" class="small num"></div></div>
