@@ -597,6 +597,8 @@ Object.entries(PLAN_FORCE).forEach(([c,a])=>{
    ลูกหีบ105 หม้อต้ม556 หม้อเคี่ยว238 หม้อปั่น420 Cooling240 ผลิตน้ำ366 Waste202 ลม7 Shop9 = 2143
    MEC ใช้แผน Gantt ราย Task (planU ไม่ถูกใช้แล้ว) จึงแก้เฉพาะยอดแรงที่ใช้สเกล mh ราย task/job */
 FORCE_TOTAL["MEC"]=2143;
+/* แรงรวมไฟฟ้าผลิต = 1517 ตามไฟล์ %งาน 13 (R1 รวมเขียน 1291) — GEN ใช้แผน/ผลจริงราย Job จากไฟล์นี้ */
+FORCE_TOTAL["GEN"]=1517;
 const WEEK_FORCE = PLAN_DAYS.map((_,i)=>Object.values(PLAN_FORCE).reduce((s,a)=>s+a[i],0));
 /* แรงรวมทั้งฤดูกาลตามไฟล์ R1 (17,473) — ใช้แสดง "ยอดรวมตามแผน" ให้ตรงไฟล์ ไม่ใช่ผลรวม mh ราย task ที่ปัดเศษ */
 const SEASON_FORCE = Math.round(Object.values(FORCE_TOTAL).reduce((a,b)=>a+b,0));
@@ -758,6 +760,29 @@ MEC: [
  /* Job Machine Shop: แผน wk1 (ชีต "Shop") */
  {name:"ซ่อมบำรุงรักษาเครื่องจักร Machine Shop", owner:"หน.ซ่อมบำรุงเครื่องกล", w:0.42, realPlan:true, p18:100, tasks:[
    ["ระบบเครื่องจักร Machine Shop",1,1,100,100]]},
+],
+/* ===== ไฟฟ้าผลิต (GEN) — ไฟล์ "งานประจำสัปดาห์ ML-FM-3000-12 ไฟฟ้าผลิต" แท็บ %งาน 13 (=สัปดาห์ฤดู 18) =====
+   9 Job (job-level) · GEN เริ่มงานสัปดาห์ 6 จบ 31 ต.ค. · ช่วง s–e = สัปดาห์ฤดูจากวันที่จริง
+   [ชื่อ, wkเริ่ม, wkจบ, น้ำหนักในJob=100, เกิดจริง Q] · w=%ของแผนก(T) · p18=เป้าสะสม%ถึงสัปดาห์18(P) · แรงรวม 1517 */
+GEN: [
+ {name:"ตรวจเช็ค/ทำความสะอาด COOLER, OIL TANK STG No.1-5", owner:"หน.ผลิตไฟฟ้า", w:15.03, realPlan:true, p18:100, tasks:[
+   ["ตรวจเช็ค/ทำความสะอาด COOLER, OIL TANK STG No.1-5",6,9,100,100]]},
+ {name:"ซ่อมแซม VALVES, PIPE AND INSULATION", owner:"หน.ผลิตไฟฟ้า", w:42.32, realPlan:true, p18:65.97, tasks:[
+   ["ซ่อมแซม VALVES, PIPE AND INSULATION",10,22,100,57]]},
+ {name:"ซ่อมแซม CONDENSER SYSTEMS", owner:"หน.ผลิตไฟฟ้า", w:5.60, realPlan:true, p18:100, tasks:[
+   ["ซ่อมแซม CONDENSER SYSTEMS",11,13,100,55]]},
+ {name:"ตรวจเช็ค Turbine, Gear, Generator No.1-5", owner:"หน.ผลิตไฟฟ้า", w:6.33, realPlan:true, p18:100, tasks:[
+   ["ตรวจเช็ค Turbine, Gear, Generator No.1-5",7,10,100,100]]},
+ {name:"ซ่อมแซม ตู้ FEEDER, Excite, Control", owner:"หน.ผลิตไฟฟ้า", w:3.43, realPlan:true, p18:100, tasks:[
+   ["ซ่อมแซม ตู้ FEEDER, Excite, Control",14,15,100,15]]},
+ {name:"ตรวจเช็คซ่อมแซม DIESEL GENERATOR", owner:"หน.ผลิตไฟฟ้า", w:3.76, realPlan:true, p18:0, tasks:[
+   ["ตรวจเช็คซ่อมแซม DIESEL GENERATOR",23,23,100,70]]},
+ {name:"ซ่อมแซมประกอบ TURBINE No.1-5", owner:"หน.ผลิตไฟฟ้า", w:9.10, realPlan:true, p18:0, tasks:[
+   ["ซ่อมแซมประกอบ TURBINE No.1-5",24,25,100,45]]},
+ {name:"ซ่อมแซมประกอบ GEAR BOX No.1-5", owner:"หน.ผลิตไฟฟ้า", w:10.68, realPlan:true, p18:0, tasks:[
+   ["ซ่อมแซมประกอบ GEAR BOX No.1-5",26,27,100,15]]},
+ {name:"ซ่อมแซมประกอบ Generator No.1-5", owner:"หน.ผลิตไฟฟ้า", w:3.76, realPlan:true, p18:0, tasks:[
+   ["ซ่อมแซมประกอบ Generator No.1-5",28,28,100,40]]},
 ]};
 
 /* ===== ซ่อมบำรุงไฟฟ้า (ELE) — ไฟล์ P18 (เป้า/ผลจริง/น้ำหนักราย Job) + แผนช่อม (task + col K %สำเร็จ) =====
