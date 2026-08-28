@@ -457,7 +457,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r76";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r78";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -684,7 +684,7 @@ const WK_OFFSET = { BLR:5, MEC:0 };
 /* แผนกที่ช่วงสัปดาห์ Task มาจาก activity จริง (ไม่ใช่แผน Gantt) → ใช้เส้นแผนทางการของแผนก (planU) ในการเทียบ */
 const WK_DEPTPLAN = { MEC:true };
 /* แผนกที่บังคับใช้เส้นแผนทางการ (planU) ทุก Job — ยอดรวมแผนกอิงเส้น R1 ตามรายงาน (เครื่องมือควบคุม: รายงานรวม 62.53 = planU(INS,18)) */
-const USE_PLANU = { INS:true, GEN:true };
+const USE_PLANU = { INS:true };
 /* สเกลผลจริงราย Job ของ ELE ให้ยอดรวมแผนก = 65.08 ตาม headline รายงาน P18 (เฉลี่ยถ่วงราย Job ได้ 64.71) */
 const ELE_QS = 1.004636;
 const REAL_JOBS_WK = { BLR: [
@@ -769,8 +769,8 @@ MEC: [
    9 Job (job-level) · GEN เริ่มงานสัปดาห์ 6 จบ 31 ต.ค. · ช่วง s–e = สัปดาห์ฤดูจากวันที่จริง
    [ชื่อ, wkเริ่ม, wkจบ, น้ำหนักในJob=100, เกิดจริง Q] · w=%ของแผนก(T) · p18=เป้าสะสม%ถึงสัปดาห์18(P) · แรงรวม 1517 */
 GEN: [
- /* แต่ละ Job ลง sub-task (จาก Schedule 1-9) น้ำหนักเท่ากัน · ใช้เส้นแผน p18 + ผลจริง Q ของ Job (ไม่มีผลจริงราย sub-task)
-    task = [ชื่อ, wkเริ่ม(=ช่วง Job), wkจบ, น้ำหนักในJob, เกิดจริงแต้มในJob] · sum น้ำหนัก=100 · sum เกิดจริง=Q */
+ /* แต่ละ Job ลง sub-task · แผน = เส้น p18 (0→P ที่ wk18→100% ที่กำหนดเสร็จตามไฟล์) + ผลจริง Q ราย Job (%งาน 13 ทางการ)
+    task = [ชื่อ, wkเริ่ม, wkจบ, น้ำหนักในJob, เกิดจริงแต้มในJob] · sum น้ำหนัก=100 · sum เกิดจริง=Q · เป้ารวม 58.34 · จริงรวม 58.91 */
  {name:"ตรวจเช็ค/ทำความสะอาด COOLER, OIL TANK STG No.1-5", owner:"หน.ผลิตไฟฟ้า", w:15.03, realPlan:true, p18:100, tasks:[
    ["Drain lube oil & cleaning lube oil system",6,9,20,20],["Drain water cooler & water cooler system",6,9,20,20],
    ["Inspection & repair oil tank",6,9,20,20],["Inspection & repair oil-air cooler",6,9,20,20],["Close & pressure test",6,9,20,20]]},
