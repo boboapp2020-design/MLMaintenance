@@ -457,7 +457,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r71";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r72";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1299,7 +1299,7 @@ const unitTasks = u=>u.jobs.flatMap(j=>j.tasks),
       secTasks = s=>s.units.flatMap(unitTasks), allTasks = DATA.flatMap(secTasks);
 const CFG={warn:0,crit:7};   /* ไม่เผื่อ tolerance: ตามแผนเฉพาะเมื่อผลจริง ≥ แผน · ตามหลังแม้แต่จุดเดียว = เสี่ยงทันที */
 function statusOf(v){ return v>=-CFG.warn?[pk(["ตามแผน","ຕາມແຜນ","On plan"]),"good"]:v>=-CFG.crit?[pk(["เสี่ยง","ສ່ຽງ","At risk"]),"warn"]:[pk(["ล่าช้า","ຊັກຊ້າ","Late"]),"crit"]; }
-const fmt1 = x=>x.toLocaleString("th-TH",{maximumFractionDigits:1,minimumFractionDigits:1});
+const fmt1 = x=>x.toLocaleString("th-TH",{maximumFractionDigits:2,minimumFractionDigits:2});
 const fmt0 = x=>Math.round(x).toLocaleString("th-TH");
 function wkStart(w){ return new Date(2026,3,20+(w-1)*7); }
 function wkEnd(w){ return new Date(2026,3,18+w*7); }   /* สัปดาห์ทำงาน จ.–ส. (เช่น สัปดาห์ 1 = 20–25 เม.ย.) */
