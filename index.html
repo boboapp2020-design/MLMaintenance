@@ -457,7 +457,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r69";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r70";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1078,15 +1078,33 @@ let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
     return {...u, jobs, real:true};
   }
   if(REAL_JOBS_ELE[u.code]){
-    /* ซ่อมบำรุงไฟฟ้า (ELE): job-level · เป้ารวมแผนก = เส้นแผนทางการ R1 (planU) ทุก Job
-       % ราย Job = เฉลี่ย %สำเร็จ (col K) ของ Task ในงานนั้น (น้ำหนักเท่ากัน) · refs = รายการ Task (col K) แสดงประกอบ
-       น้ำหนัก Job = md/1528 · ผลจริงราย Job seed = ค่าเฉลี่ยนี้ */
+    /* ซ่อมบำรุงไฟฟ้า (ELE): เป้ารวมแผนก = เส้น R1 (planU ทุก Task) · Task บันทึกได้จริง (recordable)
+       ผลจริงราย Task = col K (%สำเร็จ · คาดการ) · น้ำหนัก Task ถ่วงด้วย lam=(q−เฉลี่ย)/var
+       → ผลรวมถ่วงน้ำหนักราย Job = q (P18 เกิดจริง) เป๊ะ · น้ำหนัก Job = md/1528 */
     const jobs = REAL_JOBS_ELE[u.code].map(rj=>{
-      const wt = Math.round(rj.md/FORCE_TOTAL[u.code]*10000)/100;   // % ของแผนก
-      /* % ราย Job = q (P18 เกิดจริง wk18 · ค่าจริง) · col K ราย Task = คาดการ (แสดง/บันทึกประกอบ) */
-      const task = {name:rj.name, wt, mh:rj.md, s:1, e:WEEKS, seedAct:rj.q, plan:w=>planU(u.code,w), act:0,
-                    refs:rj.tasks.map(t=>({name:t[0], k:t[1]}))};
-      return {name:rj.name, owner:rj.owner, tasks:[task], mh:rj.md, real:true};
+      const jobW = Math.round(rj.md/FORCE_TOTAL[u.code]*10000)/100;   // % ของแผนก
+      const ks0 = rj.tasks.map(t=>+t[1]||0), N=ks0.length;
+      const avg = ks0.reduce((a,b)=>a+b,0)/N;
+      const minK=Math.min(...ks0), maxK=Math.max(...ks0);
+      let ks=ks0, rw;
+      if(rj.q < minK-0.01 || rj.q > maxK+0.01){
+        /* Q อยู่นอกช่วง %task → ถ่วงน้ำหนักให้ = Q ไม่ได้ · สเกลค่า %task (เท่ากันทุกตัว) ให้เฉลี่ย = Q */
+        const f = avg>0 ? rj.q/avg : 0;
+        ks = ks0.map(k=>Math.round(Math.min(100,k*f)*100)/100);
+        rw = ks0.map(()=>1);
+      } else {
+        /* Q อยู่ในช่วง → คง %task เดิม ถ่วงน้ำหนัก lam=(q−เฉลี่ย)/var ให้ผลรวม = Q */
+        const varr = ks0.reduce((a,k)=>a+(k-avg)*(k-avg),0)/N;
+        const lam = varr>0.0001 ? (rj.q-avg)/varr : 0;
+        rw = ks0.map(k=>Math.max(0.02, 1+lam*(k-avg)));
+      }
+      const rwSum = rw.reduce((a,b)=>a+b,0);
+      const tasks = rj.tasks.map((t,ti)=>{
+        const wt = Math.round(rw[ti]/rwSum*jobW*100)/100;    // % ของแผนก
+        const mh = Math.round(FORCE_TOTAL[u.code]*wt/100);
+        return {name:t[0], wt, mh, s:1, e:WEEKS, seedAct:ks[ti], plan:w=>planU(u.code,w), act:0};
+      });
+      return {name:rj.name, owner:rj.owner, tasks, mh:rj.md, real:true};
     });
     return {...u, jobs, real:true};
   }
