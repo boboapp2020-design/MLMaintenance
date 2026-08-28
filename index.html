@@ -448,6 +448,13 @@ img,svg,table{max-width:100%}
     <div id="modalBody"></div>
   </div>
 </div>
+<div class="modal-ov" id="pinModal" onclick="if(event.target===this)closePinModal()">
+  <div class="modal-box" style="max-width:370px">
+    <button class="modal-close" onclick="closePinModal()" aria-label="close">✕</button>
+    <h3 id="pinTitle">PIN</h3>
+    <div id="pinBody"></div>
+  </div>
+</div>
 <div class="modal-ov" id="taskModal" onclick="if(event.target===this)closeTaskForm()">
   <div class="modal-box" style="max-width:440px">
     <button class="modal-close" onclick="closeTaskForm()" aria-label="close">✕</button>
@@ -457,7 +464,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r82";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r83";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1302,7 +1309,7 @@ function taskPrevPct(tid, w, wt){
 function isKeepEntry(e){ return /คงค่าเดิม|keep|ຄົງຄ່າ/.test(e&&e.note||""); }
 function unitsRecordedOn(dateStr){
   const set=new Set();
-  ENTRIES.forEach(e=>{ if(e.date===dateStr) set.add(e.taskId.split("-")[0]); });
+  ENTRIES.forEach(e=>{ if(e.date===dateStr && !/-PIN$/.test(String(e.taskId))) set.add(e.taskId.split("-")[0]); });   /* ไม่นับแถวเปลี่ยน PIN เป็นการบันทึกงาน */
   return set;
 }
 /* Job/Task ที่แสดงจริง (ตัด placeholder ของหน่วยที่ยังไม่มีแผนงานจริงออก) */
@@ -1704,7 +1711,76 @@ function todayISO(){ const d=new Date(); return d.getFullYear()+"-"+String(d.get
 let DEPT="";  /* เริ่มที่หน้าเลือกแผนกทุกครั้ง (ไม่จำแผนกเดิม) */
 function unitByCode(code){ return DATA.flatMap(s=>s.units).find(u=>u.code===code); }
 let SELJOB=null;
-function setDept(code){ DEPT=code||""; SELJOB=null; entryPage(); }
+/* ===== PIN ประจำแผนก (หน้าบันทึกข้อมูล) =====
+   ค่าเริ่มต้นตามรหัสหน่วยงานโรงงาน · เปลี่ยนได้เอง (เก็บเป็นแถวพิเศษ taskId "<CODE>-PIN" ใน Google Sheet, note=PIN ใหม่ — แถวนี้ไม่ถูกนับเป็นผลงานเพราะไม่มีใน TASK_INDEX)
+   ปลดล็อกจำต่อเซสชัน (รีเฟรชหน้า = ถามใหม่) */
+const DEPT_PIN_DEF = { MIL:"3110", EVP:"3210", PAN:"3220", CFG:"3230", GEN:"3310", BLR:"3120", INS:"3300", ELE:"3320", MEC:"3130" };
+const PIN_OK = {};
+function deptPin(code){
+  let pin = DEPT_PIN_DEF[code]||"0000";
+  ENTRIES.forEach(e=>{ if(String(e.taskId)===code+"-PIN" && /^\d{4,6}$/.test(String(e.note||"").trim())) pin=String(e.note).trim(); });
+  return pin;
+}
+function setDept(code){
+  if(code && !PIN_OK[code]){ openPinModal(code); return; }
+  DEPT=code||""; SELJOB=null; entryPage();
+}
+let PIN_CODE=null;
+function openPinModal(code){
+  PIN_CODE=code;
+  document.getElementById("pinTitle").textContent="🔒 "+un(unitByCode(code).name);
+  document.getElementById("pinBody").innerHTML = `
+    <div class="small" style="margin-bottom:10px;color:var(--mut)">${pk(["ใส่ PIN ประจำแผนกเพื่อเข้าบันทึกข้อมูล","ໃສ່ PIN ຂອງພະແນກເພື່ອບັນທຶກ","Enter the department PIN to record data"])}</div>
+    <input id="pinInp" type="password" inputmode="numeric" maxlength="6" autocomplete="off"
+      style="width:100%;font-size:24px;letter-spacing:10px;text-align:center;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)"
+      onkeydown="if(event.key==='Enter')pinSubmit()">
+    <div id="pinErr" class="small" style="color:var(--crit);min-height:18px;margin-top:6px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">
+      <button class="btn btn-o" onclick="closePinModal()">${pk(["ยกเลิก","ຍົກເລີກ","Cancel"])}</button>
+      <button class="btn btn-p" onclick="pinSubmit()">${pk(["ตกลง","ຕົກລົງ","OK"])}</button>
+    </div>`;
+  document.getElementById("pinModal").classList.add("open");
+  setTimeout(()=>{ const i=document.getElementById("pinInp"); if(i) i.focus(); },80);
+}
+function closePinModal(){ document.getElementById("pinModal").classList.remove("open"); }
+function pinSubmit(){
+  const v=(document.getElementById("pinInp").value||"").trim();
+  if(v===deptPin(PIN_CODE)){ PIN_OK[PIN_CODE]=true; closePinModal(); DEPT=PIN_CODE; SELJOB=null; entryPage(); }
+  else{ document.getElementById("pinErr").textContent=pk(["PIN ไม่ถูกต้อง ลองใหม่","PIN ບໍ່ຖືກຕ້ອງ","Wrong PIN — try again"]);
+    const i=document.getElementById("pinInp"); i.value=""; i.focus(); }
+}
+function openPinChange(){
+  const code=DEPT; if(!code) return;
+  PIN_CODE=code;
+  const F='style="width:100%;font-size:17px;letter-spacing:6px;text-align:center;padding:8px 10px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)"';
+  document.getElementById("pinTitle").textContent="🔑 "+pk(["เปลี่ยน PIN","ປ່ຽນ PIN","Change PIN"])+" · "+un(unitByCode(code).name);
+  document.getElementById("pinBody").innerHTML = `
+    <div class="formgrid" style="display:grid;gap:10px">
+      <div class="fld"><label class="small">${pk(["PIN เดิม","PIN ເກົ່າ","Current PIN"])}</label><input id="pinCur" type="password" inputmode="numeric" maxlength="6" autocomplete="off" ${F}></div>
+      <div class="fld"><label class="small">${pk(["PIN ใหม่ (ตัวเลข 4–6 หลัก)","PIN ໃໝ່ (4–6 ຫຼັກ)","New PIN (4–6 digits)"])}</label><input id="pinNew1" type="password" inputmode="numeric" maxlength="6" autocomplete="off" ${F}></div>
+      <div class="fld"><label class="small">${pk(["ยืนยัน PIN ใหม่","ຢືນຢັນ PIN ໃໝ່","Confirm new PIN"])}</label><input id="pinNew2" type="password" inputmode="numeric" maxlength="6" autocomplete="off" ${F} onkeydown="if(event.key==='Enter')pinChangeSubmit()"></div>
+    </div>
+    <div id="pinErr" class="small" style="color:var(--crit);min-height:18px;margin-top:6px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">
+      <button class="btn btn-o" onclick="closePinModal()">${pk(["ยกเลิก","ຍົກເລີກ","Cancel"])}</button>
+      <button class="btn btn-p" onclick="pinChangeSubmit()">${pk(["บันทึก PIN ใหม่","ບັນທຶກ PIN ໃໝ່","Save new PIN"])}</button>
+    </div>`;
+  document.getElementById("pinModal").classList.add("open");
+  setTimeout(()=>{ const i=document.getElementById("pinCur"); if(i) i.focus(); },80);
+}
+function pinChangeSubmit(){
+  const err=m=>{ document.getElementById("pinErr").textContent=m; };
+  const cur=(document.getElementById("pinCur").value||"").trim();
+  const n1=(document.getElementById("pinNew1").value||"").trim();
+  const n2=(document.getElementById("pinNew2").value||"").trim();
+  if(cur!==deptPin(PIN_CODE)){ err(pk(["PIN เดิมไม่ถูกต้อง","PIN ເກົ່າບໍ່ຖືກ","Current PIN is wrong"])); return; }
+  if(!/^\d{4,6}$/.test(n1)){ err(pk(["PIN ใหม่ต้องเป็นตัวเลข 4–6 หลัก","PIN ໃໝ່ 4–6 ຫຼັກ","New PIN must be 4–6 digits"])); return; }
+  if(n1!==n2){ err(pk(["PIN ใหม่ทั้งสองช่องไม่ตรงกัน","PIN ໃໝ່ບໍ່ກົງກັນ","New PINs do not match"])); return; }
+  const entry={date:todayISO(), taskId:PIN_CODE+"-PIN", pct:0, mh:0, by:"เปลี่ยน PIN", note:n1};
+  ENTRIES.push(entry); saveEntries(ENTRIES); pushToSheet(entry);
+  closePinModal();
+  alert("✓ "+pk(["เปลี่ยน PIN ของแผนกแล้ว (มีผลทุกเครื่องหลัง sync)","ປ່ຽນ PIN ແລ້ວ","Department PIN changed (applies everywhere after sync)"]));
+}
 function selectJob(jid){ SELJOB=jid; document.querySelectorAll('.joblistitem').forEach(function(el){ el.classList.toggle('active', el.getAttribute('onclick').indexOf("'"+jid+"'")>-1); }); var d=document.querySelector('.jobdetail'); if(d){ d.innerHTML=jobDetailHtml(); } else { entryDeptPage(); } }
 function clearAllData(){
   if(!confirm(pk(["⚠️ ล้างข้อมูลบันทึกทั้งหมด (ทั้งในเครื่องและใน Google Sheet)? ย้อนกลับไม่ได้","⚠️ ລ້າງຂໍ້ມູນທັງໝົດ? ຍ້ອນກັບບໍ່ໄດ້","⚠️ Clear ALL records (device + Google Sheet)? Cannot undo"]))) return;
@@ -1813,6 +1889,7 @@ function entryDeptPage(){
   <div class="deptbar">
     <button class="btn btn-o btnsm" onclick="setDept('')">← ${pk(["กลับ","ກັບຄືນ","Back"])}</button>
     <span class="deptname">🔒 ${un(u.name)}</span>
+    <span class="editlink" style="cursor:pointer;font-size:12px;color:var(--mut);text-decoration:underline" onclick="openPinChange()">${pk(["เปลี่ยน PIN","ປ່ຽນ PIN","change PIN"])}</span>
     <span class="wknav">
       <button class="wkbtn" ${WNOW<=1?'disabled':''} onclick="entryWeek(-1)" title="${pk(["สัปดาห์ก่อนหน้า (กรอกย้อนหลัง)","ອາທິດກ່ອນ","previous week"])}">◀</button>
       <span class="wklbl">${pk(["บันทึกของสัปดาห์","ບັນທຶກຂອງອາທິດ","Recording week"])} <b>${WNOW}</b>${WNOW<REALWK?` <span class="wkback">${pk(["ย้อนหลัง","ຍ້ອນຫຼັງ","past"])}</span>`:""}</span>
