@@ -457,7 +457,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r70";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r71";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -685,6 +685,8 @@ const WK_OFFSET = { BLR:5, MEC:0 };
 const WK_DEPTPLAN = { MEC:true };
 /* แผนกที่บังคับใช้เส้นแผนทางการ (planU) ทุก Job — ยอดรวมแผนกอิงเส้น R1 ตามรายงาน (เครื่องมือควบคุม: รายงานรวม 62.53 = planU(INS,18)) */
 const USE_PLANU = { INS:true };
+/* สเกลผลจริงราย Job ของ ELE ให้ยอดรวมแผนก = 65.08 ตาม headline รายงาน P18 (เฉลี่ยถ่วงราย Job ได้ 64.71) */
+const ELE_QS = 1.00479;
 const REAL_JOBS_WK = { BLR: [
  /* Job1-2: [ชื่อ, สัปดาห์เริ่ม, สัปดาห์จบ, เป้าหมาย(น้ำหนักในJob), เกิดจริง] — จาก sheet B1/B2 (เลขหน้า=เป้า เลขหลัง=จริง) */
  {name:"งานซ่อมแซมหม้อไอน้ำ No.1", owner:"แผนกผลิตไฟฟ้า B", w:18, tasks:[
@@ -1083,19 +1085,20 @@ let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
        → ผลรวมถ่วงน้ำหนักราย Job = q (P18 เกิดจริง) เป๊ะ · น้ำหนัก Job = md/1528 */
     const jobs = REAL_JOBS_ELE[u.code].map(rj=>{
       const jobW = Math.round(rj.md/FORCE_TOTAL[u.code]*10000)/100;   // % ของแผนก
+      const q = Math.round(rj.q*ELE_QS*100)/100;   // ผลจริงราย Job (สเกลให้ยอดรวม = 65.08)
       const ks0 = rj.tasks.map(t=>+t[1]||0), N=ks0.length;
       const avg = ks0.reduce((a,b)=>a+b,0)/N;
       const minK=Math.min(...ks0), maxK=Math.max(...ks0);
       let ks=ks0, rw;
-      if(rj.q < minK-0.01 || rj.q > maxK+0.01){
+      if(q < minK-0.01 || q > maxK+0.01){
         /* Q อยู่นอกช่วง %task → ถ่วงน้ำหนักให้ = Q ไม่ได้ · สเกลค่า %task (เท่ากันทุกตัว) ให้เฉลี่ย = Q */
-        const f = avg>0 ? rj.q/avg : 0;
+        const f = avg>0 ? q/avg : 0;
         ks = ks0.map(k=>Math.round(Math.min(100,k*f)*100)/100);
         rw = ks0.map(()=>1);
       } else {
         /* Q อยู่ในช่วง → คง %task เดิม ถ่วงน้ำหนัก lam=(q−เฉลี่ย)/var ให้ผลรวม = Q */
         const varr = ks0.reduce((a,k)=>a+(k-avg)*(k-avg),0)/N;
-        const lam = varr>0.0001 ? (rj.q-avg)/varr : 0;
+        const lam = varr>0.0001 ? (q-avg)/varr : 0;
         rw = ks0.map(k=>Math.max(0.02, 1+lam*(k-avg)));
       }
       const rwSum = rw.reduce((a,b)=>a+b,0);
