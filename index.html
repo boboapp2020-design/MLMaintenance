@@ -457,7 +457,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r73";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r75";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -684,7 +684,7 @@ const WK_OFFSET = { BLR:5, MEC:0 };
 /* แผนกที่ช่วงสัปดาห์ Task มาจาก activity จริง (ไม่ใช่แผน Gantt) → ใช้เส้นแผนทางการของแผนก (planU) ในการเทียบ */
 const WK_DEPTPLAN = { MEC:true };
 /* แผนกที่บังคับใช้เส้นแผนทางการ (planU) ทุก Job — ยอดรวมแผนกอิงเส้น R1 ตามรายงาน (เครื่องมือควบคุม: รายงานรวม 62.53 = planU(INS,18)) */
-const USE_PLANU = { INS:true };
+const USE_PLANU = { INS:true, GEN:true };
 /* สเกลผลจริงราย Job ของ ELE ให้ยอดรวมแผนก = 65.08 ตาม headline รายงาน P18 (เฉลี่ยถ่วงราย Job ได้ 64.71) */
 const ELE_QS = 1.004636;
 const REAL_JOBS_WK = { BLR: [
@@ -2181,8 +2181,9 @@ function repPage(){
   const PTS=pk(["จุด","ຈຸດ","pts"]);
   app.innerHTML = pagehead(pk(["รายงานประจำสัปดาห์ที่","ລາຍງານປະຈຳສັບປະດາທີ","Weekly Report — Week"])+" "+WNOW,
     pk(["สรุปสำหรับที่ประชุมผู้บริหาร · ข้อมูล ณ","ສະຫຼຸບສຳລັບກອງປະຊຸມຜູ້ບໍລິຫານ · ຂໍ້ມູນ ນະ","Executive summary · as of"])+" "+fmtDate(wkEnd(WNOW))) + `
-  <div class="noprint" style="margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap"><button class="btn btn-p" onclick="window.print()">🖨 ${pk(["พิมพ์ / บันทึก PDF","ພິມ / ບັນທຶກ PDF","Print / Save PDF"])}</button>
-    <button class="btn btn-o" onclick="exportExcel()">📊 Export Excel</button></div>
+  <div class="noprint" style="margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button class="btn btn-p" onclick="window.print()">🖨 ${pk(["พิมพ์ / บันทึก PDF","ພິມ / ບັນທຶກ PDF","Print / Save PDF"])}</button>
+    <button class="btn btn-o" onclick="exportExcel()">📊 Export Excel</button>
+    <button class="btn" onclick="go('over')" style="margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--mut);font-weight:500;padding:9px 18px">← ${pk(["กลับ","ກັບ","Back"])}</button></div>
   <div class="card"><h2>1. ${pk(["สรุปภาพรวม","ສະຫຼຸບພາບລວມ","Summary"])}</h2>
     <div class="repline"><span class="bullet">•</span><span class="num">${pk(["ความคืบหน้ารวม","ຄວາມຄືບໜ້າລວມ","Overall progress"])} <b>${fmt1(f.act)}%</b> ${pk(["เทียบแผน","ທຽບແຜນ","vs plan"])} ${fmt1(f.plan)}% — <b>${gap>=0?pk(["นำแผน","ນຳແຜນ","ahead"]):pk(["ช้ากว่าแผน","ຊ້າກວ່າແຜນ","behind"])} ${fmt1(Math.abs(gap))} ${PTS} (${fLbl})</b></span></div>
     <div class="repline"><span class="bullet">•</span><span class="num">${pk(["แรงงานสะสม","ແຮງງານສະສົມ","Man-days"])} <b>${fmt0(f.actMh)}</b> / ${fmt0(SEASON_FORCE)} ${pk(["แรง","ແຮງ","man-days"])} · Job ${pk(["เสร็จ","ສຳເລັດ","done"])} <b>${done.length}/${jobsAll.length}</b></span></div>
