@@ -457,7 +457,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r81";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r82";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2126,6 +2126,112 @@ ${sheets}
   }catch(err){ alert("Export error: "+err.message); }
 }
 
+/* ============ ฟอร์มรายงานแผนก (ตามแบบ ML-FM-3000-012) ============
+   Export Excel รายแผนก โครงเหมือนรายงานกระดาษ: หัวบริษัท/สัปดาห์/แผนก + ตาราง 18 คอลัมน์
+   (รายการ · เป้าหมายจำนวนวัน 3 · เป้าหมายจำนวนแรง 4 · เป้าหมาย% · ผลดำเนินงาน 9) + แถวรวม + งานปรับปรุง
+   ข้อมูล ณ REPORT_WK (สัปดาห์รายงานล่าสุด) · เลขสัปดาห์หัวรายงาน = สัปดาห์ของแผนก (GEN/BLR เริ่ม wk6) */
+const DEPT_FORM_NAME = { INS:"ซ่อมบำรุงรักษา B (เครื่องมือควบคุม)", ELE:"ซ่อมบำรุงรักษา B (ซ่อมบำรุงไฟฟ้า)", MEC:"ซ่อมบำรุงรักษา A (เครื่องกล)" };
+const DEPT_START_WK = { GEN:6, BLR:6 };
+const THM_S=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+function wkMon(w){ return new Date(2026,3,20+(w-1)*7); }
+function thDateS(d){ return d.getDate()+"."+THM_S[d.getMonth()]+"."+String(d.getFullYear()).slice(-2); }
+function xlM(v,st,ma,md,idx){ let s=""; if(st)s+=` ss:StyleID="${st}"`; if(idx)s+=` ss:Index="${idx}"`; if(ma)s+=` ss:MergeAcross="${ma}"`; if(md)s+=` ss:MergeDown="${md}"`;
+  const t=(typeof v==="number"&&isFinite(v))?"Number":"String"; return `<Cell${s}><Data ss:Type="${t}">${xlEsc(v)}</Data></Cell>`; }
+function exportDeptForm(codeArg){
+  const sel=document.getElementById("repDeptSel");
+  const code=codeArg||(sel?sel.value:"");
+  const u=unitByCode(code);
+  if(!u){ alert(pk(["กรุณาเลือกแผนกก่อน","ກະລຸນາເລືອກພະແນກ","Select a department first"])); return; }
+  if(u.blank){ alert(pk(["แผนกนี้ยังไม่มีข้อมูล Job/Task","ພະແນກນີ້ຍັງບໍ່ມີຂໍ້ມູນ","No data for this department yet"])); return; }
+  const w=REPORT_WK, wPrev=Math.max(1,w-1);
+  const deptWk=w-((DEPT_START_WK[code]||1)-1);
+  const mon=wkMon(w), sat=weekSaturday(w);
+  const r2=x=>+x.toFixed(2);
+  const jr=visJobs(u).map(j=>{
+    const ts=j.tasks;
+    const s0=Math.max(1,Math.round(Math.min(...ts.map(t=>t.s)))), e0=Math.min(WEEKS,Math.round(Math.max(...ts.map(t=>t.e))));
+    const mhRaw=ts.reduce((a,t)=>a+t.mh,0), mh=Math.round(mhRaw);
+    const nowA=agg(ts,w), prevA=w>1?agg(ts,wPrev):{plan:0,act:0};
+    /* สะสมถึงสัปดาห์ก่อน (ประมาณระดับ Job): จริงก่อน = จริงตอนนี้ × สัดส่วนแผน · ถ้าแผน Job ไม่ขยับ (เช่น งานทำล่วงหน้าที่แผน=0) → ถือว่าค่าจริงคงเดิม */
+    const pa = nowA.plan>0 ? nowA.act*Math.min(1,prevA.plan/nowA.plan) : nowA.act;
+    return {name:tr(j.name), d1:thDateS(wkMon(s0)), d2:thDateS(weekSaturday(e0)),
+      days:PLAN_DAYS.slice(s0-1,e0).reduce((a,b)=>a+b,0), mh, mhRaw,
+      mhWk:Math.max(1,Math.round(mh/(e0+1-s0))),
+      mhAct:Math.round(mh*Math.max(0,nowA.act-pa)/100), mhCum:Math.round(mh*nowA.act/100),
+      pp:prevA.plan, pa, np:nowA.plan-prevA.plan, na:nowA.act-pa, cp:nowA.plan, ca:nowA.act};
+  });
+  const ut=unitTasks(u), nowU=agg(ut,w);
+  const uMhRaw=ut.reduce((a,t)=>a+t.mh,0), uMh=Math.round(uMhRaw);
+  /* รวมแผนก: สะสมก่อน = ถ่วงน้ำหนักจากราย Job (แรงจริงไม่ปัดเศษ) */
+  const prevU={ plan:(w>1?agg(ut,wPrev):{plan:0}).plan, act: jr.reduce((a,x)=>a+x.pa*x.mhRaw,0)/uMhRaw };
+  const us=Math.max(1,Math.round(Math.min(...ut.map(t=>t.s)))), ue=Math.min(WEEKS,Math.round(Math.max(...ut.map(t=>t.e))));
+  let rows="";
+  rows+=xlRow(xlM("บริษัท น้ำตาลมิตรลาว จำกัด","fT",17));
+  rows+=xlRow(xlM("รายงานผลการปฏิบัติงานซ่อมแซม และ ปรับปรุงเครื่องจักร ประจำสัปดาห์ที่ : "+deptWk,"fS",17));
+  rows+=xlRow(xlM("แผนก : "+(DEPT_FORM_NAME[code]||un(u.name))+"      ฝ่าย : โรงงาน      วันที่ "+mon.getDate()+" - "+thDateS(sat)+(deptWk!==w?"  (สัปดาห์โรงงานที่ "+w+")":""),"fS",17));
+  rows+=xlRow(
+    xlM("รายการ","fH",0,2)+xlM("เป้าหมายจำนวนวัน","fH",2,0,2)+xlM("เป้าหมายจำนวนแรง","fH",3,0,5)+
+    xlM("เป้าหมาย% งานทั้งหมด","fH",0,2,9)+xlM("ผลการดำเนินงาน (%)","fH",8,0,10));
+  rows+=xlRow(
+    xlM("วันเริ่มงาน","fH",0,1,2)+xlM("วันแล้วเสร็จ","fH",0,1)+xlM("รวม","fH",0,1)+
+    xlM("เป้าหมายแรงรวม","fH",0,1)+xlM("เป้าหมายแรง/สัปดาห์","fH",0,1)+xlM("จำนวนแรงเกิดจริง","fH",0,1)+xlM("จำนวนแรงสะสม","fH",0,1)+
+    xlM("สะสมถึงสัปดาห์ก่อน","fH",2,0,10)+xlM("เกิดขึ้นสัปดาห์นี้","fH",2)+xlM("สะสมถึงสัปดาห์นี้","fH",2));
+  rows+=xlRow(["เป้าหมาย","เกิดจริง","ผลต่าง","เป้าหมาย","เกิดจริง","ผลต่าง","เป้าหมาย","เกิดจริง","ผลต่าง"].map((h,i)=>xlM(h,"fH",0,0,i===0?10:0)).join(""));
+  rows+=xlRow(xlM("งานซ่อมแซม","fSec",17));
+  jr.forEach(x=>{
+    rows+=xlRow(
+      xlM(x.name,"fC")+xlM(x.d1,"fCc")+xlM(x.d2,"fCc")+xlM(x.days,"fCc")+
+      xlM(x.mh,"fN0")+xlM(x.mhWk,"fN0")+xlM(x.mhAct,"fN0")+xlM(x.mhCum,"fN0")+xlM(100,"fN")+
+      xlM(r2(x.pp),"fN")+xlM(r2(x.pa),"fN")+xlM(r2(x.pa-x.pp),"fD")+
+      xlM(r2(x.np),"fRd")+xlM(r2(x.na),"fBl")+xlM(r2(x.na-x.np),"fGn")+
+      xlM(r2(x.cp),"fN")+xlM(r2(x.ca),"fN")+xlM(r2(x.ca-x.cp),"fD"));
+  });
+  rows+=xlRow(
+    xlM("รวม","fTot")+xlM(thDateS(wkMon(us)),"fTotC")+xlM(thDateS(weekSaturday(ue)),"fTotC")+xlM(PLAN_DAYS.slice(us-1,ue).reduce((a,b)=>a+b,0),"fTotC")+
+    xlM(uMh,"fTotN0")+xlM(Math.max(1,Math.round(uMh/(ue+1-us))),"fTotN0")+xlM(Math.round(uMh*Math.max(0,nowU.act-prevU.act)/100),"fTotN0")+xlM(Math.round(uMh*nowU.act/100),"fTotN0")+xlM(100,"fTotN")+
+    xlM(r2(prevU.plan),"fTotN")+xlM(r2(prevU.act),"fTotN")+xlM(r2(prevU.act-prevU.plan),"fTotN")+
+    xlM(r2(nowU.plan-prevU.plan),"fTotR")+xlM(r2(nowU.act-prevU.act),"fTotB")+xlM(r2((nowU.act-prevU.act)-(nowU.plan-prevU.plan)),"fTotG")+
+    xlM(r2(nowU.plan),"fTotN")+xlM(r2(nowU.act),"fTotN")+xlM(r2(nowU.act-nowU.plan),"fTotG"));
+  rows+=xlRow(xlM("งานปรับปรุง","fSec",17));
+  for(let i=0;i<3;i++) rows+=xlRow(Array.from({length:18},(_,c)=>xlM("",c===0?"fC":"fCc")).join(""));
+  const cols=[250,64,64,40,58,58,58,58,62,52,52,52,52,52,52,52,52,52].map(wd=>`<Column ss:Width="${wd}"/>`).join("");
+  const BD='<Borders><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/></Borders>';
+  const xml=`<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:x="urn:schemas-microsoft-com:office:excel">
+<Styles>
+ <Style ss:ID="Default"><Alignment ss:Vertical="Center"/><Font ss:FontName="Tahoma" ss:Size="10"/></Style>
+ <Style ss:ID="fT"><Font ss:Bold="1" ss:Size="14"/><Alignment ss:Horizontal="Center"/></Style>
+ <Style ss:ID="fS"><Font ss:Bold="1" ss:Size="11"/><Alignment ss:Horizontal="Center"/></Style>
+ <Style ss:ID="fH"><Font ss:Bold="1" ss:Size="9"/><Interior ss:Color="#F3F4F6" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>${BD}</Style>
+ <Style ss:ID="fSec"><Font ss:Bold="1"/>${BD}</Style>
+ <Style ss:ID="fC"><Alignment ss:Vertical="Center" ss:WrapText="1"/>${BD}</Style>
+ <Style ss:ID="fCc"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/>${BD}</Style>
+ <Style ss:ID="fN"><NumberFormat ss:Format="0.00"/><Alignment ss:Horizontal="Center"/>${BD}</Style>
+ <Style ss:ID="fN0"><NumberFormat ss:Format="0"/><Alignment ss:Horizontal="Center"/>${BD}</Style>
+ <Style ss:ID="fD"><NumberFormat ss:Format="0.00"/><Alignment ss:Horizontal="Center"/>${BD}</Style>
+ <Style ss:ID="fRd"><Font ss:Color="#DC2626" ss:Bold="1"/><NumberFormat ss:Format="0.00"/><Alignment ss:Horizontal="Center"/>${BD}</Style>
+ <Style ss:ID="fBl"><Font ss:Color="#1D4ED8" ss:Bold="1"/><NumberFormat ss:Format="0.00"/><Alignment ss:Horizontal="Center"/>${BD}</Style>
+ <Style ss:ID="fGn"><Font ss:Color="#16A34A" ss:Bold="1"/><NumberFormat ss:Format="0.00"/><Alignment ss:Horizontal="Center"/>${BD}</Style>
+ <Style ss:ID="fTot"><Font ss:Bold="1"/><Interior ss:Color="#EFEFEF" ss:Pattern="Solid"/>${BD}</Style>
+ <Style ss:ID="fTotC"><Font ss:Bold="1"/><Interior ss:Color="#EFEFEF" ss:Pattern="Solid"/><Alignment ss:Horizontal="Center"/>${BD}</Style>
+ <Style ss:ID="fTotN"><Font ss:Bold="1"/><Interior ss:Color="#EFEFEF" ss:Pattern="Solid"/><NumberFormat ss:Format="0.00"/><Alignment ss:Horizontal="Center"/>${BD}</Style>
+ <Style ss:ID="fTotN0"><Font ss:Bold="1"/><Interior ss:Color="#EFEFEF" ss:Pattern="Solid"/><NumberFormat ss:Format="0"/><Alignment ss:Horizontal="Center"/>${BD}</Style>
+ <Style ss:ID="fTotR"><Font ss:Bold="1" ss:Color="#DC2626"/><Interior ss:Color="#EFEFEF" ss:Pattern="Solid"/><NumberFormat ss:Format="0.00"/><Alignment ss:Horizontal="Center"/>${BD}</Style>
+ <Style ss:ID="fTotB"><Font ss:Bold="1" ss:Color="#1D4ED8"/><Interior ss:Color="#EFEFEF" ss:Pattern="Solid"/><NumberFormat ss:Format="0.00"/><Alignment ss:Horizontal="Center"/>${BD}</Style>
+ <Style ss:ID="fTotG"><Font ss:Bold="1" ss:Color="#16A34A"/><Interior ss:Color="#EFEFEF" ss:Pattern="Solid"/><NumberFormat ss:Format="0.00"/><Alignment ss:Horizontal="Center"/>${BD}</Style>
+</Styles>
+<Worksheet ss:Name="${xlEsc(("รายงาน สัปดาห์ "+deptWk+" "+un(u.name)).slice(0,31))}"><Table>${cols}${rows}</Table></Worksheet>
+</Workbook>`;
+  try{
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([xml],{type:"application/vnd.ms-excel;charset=utf-8"}));
+    a.download="รายงานแผนก_"+code+"_wk"+deptWk+".xls"; document.body.appendChild(a); a.click();
+    setTimeout(()=>{ a.remove(); URL.revokeObjectURL(a.href); },100);
+  }catch(err){ alert("Export error: "+err.message); }
+  return xml;
+}
+
 /* ============ การวิเคราะห์ ============ */
 function anaPage(){
   const SCc={good:"#16A34A",warn:"#D97706",crit:"#EF4444"};
@@ -2227,6 +2333,11 @@ function repPage(){
     pk(["สรุปสำหรับที่ประชุมผู้บริหาร · ข้อมูล ณ","ສະຫຼຸບສຳລັບກອງປະຊຸມຜູ້ບໍລິຫານ · ຂໍ້ມູນ ນະ","Executive summary · as of"])+" "+fmtDate(wkEnd(WNOW))) + `
   <div class="noprint" style="margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button class="btn btn-p" onclick="window.print()">🖨 ${pk(["พิมพ์ / บันทึก PDF","ພິມ / ບັນທຶກ PDF","Print / Save PDF"])}</button>
     <button class="btn btn-o" onclick="exportExcel()">📊 Export Excel</button>
+    <span style="display:inline-flex;gap:6px;align-items:center;background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:4px 6px 4px 12px">
+      <select id="repDeptSel" style="border:none;background:transparent;font:inherit;font-size:13.5px;color:var(--ink);outline:none;max-width:180px">
+        ${DATA.flatMap(s=>s.units).filter(x=>!x.blank).map(x=>`<option value="${x.code}">${un(x.name)}</option>`).join("")}
+      </select>
+      <button class="btn btn-o" style="padding:7px 14px" onclick="exportDeptForm()">📋 ${pk(["ฟอร์มรายงานแผนก","ຟອມລາຍງານພະແນກ","Dept report form"])}</button></span>
     <button class="btn" onclick="go('over')" style="margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--mut);font-weight:500;padding:9px 18px">← ${pk(["กลับ","ກັບ","Back"])}</button></div>
   <div class="card"><h2>1. ${pk(["สรุปภาพรวม","ສະຫຼຸບພາບລວມ","Summary"])}</h2>
     <div class="repline"><span class="bullet">•</span><span class="num">${pk(["ความคืบหน้ารวม","ຄວາມຄືບໜ້າລວມ","Overall progress"])} <b>${fmt1(f.act)}%</b> ${pk(["เทียบแผน","ທຽບແຜນ","vs plan"])} ${fmt1(f.plan)}% — <b>${gap>=0?pk(["นำแผน","ນຳແຜນ","ahead"]):pk(["ช้ากว่าแผน","ຊ້າກວ່າແຜນ","behind"])} ${fmt1(Math.abs(gap))} ${PTS} (${fLbl})</b></span></div>
