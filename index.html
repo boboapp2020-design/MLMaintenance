@@ -457,7 +457,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r72";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r73";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -686,7 +686,7 @@ const WK_DEPTPLAN = { MEC:true };
 /* แผนกที่บังคับใช้เส้นแผนทางการ (planU) ทุก Job — ยอดรวมแผนกอิงเส้น R1 ตามรายงาน (เครื่องมือควบคุม: รายงานรวม 62.53 = planU(INS,18)) */
 const USE_PLANU = { INS:true };
 /* สเกลผลจริงราย Job ของ ELE ให้ยอดรวมแผนก = 65.08 ตาม headline รายงาน P18 (เฉลี่ยถ่วงราย Job ได้ 64.71) */
-const ELE_QS = 1.00479;
+const ELE_QS = 1.004636;
 const REAL_JOBS_WK = { BLR: [
  /* Job1-2: [ชื่อ, สัปดาห์เริ่ม, สัปดาห์จบ, เป้าหมาย(น้ำหนักในJob), เกิดจริง] — จาก sheet B1/B2 (เลขหน้า=เป้า เลขหลัง=จริง) */
  {name:"งานซ่อมแซมหม้อไอน้ำ No.1", owner:"แผนกผลิตไฟฟ้า B", w:18, tasks:[
@@ -1104,7 +1104,7 @@ let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
       const rwSum = rw.reduce((a,b)=>a+b,0);
       const tasks = rj.tasks.map((t,ti)=>{
         const wt = Math.round(rw[ti]/rwSum*jobW*100)/100;    // % ของแผนก
-        const mh = Math.round(FORCE_TOTAL[u.code]*wt/100);
+        const mh = FORCE_TOTAL[u.code]*wt/100;               // ไม่ปัดเศษ → dept = ผลรวมถ่วงน้ำหนักตรง (เลี่ยง drift จากปัดเศษ mh)
         return {name:t[0], wt, mh, s:1, e:WEEKS, seedAct:ks[ti], plan:w=>planU(u.code,w), act:0};
       });
       return {name:rj.name, owner:rj.owner, tasks, mh:rj.md, real:true};
