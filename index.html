@@ -457,7 +457,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r66";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r67";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1074,6 +1074,16 @@ let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
         return {name:a[0], wt, mh, s, e, actPct, plan:w=>Math.max(0,Math.min(1,(w+1-s)/(e-s))), act:0};
       });
       return {name:rj.name, owner:rj.owner, tasks, mh:tasks.reduce((x,t)=>x+t.mh,0), real:true};
+    });
+    return {...u, jobs, real:true};
+  }
+  if(REAL_JOBS_ELE[u.code]){
+    /* ซ่อมบำรุงไฟฟ้า (ELE): job-level · เป้ารวมแผนก = เส้นแผนทางการ R1 (planU) ทุก Job · ผลจริงราย Job = q (P18)
+       น้ำหนัก Job = md/1528 · refs = รายการ Task (col K %สำเร็จ) เก็บไว้แสดงประกอบ */
+    const jobs = REAL_JOBS_ELE[u.code].map(rj=>{
+      const wt=Math.round(rj.md/FORCE_TOTAL[u.code]*10000)/100;   // % ของแผนก
+      const task={name:rj.name, wt, mh:rj.md, s:1, e:WEEKS, seedAct:rj.q, plan:w=>planU(u.code,w), act:0, refs:rj.tasks};
+      return {name:rj.name, owner:rj.owner, tasks:[task], mh:rj.md, real:true};
     });
     return {...u, jobs, real:true};
   }
