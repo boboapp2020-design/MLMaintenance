@@ -464,7 +464,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r83";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r84";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2220,6 +2220,12 @@ function exportDeptForm(codeArg){
   const u=unitByCode(code);
   if(!u){ alert(pk(["กรุณาเลือกแผนกก่อน","ກະລຸນາເລືອກພະແນກ","Select a department first"])); return; }
   if(u.blank){ alert(pk(["แผนกนี้ยังไม่มีข้อมูล Job/Task","ພະແນກນີ້ຍັງບໍ່ມີຂໍ້ມູນ","No data for this department yet"])); return; }
+  /* กัน export ตอนผลจริงยังไม่ถูกดึงจาก Google Sheet (โหลดหน้าใหม่แล้วรีบกด → ตัวเลขเกิดจริงจะเป็น 0 หมด) */
+  if(ENTRIES.length===0 || SYNC_STATE!=="ok"){
+    if(SHEET_API) syncFromSheet(1,true);
+    alert(pk(["⏳ กำลังดึงผลจริงจาก Google Sheet — รอสถานะมุมขวาบนเป็น 🟢 สักครู่ แล้วกดอีกครั้ง","⏳ ກຳລັງດຶງຂໍ້ມູນ — ລໍຖ້າສະຖານະ 🟢 ແລ້ວກົດໃໝ່","⏳ Still loading actuals from Google Sheet — wait for the 🟢 status, then click again"]));
+    return;
+  }
   const w=REPORT_WK, wPrev=Math.max(1,w-1);
   const deptWk=w-((DEPT_START_WK[code]||1)-1);
   const mon=wkMon(w), sat=weekSaturday(w);
