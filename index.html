@@ -457,7 +457,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r68";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r69";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1083,8 +1083,8 @@ let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
        น้ำหนัก Job = md/1528 · ผลจริงราย Job seed = ค่าเฉลี่ยนี้ */
     const jobs = REAL_JOBS_ELE[u.code].map(rj=>{
       const wt = Math.round(rj.md/FORCE_TOTAL[u.code]*10000)/100;   // % ของแผนก
-      const avgK = rj.tasks.length ? Math.round(rj.tasks.reduce((x,t)=>x+(+t[1]||0),0)/rj.tasks.length*100)/100 : 0;  // เฉลี่ย %สำเร็จ
-      const task = {name:rj.name, wt, mh:rj.md, s:1, e:WEEKS, seedAct:avgK, plan:w=>planU(u.code,w), act:0,
+      /* % ราย Job = q (P18 เกิดจริง wk18 · ค่าจริง) · col K ราย Task = คาดการ (แสดง/บันทึกประกอบ) */
+      const task = {name:rj.name, wt, mh:rj.md, s:1, e:WEEKS, seedAct:rj.q, plan:w=>planU(u.code,w), act:0,
                     refs:rj.tasks.map(t=>({name:t[0], k:t[1]}))};
       return {name:rj.name, owner:rj.owner, tasks:[task], mh:rj.md, real:true};
     });
