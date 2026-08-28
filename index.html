@@ -457,7 +457,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r67";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r68";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -839,23 +839,23 @@ INS: [
    md = แรง(คน-วัน)ราย Job (P18) รวม 1528 · w = md/1528×100 */
 const REAL_JOBS_ELE = { ELE: [
  {name:"เครื่องจักรไฟฟ้า แผนกลูกหีบ", owner:"หน.ซ่อมบำรุงไฟฟ้า", md:153, q:65.07, tasks:[
-   ["ซ่อมมอเตอร์แผนกลูกหีบ",0],["ทำความสะอาด DC Motor",80],["ตรวจเช็ค MCC 4 MDB ลูกหีบ",100],
+   ["ทำความสะอาด DC Motor",80],["ตรวจเช็ค MCC 4 MDB ลูกหีบ",100],
    ["ซ่อมระบบควบคุมมอเตอร์ DC Drive MCC2,3 ลูกหีบ",100],["ตรวจเช็คระบบควบคุมเครนปั้นจั่น ลูกหีบ",0],
    ["ซ่อมแสงสว่าง ลูกหีบ/หม้อต้ม/โรงปูนขาว",0]]},
  {name:"เครื่องจักรไฟฟ้า แผนกหม้อต้ม", owner:"หน.ซ่อมบำรุงไฟฟ้า", md:153, q:64.61, tasks:[
    ["ซ่อมมอเตอร์แผนกหม้อต้ม",80],["ตรวจเช็ค MCC 5 MDB หม้อต้ม",100],
-   ["ซ่อมมอเตอร์โรงปูนขาว",0],["ตรวจเช็ค โรงปูนขาว (หม้อต้ม)",0]]},
+   ["ตรวจเช็ค โรงปูนขาว (หม้อต้ม)",100]]},
  {name:"เครื่องจักรไฟฟ้า แผนกหม้อไอน้ำ", owner:"หน.ซ่อมบำรุงไฟฟ้า", md:153, q:64.65, tasks:[
    ["ซ่อมมอเตอร์ Boiler No.1,2,3",60],["ตรวจเช็ค MCC 1 MDB หม้อไอน้ำ",100],
    ["ตรวจเช็ค MCC 1/1 MDB หม้อไอน้ำ",100],["ซ่อมแสงสว่างหม้อไอน้ำ",0],
    ["ซ่อมมอเตอร์ปั้มลม/ระบบควบคุมปั้มลม หม้อไอน้ำ",100],["ซ่อมแสงสว่างรอบกองกากอ้อย Bagashouse",0]]},
  {name:"เครื่องจักรไฟฟ้า แผนกไฟฟ้าผลิต", owner:"หน.ซ่อมบำรุงไฟฟ้า", md:153, q:64.32, tasks:[
-   ["ซ่อมมอเตอร์แผนกไฟฟ้าผลิต",0],["ตรวจเช็ค TR1-TR10 (หม้อแปลง)",60],
+   ["ตรวจเช็ค TR1-TR10 (หม้อแปลง)",60],
    ["ตรวจวัดระบบล่อฟ้า หม้อไอน้ำ/ไฟฟ้าผลิต/หม้อต้ม <5Ω",100]]},
  {name:"เครื่องจักรไฟฟ้า แผนกหม้อเคี่ยว", owner:"หน.ซ่อมบำรุงไฟฟ้า", md:204, q:64.64, tasks:[
    ["ซ่อมมอเตอร์แผนกเคี่ยว",70],["ตรวจเช็ค MCC 6 หม้อเคี่ยว",100],["ซ่อมแสงสว่างหม้อเคี่ยว",60]]},
  {name:"เครื่องจักรไฟฟ้า แผนกหม้อปั่น", owner:"หน.ซ่อมบำรุงไฟฟ้า", md:204, q:64.47, tasks:[
-   ["ซ่อมมอเตอร์แผนกหม้อปั่น",0],["ตรวจเช็ค MCC 7 MDB หม้อปั่น",100],["ซ่อมแสงสว่างหม้อปั่น",60],
+   ["ตรวจเช็ค MCC 7 MDB หม้อปั่น",100],["ซ่อมแสงสว่างหม้อปั่น",60],
    ["ซ่อมมอเตอร์/ระบบควบคุมเครน หม้อปั่น",100],["ซ่อมมอเตอร์ปั้มลม/ระบบควบคุมปั้มลม หม้อปั่น",100]]},
  {name:"เครื่องจักรไฟฟ้า ระบบน้ำ บ่อน้ำดี บ่อน้ำเสีย", owner:"หน.ซ่อมบำรุงไฟฟ้า", md:203, q:64.98, tasks:[
    ["ซ่อมมอเตอร์ระบบน้ำ",80],["ซ่อมมอเตอร์บ่อน้ำดี บ่อน้ำเสีย",80],["ตรวจเช็ค MCC 9 ระบบน้ำ",100],
@@ -1078,23 +1078,13 @@ let DATA = MODEL.map(sec => ({...sec, units: sec.units.map(u => {
     return {...u, jobs, real:true};
   }
   if(REAL_JOBS_ELE[u.code]){
-    /* ซ่อมบำรุงไฟฟ้า (ELE): job-level · เป้ารวมแผนก = เส้นแผนทางการ R1 (planU) ทุก Job · ผลจริงราย Job = q (P18)
-       น้ำหนัก Job = md/1528 · refs = รายการ Task (col K %สำเร็จ) เก็บไว้แสดงประกอบ */
+    /* ซ่อมบำรุงไฟฟ้า (ELE): job-level · เป้ารวมแผนก = เส้นแผนทางการ R1 (planU) ทุก Job
+       % ราย Job = เฉลี่ย %สำเร็จ (col K) ของ Task ในงานนั้น (น้ำหนักเท่ากัน) · refs = รายการ Task (col K) แสดงประกอบ
+       น้ำหนัก Job = md/1528 · ผลจริงราย Job seed = ค่าเฉลี่ยนี้ */
     const jobs = REAL_JOBS_ELE[u.code].map(rj=>{
-      const wt=Math.round(rj.md/FORCE_TOTAL[u.code]*10000)/100;   // % ของแผนก
-      const task={name:rj.name, wt, mh:rj.md, s:1, e:WEEKS, seedAct:rj.q, plan:w=>planU(u.code,w), act:0, refs:rj.tasks};
-      return {name:rj.name, owner:rj.owner, tasks:[task], mh:rj.md, real:true};
-    });
-    return {...u, jobs, real:true};
-  }
-  if(REAL_JOBS_ELE[u.code]){
-    /* ELE: 8 Job ราย Job (P18) · % ราย Job = q (P18 Q) ผ่าน task ตัวแทน 1 ตัว/Job (seedAct=q ขับ dashboard)
-       col K ราย Task เก็บใน task.refs แสดงประกอบ (ไม่เฉลี่ยเป็น Job) · เป้า = เส้นแผนแผนก uniform (planU ≈64.65 ที่ wk18) */
-    const tot = REAL_JOBS_ELE[u.code].reduce((x,rj)=>x+rj.md,0);
-    const jobs = REAL_JOBS_ELE[u.code].map(rj=>{
-      const wt = Math.round(rj.md/tot*10000)/100;   // % ของแผนก
-      const task = {name:rj.name, wt, mh:rj.md, s:UNIT_STARTW[u.code]||1, e:WEEKS,
-                    seedAct:rj.q, plan:w=>planU(u.code,w), act:0,
+      const wt = Math.round(rj.md/FORCE_TOTAL[u.code]*10000)/100;   // % ของแผนก
+      const avgK = rj.tasks.length ? Math.round(rj.tasks.reduce((x,t)=>x+(+t[1]||0),0)/rj.tasks.length*100)/100 : 0;  // เฉลี่ย %สำเร็จ
+      const task = {name:rj.name, wt, mh:rj.md, s:1, e:WEEKS, seedAct:avgK, plan:w=>planU(u.code,w), act:0,
                     refs:rj.tasks.map(t=>({name:t[0], k:t[1]}))};
       return {name:rj.name, owner:rj.owner, tasks:[task], mh:rj.md, real:true};
     });
