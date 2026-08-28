@@ -464,7 +464,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r84";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r85";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1193,7 +1193,22 @@ DATA.forEach(s=>s.units.forEach(u=>u.jobs.forEach((j,ji)=>{
    EVP-J1-T14 วันที่ 2026-08-26 = รายการทดสอบค้าง (ไม่ใช่ผลจริงสัปดาห์ 19) ทำให้หม้อต้มขึ้นว่าบันทึกสัปดาห์ 19 ผิด */
 const IGNORE_ENTRIES = { "EVP-J1-T14|2026-08-26": 1 };
 function ignoredEntry(e){ return !!IGNORE_ENTRIES[String(e.taskId)+"|"+normDate(e.date)]; }
-function loadEntries(){ try{ return JSON.parse(localStorage.getItem("idash_entries")||"[]").filter(e=>!ignoredEntry(e)); }catch(e){ return []; } }
+/* ---- ทำความสะอาดข้อมูล entry (กัน stored XSS: ใครก็ POST เข้า Apps Script ได้ ห้ามเชื่อ by/note/taskId แล้วเอาไป render ตรงๆ) ---- */
+function cleanStr(s){ return String(s==null?"":s).replace(/[<>"'`]/g,"").slice(0,120); }
+function sanEntry(e){ return {
+  date:normDate(e.date),
+  taskId:String(e.taskId==null?"":e.taskId).replace(/[^\w\-\.]/g,"").slice(0,40),
+  pct:isFinite(Number(e.pct))?Number(e.pct):0,
+  mh:isFinite(Number(e.mh))?Number(e.mh):0,
+  by:cleanStr(e.by), note:cleanStr(e.note)}; }
+function entKey(e){ return e.date+"|"+e.taskId+"|"+e.pct+"|"+(e.by||""); }
+/* ---- รายการที่ผู้ใช้กดลบในเครื่องนี้ (tombstone) — API ไม่มีคำสั่งลบรายแถว จึงลบได้เฉพาะมุมมองของเครื่องนี้ ---- */
+let DEL_LOCAL={}; try{ JSON.parse(localStorage.getItem("idash_del")||"[]").forEach(k=>DEL_LOCAL[k]=1); }catch(e){}
+function saveDel(){ try{ localStorage.setItem("idash_del",JSON.stringify(Object.keys(DEL_LOCAL))); }catch(e){} }
+/* ---- คิวรายการที่ POST ไป Sheet ไม่สำเร็จ (กันบันทึกหายเงียบๆ ตอนเน็ตสะดุด) ---- */
+let PENDING=[]; try{ PENDING=JSON.parse(localStorage.getItem("idash_pending")||"[]").map(sanEntry); }catch(e){}
+function savePending(){ try{ localStorage.setItem("idash_pending",JSON.stringify(PENDING)); }catch(e){} }
+function loadEntries(){ try{ return JSON.parse(localStorage.getItem("idash_entries")||"[]").map(sanEntry).filter(e=>!ignoredEntry(e) && !DEL_LOCAL[entKey(e)]); }catch(e){ return []; } }
 function saveEntries(a){ try{ localStorage.setItem("idash_entries",JSON.stringify(a)); }catch(e){} }
 let ENTRIES = loadEntries();
 
@@ -1227,7 +1242,12 @@ async function syncFromSheet(attempt, silent){
     if(!Array.isArray(data)) throw new Error("bad payload");
     /* เกราะกันข้อมูลหาย: ถ้าเซิร์ฟเวอร์ตอบว่างแต่เครื่องเรามีข้อมูลอยู่ ให้ลองซ้ำก่อนยอมรับ (กันจังหวะ Sheet สะดุด) */
     if(data.length===0 && ENTRIES.length>0 && attempt<4) throw new Error("empty while local has data");
-    ENTRIES=data.map(e=>({date:normDate(e.date), taskId:String(e.taskId), pct:Number(e.pct), mh:Number(e.mh)||0, by:e.by||"", note:e.note||""})).filter(e=>!ignoredEntry(e));
+    ENTRIES=data.map(sanEntry).filter(e=>!ignoredEntry(e) && !DEL_LOCAL[entKey(e)]);
+    /* รายการที่ POST ไม่สำเร็จ (คิวค้าง): ถ้าถึง Sheet แล้ว → เอาออกจากคิว · ยังไม่ถึง → คงไว้ในจอ + ส่งซ้ำ */
+    if(PENDING.length){
+      PENDING=PENDING.filter(p=>!ENTRIES.some(e=>entKey(e)===entKey(p))); savePending();
+      PENDING.forEach(p=>{ ENTRIES.push(p); pushToSheet(p); });
+    }
     saveEntries(ENTRIES); applyEntries(); SYNC_STATE="ok";
     SYNC_TIME=new Date();
     /* re-render เฉพาะเมื่อข้อมูลเปลี่ยนจริง และไม่ได้อยู่ในหน้าย่อย/ฟอร์มบันทึก (กันเด้งกลับเอง) */
@@ -1251,7 +1271,12 @@ document.addEventListener("visibilitychange", function(){
 });
 function pushToSheet(entry){
   if(!SHEET_API) return;
-  fetch(SHEET_API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(entry)}).catch(()=>{});
+  entry=sanEntry(entry);
+  /* เข้าคิวก่อนส่ง — ส่งสำเร็จค่อยถอดออก · ส่งพลาด (เน็ตสะดุด) คงในคิว แล้วรอบ sync จะเติมกลับเข้าจอ + ส่งซ้ำให้จนกว่าจะเห็นใน Sheet */
+  if(!PENDING.some(p=>entKey(p)===entKey(entry))){ PENDING.push(entry); savePending(); }
+  fetch(SHEET_API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(entry)})
+    .then(()=>{ PENDING=PENDING.filter(p=>entKey(p)!==entKey(entry)); savePending(); })
+    .catch(()=>{});
 }
 function connFormHtml(){
   return `<div class="formgrid" style="grid-template-columns:1fr auto auto">
@@ -1776,7 +1801,7 @@ function pinChangeSubmit(){
   if(cur!==deptPin(PIN_CODE)){ err(pk(["PIN เดิมไม่ถูกต้อง","PIN ເກົ່າບໍ່ຖືກ","Current PIN is wrong"])); return; }
   if(!/^\d{4,6}$/.test(n1)){ err(pk(["PIN ใหม่ต้องเป็นตัวเลข 4–6 หลัก","PIN ໃໝ່ 4–6 ຫຼັກ","New PIN must be 4–6 digits"])); return; }
   if(n1!==n2){ err(pk(["PIN ใหม่ทั้งสองช่องไม่ตรงกัน","PIN ໃໝ່ບໍ່ກົງກັນ","New PINs do not match"])); return; }
-  const entry={date:todayISO(), taskId:PIN_CODE+"-PIN", pct:0, mh:0, by:"เปลี่ยน PIN", note:n1};
+  const entry=sanEntry({date:todayISO(), taskId:PIN_CODE+"-PIN", pct:0, mh:0, by:"เปลี่ยน PIN", note:n1});
   ENTRIES.push(entry); saveEntries(ENTRIES); pushToSheet(entry);
   closePinModal();
   alert("✓ "+pk(["เปลี่ยน PIN ของแผนกแล้ว (มีผลทุกเครื่องหลัง sync)","ປ່ຽນ PIN ແລ້ວ","Department PIN changed (applies everywhere after sync)"]));
@@ -1952,8 +1977,8 @@ function saveTaskForm(){
   if(floor!=null && pct<floor){ alert(pk(["แต้มสะสมต้องไม่น้อยกว่าค่าล่าสุด ("+floor+" แต้ม)","ຕ້ອງບໍ່ໜ້ອຍກວ່າ ("+floor+" ແຕ້ມ)","Must be ≥ latest ("+floor+" pts)"])); return; }
   const d=document.getElementById("tfDate").value||todayISO();
   if(d>todayISO()){ alert(pk(["เลือกวันอนาคตไม่ได้","ບໍ່ໄດ້","No future date"])); return; }
-  const entry={date:d, taskId:tid, pct:pct, mh:0,
-    by:document.getElementById("tfBy").value.trim(), note:document.getElementById("tfNote").value.trim()};
+  const entry=sanEntry({date:d, taskId:tid, pct:pct, mh:0,
+    by:document.getElementById("tfBy").value.trim(), note:document.getElementById("tfNote").value.trim()});
   ENTRIES.push(entry); saveEntries(ENTRIES); applyEntries(); pushToSheet(entry);
   closeTaskForm(); entryDeptPage();
   const t=document.getElementById("entryToast"); if(t){ t.innerHTML=`<div class="toast">✓ ${pk(["บันทึกแล้ว","ບັນທຶກແລ້ວ","Saved"])}</div>`; setTimeout(()=>t.innerHTML="",2500); }
@@ -1967,7 +1992,7 @@ function keepTaskForm(){
   const pct=(floor!=null)?floor:Math.round(x.t.act*wt*100)/100;   // ค่าเดิม (แต้มสะสมล่าสุด/ปัจจุบัน)
   const d=dateISO(new Date(Math.min(weekSaturday(WNOW).getTime(), Date.now())));
   const by=(document.getElementById("tfBy").value||"").trim();
-  const entry={date:d, taskId:tid, pct:pct, mh:0, by:by, note:pk(["คงค่าเดิม (เช็คอิน)","ຄົງຄ່າເດີມ","keep (check-in)"])};
+  const entry=sanEntry({date:d, taskId:tid, pct:pct, mh:0, by:by, note:pk(["คงค่าเดิม (เช็คอิน)","ຄົງຄ່າເດີມ","keep (check-in)"])});
   ENTRIES.push(entry); saveEntries(ENTRIES); applyEntries(); pushToSheet(entry);
   closeTaskForm(); entryDeptPage();
   const t=document.getElementById("entryToast"); if(t){ t.innerHTML=`<div class="toast">↔️ ${pk(["เช็คอินแล้ว (คงค่าเดิม)","ເຊັກອິນແລ້ວ","Checked in (kept)"])}</div>`; setTimeout(()=>t.innerHTML="",2500); }
@@ -2115,13 +2140,15 @@ function saveEntry(){
   setTimeout(()=>{ t.innerHTML=""; },2500);
 }
 function delEntry(i){
-  if(!confirm(pk(["ลบรายการนี้?","ລຶບລາຍການນີ້?","Delete this record?"]))) return;
+  if(!confirm(pk(["ซ่อนรายการนี้จากเครื่องนี้? (แถวใน Google Sheet ยังอยู่ — เครื่องอื่นยังเห็น ถ้าต้องการลบจริงให้ลบใน Sheet)","ເຊື່ອງລາຍການນີ້ຈາກເຄື່ອງນີ້?","Hide this record on this device? (The Google Sheet row remains — delete it in the Sheet to remove for everyone)"]))) return;
+  const e=ENTRIES[i]; if(e){ DEL_LOCAL[entKey(e)]=1; saveDel(); }   /* tombstone — กันแถวเด้งกลับตอน sync รอบถัดไป */
   ENTRIES.splice(i,1); saveEntries(ENTRIES); applyEntries(); entryPage();
 }
 function exportEntries(){
   if(ENTRIES.length===0){ alert(pk(["ยังไม่มีข้อมูลให้ export","ຍັງບໍ່ມີຂໍ້ມູນ","No data to export"])); return; }
   const head="วันที่,รหัส Task,% ความคืบหน้าสะสม (0-100),man-hr ที่ใช้วันนี้,ผู้บันทึก,หมายเหตุ";
-  const csv="﻿"+head+"\n"+ENTRIES.map(e=>[e.date,e.taskId,e.pct,e.mh,'"'+(e.by||"").replace(/"/g,'""')+'"','"'+(e.note||"").replace(/"/g,'""')+'"'].join(",")).join("\n");
+  const cSafe=s=>{ s=String(s||""); return /^[=+\-@]/.test(s)?"'"+s:s; };   /* กัน CSV formula injection (=cmd ฯลฯ) ตอนเปิดใน Excel */
+  const csv="﻿"+head+"\n"+ENTRIES.map(e=>[e.date,e.taskId,e.pct,e.mh,'"'+cSafe(e.by).replace(/"/g,'""')+'"','"'+cSafe(e.note).replace(/"/g,'""')+'"'].join(",")).join("\n");
   try{
     const a=document.createElement("a");
     a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
@@ -2220,12 +2247,14 @@ function exportDeptForm(codeArg){
   const u=unitByCode(code);
   if(!u){ alert(pk(["กรุณาเลือกแผนกก่อน","ກະລຸນາເລືອກພະແນກ","Select a department first"])); return; }
   if(u.blank){ alert(pk(["แผนกนี้ยังไม่มีข้อมูล Job/Task","ພະແນກນີ້ຍັງບໍ່ມີຂໍ້ມູນ","No data for this department yet"])); return; }
-  /* กัน export ตอนผลจริงยังไม่ถูกดึงจาก Google Sheet (โหลดหน้าใหม่แล้วรีบกด → ตัวเลขเกิดจริงจะเป็น 0 หมด) */
-  if(ENTRIES.length===0 || SYNC_STATE!=="ok"){
+  /* กัน export ตอนผลจริงยังไม่ถูกดึงจาก Google Sheet (โหลดหน้าใหม่แล้วรีบกด → ตัวเลขเกิดจริงจะเป็น 0 หมด)
+     — บล็อกเฉพาะตอนไม่มีข้อมูลเลย · ถ้ามีข้อมูลในเครื่องแต่ sync ล่าสุดยังไม่สำเร็จ ให้เลือกเองว่าจะใช้ข้อมูลชุดเดิม */
+  if(ENTRIES.length===0){
     if(SHEET_API) syncFromSheet(1,true);
     alert(pk(["⏳ กำลังดึงผลจริงจาก Google Sheet — รอสถานะมุมขวาบนเป็น 🟢 สักครู่ แล้วกดอีกครั้ง","⏳ ກຳລັງດຶງຂໍ້ມູນ — ລໍຖ້າສະຖານະ 🟢 ແລ້ວກົດໃໝ່","⏳ Still loading actuals from Google Sheet — wait for the 🟢 status, then click again"]));
     return;
   }
+  if(SYNC_STATE!=="ok" && !confirm(pk(["ยังเชื่อม Google Sheet ไม่สำเร็จ — ตัวเลขอาจไม่ใช่ชุดล่าสุด ต้องการ Export ต่อหรือไม่?","ຍັງເຊື່ອມ Sheet ບໍ່ສຳເລັດ — Export ຕໍ່ບໍ?","Sheet not synced — numbers may be stale. Export anyway?"]))) return;
   const w=REPORT_WK, wPrev=Math.max(1,w-1);
   const deptWk=w-((DEPT_START_WK[code]||1)-1);
   const mon=wkMon(w), sat=weekSaturday(w);
