@@ -543,7 +543,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r112";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r113";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2137,7 +2137,11 @@ function entryDailyPage(){
   /* ---- หน้าที่ 2: ราย Job — แตกทุก Task เป็นการ์ด (วางแผนเช้า + ปิดงานเย็นในตัวเอง) ---- */
   const j=jl.find(x=>x.id===DAILY_JOB);
   const jaSel=agg(j.tasks,WNOW);
-  const rows = j.tasks.map((t,ti)=>{
+  /* เรียง: ล่าช้าสุด (ผลจริง−แผน ติดลบมากสุด) อยู่บน · เสร็จ 100% ลงล่างสุด */
+  const rows = j.tasks.map(t=>({t, done:actAt(t,WNOW)>=1, varc:actAt(t,WNOW)-t.plan(WNOW)}))
+    .sort((a,b)=> a.done!==b.done ? (a.done?1:-1) : (a.varc-b.varc))
+    .map((o,ti)=>{
+    const t=o.t;
     const plan=planForToday(t.id), res=todayResult(t.id);
     const curPct=fmt1(t.act*100);
     /* Task ที่เสร็จ 100% แล้ว → ล็อก วางแผน/ปิดงานไม่ได้ */
