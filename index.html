@@ -467,7 +467,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r91";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r92";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -697,7 +697,7 @@ const WK_OFFSET = { BLR:5, MEC:0 };
 const WK_DEPTPLAN = { MEC:true };
 /* แผนกที่บังคับใช้เส้นแผนทางการ (planU) ทุก Job — ยอดรวมแผนกอิงเส้น R1 ตามรายงาน (เครื่องมือควบคุม: รายงานรวม 62.53 = planU(INS,18)) */
 const USE_PLANU = { INS:true, MIL:true };
-/* ⏳ โหมดชั่วคราว: ยอมให้บันทึกแต้ม "ต่ำกว่า" ค่าล่าสุดได้ (สำหรับแก้ตัวเลขที่กรอกเกินจริง) — เสร็จภารกิจแล้วตั้งกลับเป็น false */
+/* นโยบายถาวร (user กำหนด 2026-08-29): บันทึกแต้ม "ต่ำกว่า" ค่าล่าสุดได้เสมอ เผื่อกรณีบันทึกผิด — มีกล่องยืนยันก่อนลดทุกครั้ง */
 const ALLOW_DECREASE = true;
 /* สเกลผลจริงราย Job ของ ELE ให้ยอดรวมแผนก = 65.08 ตาม headline รายงาน P18 (เฉลี่ยถ่วงราย Job ได้ 64.71) */
 const ELE_QS = 1.004636;
@@ -2040,7 +2040,7 @@ function openTaskForm(tid){
     <br>🎯 ${pk(["เป้าสะสมถึงตอนนี้","ເປົ້າສະສົມຮອດຕອນນີ້","Target to date"])} <b>${tgtPts}</b> ${pk(["แต้ม","ແຕ້ມ","pts"])} (${fmt1(x.t.plan(REALWK)*100)}% ${pk(["ของ Task","ຂອງ Task","of task"])})
     <br>${lastE?`📈 ${pk(["แต้มล่าสุด","ແຕ້ມຫຼ້າສຸດ","latest"])} <b>${lastE.pct}</b> (${pk(["บันทึกเมื่อ","ບັນທຶກເມື່ອ","on"])} ${lastE.date}) — ${pk(["กรอกต่อจากนี้","ປ້ອນຕໍ່ຈາກນີ້","continue from here"])}`:`${pk(["ยังไม่เคยบันทึก · แต้มปัจจุบัน","ຍັງບໍ່ເຄີຍບັນທຶກ · ແຕ້ມປັດຈຸບັນ","No record yet · current"])} <b>${curPts}</b>`}
     <br>${ALLOW_DECREASE
-      ? `<span style="color:var(--crit);font-weight:700">🔓 ${pk(["โหมดปรับลดชั่วคราวเปิดอยู่ — กรอกต่ำกว่าค่าล่าสุด ("+fl+" แต้ม) ได้ เพื่อแก้ตัวเลขที่เคยกรอกเกิน","ໂໝດຫຼຸດຊົ່ວຄາວເປີດຢູ່","Temporary decrease mode ON — may enter below latest ("+fl+" pts)"])}</span>`
+      ? `<span style="color:var(--mut)">✏️ ${pk(["ค่าล่าสุด "+fl+" แต้ม — ปรับลดได้หากบันทึกผิด (ระบบจะถามยืนยันก่อนลด)","ຄ່າຫຼ້າສຸດ "+fl+" ແຕ້ມ — ຫຼຸດໄດ້ຖ້າບັນທຶກຜິດ","latest "+fl+" pts — may decrease to fix mistakes (confirm required)"])}</span>`
       : `<span style="color:var(--warn)">🔒 ${pk(["กรอกได้ไม่ต่ำกว่า","ປ້ອນໄດ້ບໍ່ຕ່ຳກວ່າ","must be ≥"])} ${fl} ${pk(["แต้ม (สะสม ห้ามถอยหลัง)","ແຕ້ມ","pts"])}</span>`}</div>
     <input type="hidden" id="tfTid" value="${tid}">
     <div class="formgrid">
@@ -2069,9 +2069,9 @@ function saveTaskForm(){
   const pct=parseFloat(document.getElementById("tfPct").value);
   if(isNaN(pct)||pct<0||pct>wt+0.001){ alert(pk(["กรอกแต้มระหว่าง 0–"+wt,"ປ້ອນແຕ້ມ 0–"+wt,"Enter points 0–"+wt])); return; }
   const floor=latestPctFor(tid);
-  /* ALLOW_DECREASE = โหมดชั่วคราว: ยอมให้กรอกแต้มต่ำกว่าค่าล่าสุด (แก้ตัวเลขที่เคยกรอกเกินจริง) — ปิดโหมดโดยตั้งเป็น false */
+  /* บันทึกต่ำกว่าค่าล่าสุดได้เสมอ (แก้กรณีบันทึกผิด) — แค่ยืนยันก่อนลด */
   if(!ALLOW_DECREASE && floor!=null && pct<floor){ alert(pk(["แต้มสะสมต้องไม่น้อยกว่าค่าล่าสุด ("+floor+" แต้ม)","ຕ້ອງບໍ່ໜ້ອຍກວ່າ ("+floor+" ແຕ້ມ)","Must be ≥ latest ("+floor+" pts)"])); return; }
-  if(ALLOW_DECREASE && floor!=null && pct<floor && !confirm(pk(["⚠️ กำลังปรับลดจาก "+floor+" → "+pct+" แต้ม (โหมดปรับลดชั่วคราวเปิดอยู่) ยืนยัน?","⚠️ ຫຼຸດຈາກ "+floor+" → "+pct+" ຢືນຢັນ?","⚠️ Decreasing "+floor+" → "+pct+" pts (temporary mode). Confirm?"]))) return;
+  if(ALLOW_DECREASE && floor!=null && pct<floor && !confirm(pk(["⚠️ กำลังปรับลดจาก "+floor+" → "+pct+" แต้ม (แก้บันทึกผิด) ยืนยัน?","⚠️ ຫຼຸດຈາກ "+floor+" → "+pct+" ຢືນຢັນ?","⚠️ Decreasing "+floor+" → "+pct+" pts. Confirm?"]))) return;
   const d=document.getElementById("tfDate").value||todayISO();
   if(d>todayISO()){ alert(pk(["เลือกวันอนาคตไม่ได้","ບໍ່ໄດ້","No future date"])); return; }
   const entry=sanEntry({date:d, taskId:tid, pct:pct, mh:0,
