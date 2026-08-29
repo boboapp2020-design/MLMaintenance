@@ -324,27 +324,27 @@ svg text{font-family:inherit}
 .st-full{background:#DCFCE7;color:#16A34A}.st-partial{background:#FEF3C7;color:#D97706}.st-crit{background:#FEE2E2;color:#DC2626}.st-blank{background:var(--tint);color:var(--mut)}
 .dc2-prog{height:6px;background:var(--tint2);border-radius:99px;margin-top:16px;overflow:hidden}
 .dc2-prog>div{height:100%;border-radius:99px}
-.jpcgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:22px}
-.jpc{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--line);border-radius:20px;box-shadow:0 6px 20px rgba(30,42,58,.10);cursor:pointer;overflow:hidden;transition:transform .15s,box-shadow .15s}
-.jpc:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(30,42,58,.20)}
-.jpc-head{display:flex;gap:12px;align-items:flex-start;padding:18px 20px 6px}
-.jpc-ic{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
-.jpc-title{flex:1;font-size:19px;font-weight:800;color:var(--ink);line-height:1.3}
-.jpc-badge{flex:0 0 auto;font-size:12.5px;font-weight:800;padding:5px 13px;border-radius:999px;white-space:nowrap}
-.jpc-mid{display:flex;align-items:center;gap:14px;padding:8px 20px 14px}
-.jpc-donut{position:relative;width:120px;height:120px;flex:0 0 auto}
-.jpc-donut .jpc-dval{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:var(--ink)}
-.jpc-donut .jpc-dval span{font-size:11px;font-weight:500;color:var(--mut);margin-top:2px}
-.jpc-counts{flex:1;display:flex;flex-direction:column;gap:16px;border-left:1px solid var(--line);padding-left:16px}
-.jpc-counts .jpc-cn{font-size:19px;font-weight:800;color:var(--ink)}
-.jpc-counts .jpc-cl{font-size:12px;color:var(--mut)}
-.jpc-bar{height:8px;background:var(--tint2);border-radius:99px;margin:0 20px;overflow:hidden}
+.jpcgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(288px,1fr));gap:14px}
+.jpc{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:14px;box-shadow:0 2px 8px rgba(30,42,58,.06),0 8px 20px rgba(30,42,58,.05);cursor:pointer;overflow:hidden;transition:transform .16s,box-shadow .16s}
+.jpc:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(30,42,58,.16)}
+.jpc-head{display:flex;gap:9px;align-items:center;padding:13px 14px 4px}
+.jpc-ic{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.jpc-title{flex:1;font-size:14.5px;font-weight:800;color:var(--ink);line-height:1.25}
+.jpc-badge{flex:0 0 auto;font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;white-space:nowrap}
+.jpc-mid{display:flex;align-items:center;gap:10px;padding:6px 14px 10px}
+.jpc-donut{position:relative;width:92px;height:92px;flex:0 0 auto}
+.jpc-donut .jpc-dval{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:17px;font-weight:800;color:var(--ink)}
+.jpc-donut .jpc-dval span{font-size:9.5px;font-weight:500;color:var(--mut);margin-top:1px}
+.jpc-counts{flex:1;display:flex;flex-direction:column;gap:10px;border-left:1px solid var(--line);padding-left:14px}
+.jpc-counts .jpc-cn{font-size:16px;font-weight:800;color:var(--ink)}
+.jpc-counts .jpc-cl{font-size:11px;color:var(--mut)}
+.jpc-bar{height:6px;background:var(--tint2);border-radius:99px;margin:0 14px;overflow:hidden}
 .jpc-bar>div{height:100%;border-radius:99px}
-.jpc-today{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:var(--tint);border-radius:12px;margin:14px 20px 0;padding:12px}
+.jpc-today{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--tint);border-radius:10px;margin:10px 14px 0;padding:9px 6px}
 .jpc-today>div{text-align:center}
-.jpc-today .jpc-tn{display:block;font-size:17px;font-weight:800;color:var(--ink)}
-.jpc-today .jpc-tl{font-size:11.5px;color:var(--mut)}
-.jpc-foot{text-align:right;padding:12px 20px 16px;color:var(--blue);font-weight:800;font-size:14px}
+.jpc-today .jpc-tn{display:block;font-size:14.5px;font-weight:800;color:var(--ink)}
+.jpc-today .jpc-tl{font-size:10.5px;color:var(--mut)}
+.jpc-foot{text-align:right;padding:9px 14px 12px;color:var(--blue);font-weight:800;font-size:12.5px}
 .jpviewtog{display:inline-flex;border:1.5px solid var(--line);border-radius:10px;overflow:hidden}
 .jpviewtog button{border:none;background:var(--card);color:var(--mut);font:inherit;font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer}
 .jpviewtog button.on{background:var(--blue);color:#fff}
@@ -523,7 +523,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r101";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r102";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2003,12 +2003,12 @@ function dailySetFilter(f){ DAILY_FILTER=f; entryDailyPage(); }
 function ja1(x){ return Math.round(x*10)/10; }
 /* วงแหวน donut แสดง % ความคืบหน้า (ตรงกลางมีตัวเลข) */
 function jobDonut(pct,color){
-  const r=52, C=2*Math.PI*r, arc=Math.max(0,Math.min(1,pct/100))*C;
-  return `<div class="jpc-donut"><svg viewBox="0 0 120 120" width="120" height="120">
-    <circle cx="60" cy="60" r="${r}" fill="none" stroke="var(--tint2)" stroke-width="13"/>
-    <circle cx="60" cy="60" r="${r}" fill="none" stroke="${color}" stroke-width="13" stroke-linecap="round"
-      stroke-dasharray="${arc.toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 60 60)"/></svg>
-    <div class="jpc-dval">${fmt1(pct)}%<span>ความคืบหน้า</span></div></div>`;
+  const r=40, C=2*Math.PI*r, arc=Math.max(0,Math.min(1,pct/100))*C;
+  return `<div class="jpc-donut"><svg viewBox="0 0 92 92" width="92" height="92">
+    <circle cx="46" cy="46" r="${r}" fill="none" stroke="var(--tint2)" stroke-width="9"/>
+    <circle cx="46" cy="46" r="${r}" fill="none" stroke="${color}" stroke-width="9" stroke-linecap="round"
+      stroke-dasharray="${arc.toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 46 46)"/></svg>
+    <div class="jpc-dval">${fmt1(pct)}%<span>${pk(["คืบหน้า","ຄืบໜ້າ","progress"])}</span></div></div>`;
 }
 function entryDailyPage(){
   const u=unitByCode(DEPT); if(!u){ setDept(""); return; }
@@ -2056,8 +2056,8 @@ function entryDailyPage(){
         <div class="jpc-mid">
           ${jobDonut(ja1(r.ja.act),col)}
           <div class="jpc-counts">
-            <div><span class="jpc-cn">${j.tasks.length}</span> task<br><span class="jpc-cl">${pk(["ทั้งหมด","ທັງໝົດ","total"])}</span></div>
-            <div><span class="jpc-cn">${r.taskDone}</span> task<br><span class="jpc-cl">${pk(["เสร็จสิ้น","ສຳເລັດ","done"])}</span></div>
+            <div><span class="jpc-cn">${j.tasks.length}</span> task <span class="jpc-cl">· ${pk(["ทั้งหมด","ທັງໝົດ","total"])}</span></div>
+            <div><span class="jpc-cn">${r.taskDone}</span> task <span class="jpc-cl">· ${pk(["เสร็จสิ้น","ສຳເລັດ","done"])}</span></div>
           </div>
         </div>
         <div class="jpc-bar"><div style="width:${Math.min(100,r.ja.act)}%;background:${col}"></div></div>
