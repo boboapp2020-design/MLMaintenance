@@ -216,6 +216,8 @@ tr.clickable{cursor:pointer}
 tr.clickable:hover td{background:var(--tint)}
 .tbar{height:11px;background:var(--tint2);border-radius:4px;position:relative;width:150px}
 td.progcell{width:150px}
+tr.tgroup td{background:var(--tint2);color:var(--blue);font-weight:800;font-size:12.5px;padding:7px 10px;border-top:1.5px solid var(--line)}
+.tk-group{background:var(--tint2);color:var(--blue);font-weight:800;font-size:12.5px;padding:7px 12px;border-radius:8px;margin:10px 0 4px}
 .tbar .fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
 .tbar .mark{position:absolute;top:-3px;width:3px;height:17px;background:var(--ink);border-radius:2px}
 .scrollx{overflow-x:auto}
@@ -464,7 +466,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r87";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r88";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -776,7 +778,7 @@ MEC: [
 ],
 /* ===== ลูกหีบ (MIL) — ไฟล์ "งานซ่อมแผนกลูกหีบ2026.xlsx" sheet W18 =====
    2 Job (เตรียมอ้อย 48.15% / หีบสกัด 51.85% = แรง 2145/2310 ของ 4455) → Task ในเว็บ = sub-task ทั้ง 88 (ชื่อมี prefix กลุ่ม 1.1-2.5)
-   เป้า = planU จาก R1 (USE_PLANU.MIL, wk18=64.65) · จริงราย sub = คอลัมน์ Q (แต้มสะสมในJob) · Job จริง 64.9144/52.6491 → แผนก 58.55 (ถ่วงจาก Job · แถวรวมในไฟล์ 58.78 ขัดกันเอง user เลือกถ่วงจริง)
+   เป้า = planU จาก R1 (USE_PLANU.MIL, wk18=64.65) · จริงราย sub = คอลัมน์ Q (แต้มสะสมในJob) · **ยอดแผนก = 58.78 ตามแถวรวมในไฟล์** (user ยืนยัน 2026-08-29) — seed สเกล ×1.00387 จากถ่วง Job (58.55) เกลี่ยเข้า Task ที่ยังไม่เต็ม → Job โชว์ 65.17/52.85 (สูงกว่า Q ทางการ 64.91/52.65 เล็กน้อย)
    task = [ชื่อ, wkเริ่ม, wkจบ, น้ำหนักในJob, แต้มจริง] · sub 1.1 มีวันที่จริง (wk4-6/6-11/11-15) ที่เหลือไฟล์ไม่ระบุ → 1-28 */
 MIL: [
  {name:"งานลำเลียงและเตรียมอ้อย", owner:"หน.หน่วยลูกหีบ", w:48.15, realPlan:true, tasks:[
@@ -1778,13 +1780,19 @@ function unitView(secId, uname){
     } else {
       body = `<div class="scrollx"><table>
         <tr><th>Task</th><th class="r">${pk(["แรง","ແຮງ","man-days"])}</th><th class="r">${pk(["กำหนด (สัปดาห์)","ກຳນົດ (ສັບປะດາ)","Sched. (wk)"])}</th><th class="r">${pk(["แผน","ແຜນ","Plan"])}</th><th class="r">${pk(["ผลจริง","ຜົນຕົວຈິງ","Actual"])}</th><th style="width:150px">${pk(["ความคืบหน้า","ຄວາมຄืบໜ້າ","Progress"])}</th><th>${pk(["สถานะ","ສະຖານະ","Status"])}</th></tr>
-        ${j.tasks.map(t=>{const tp=t.plan(WNOW)*100, ta=actAt(t,WNOW)*100,
+        ${(function(){let lastG=null; return j.tasks.map(t=>{const tp=t.plan(WNOW)*100, ta=actAt(t,WNOW)*100,
           tst= ta>=100?[pk(["เสร็จ ✓","ສຳເລັດ ✓","Done ✓"]),"good"]:statusOf(ta-tp);
-          return `<tr><td>${tr(t.name)}</td><td class="r num">${fmt0(t.mh)}</td>
+          /* จุดแบ่งกลุ่ม Task: ชื่อรูปแบบ "1.1 กลุ่ม · งาน" → แทรกแถวหัวกลุ่มเมื่อกลุ่มเปลี่ยน และตัด prefix ออกจากชื่อในแถว */
+          const gm=/^(\d+\.\d+[^·]*?)\s*·\s*(.+)$/.exec(t.name);
+          const grp=gm?gm[1].trim():null, nm=gm?gm[2]:t.name;
+          let pre="";
+          if(grp && grp!==lastG){ lastG=grp;
+            pre=`<tr class="tgroup"><td colspan="7">▸ ${tr(grp)}</td></tr>`; }
+          return pre+`<tr><td style="padding-left:${grp?'22px':'10px'}">${tr(nm)}</td><td class="r num">${fmt0(t.mh)}</td>
           <td class="r num small">${Math.max(1,Math.round(t.s))}–${Math.min(WEEKS,Math.round(t.e))}</td>
           <td class="r num">${fmt1(tp)}%</td><td class="r num"><b>${fmt1(ta)}%</b></td>
           <td class="progcell"><div class="tbar"><div class="fill" style="width:${ta}%;background:${SCc[tst[1]]}"></div><div class="mark" style="left:${tp}%"></div></div></td>
-          <td><span class="chip c-${tst[1]}">${tst[0]}</span></td></tr>`;}).join("")}
+          <td><span class="chip c-${tst[1]}">${tst[0]}</span></td></tr>`;}).join("");})()}
       </table></div>`;
     }
     return `<div class="job b-${jst[1]}" id="job${ji}">
@@ -1942,18 +1950,27 @@ function jobDetailHtml(){
     const ja=agg(j.tasks,WNOW);
     right=`<h3>${tr(j.name)}</h3>
       <div class="jd-sub num">${j.id} · ${pk(["สัปดาห์นี้บันทึก","ອາທິດນີ້ບັນທຶກ","this week"])} ${doneToday}/${act.length} task · ${pk(["รวม","ລວມ","total"])} ${fmt1(ja.act)}% / ${pk(["แผน","ແຜນ","plan"])} ${fmt1(ja.plan)}%</div>
-      ${j.tasks.slice().sort((a,b)=>(actAt(a,WNOW)>=1?1:0)-(actAt(b,WNOW)>=1?1:0)).map(t=>{ const rec=recordedToday(t.id), done=actAt(t,WNOW)>=1, ta=actAt(t,WNOW)*100, tp=t.plan(WNOW)*100, cur=fmt1(ta);
+      ${(function(){
+        /* Job ที่ Task มีกลุ่ม ("1.1 กลุ่ม · งาน") → คงลำดับตามกลุ่ม + แทรกหัวกลุ่มคั่น · Job ปกติ → เรียงงานเสร็จไปท้ายเหมือนเดิม */
+        const hasGrp=j.tasks.some(t=>/^\d+\.\d+[^·]*?·/.test(t.name));
+        const list=hasGrp? j.tasks : j.tasks.slice().sort((a,b)=>(actAt(a,WNOW)>=1?1:0)-(actAt(b,WNOW)>=1?1:0));
+        let lastG=null;
+        return list.map(t=>{ const rec=recordedToday(t.id), done=actAt(t,WNOW)>=1, ta=actAt(t,WNOW)*100, tp=t.plan(WNOW)*100, cur=fmt1(ta);
         const cc=done?"#16A34A":(statusOf(ta-tp)[1]==="good"?"#16A34A":statusOf(ta-tp)[1]==="warn"?"#D97706":"#EF4444");
-        return `<div class="taskrow ${rec?'rec':''}">
+        const gm=/^(\d+\.\d+[^·]*?)\s*·\s*(.+)$/.exec(t.name);
+        const grp=gm?gm[1].trim():null, nm=gm?gm[2]:t.name;
+        let pre="";
+        if(grp && grp!==lastG){ lastG=grp; pre=`<div class="tk-group">▸ ${tr(grp)}</div>`; }
+        return pre+`<div class="taskrow ${rec?'rec':''}">
           <div class="tk-main">
-            <span class="tk-nm">${tr(t.name)}</span>
+            <span class="tk-nm">${tr(nm)}</span>
             <div class="tk-gauge"><div class="tk-fill" style="width:${ta}%;background:${cc}"></div><div class="tk-mark" style="left:${tp}%"></div></div>
             <div class="tk-pctline num"><b style="color:${cc}">${fmt1(ta/100*t.wt)}</b>/${t.wt} ${pk(["แต้ม","ແຕ້ມ","pts"])} (${cur}%) · ${pk(["เป้า","ເປົ້າ","target"])} ${fmt1(tp/100*t.wt)} ${pk(["แต้ม","ແຕ້ມ","pts"])}${done?" · ✓":""}</div>
           </div>
           <div class="tk-ctl">${done ? `<span class="chip c-good">${pk(["เสร็จแล้ว","ສຳເລັດ","Done"])}</span>`
             : rec ? `<span class="chip c-good">✓ ${pk(["บันทึกสัปดาห์นี้","ບັນທຶກອາທິດນີ້","logged this week"])}</span><br><button class="btn btn-o btnsm" style="margin-top:6px" onclick="openTaskForm('${t.id}')">${pk(["แก้ไข","ແກ້ໄຂ","edit"])}</button>`
             : `<button class="btn btn-p btnsm" onclick="openTaskForm('${t.id}')">✍ ${pk(["บันทึก","ບັນທຶກ","Record"])}</button>`}</div>
-        </div>`;}).join("")}
+        </div>`;}).join("");})()}
       <div class="jconfirm">
         <button class="btn ${allDone&&!conf?'btn-p':'btn-o'}" ${(!allDone||conf)?'disabled style="opacity:.5;cursor:default"':''} onclick="confirmJob('${j.id}')">
           ${conf?`✓ ${pk(["ยืนยัน Job แล้ว","ຢືນຢັນ Job ແລ້ວ","Job confirmed"])}`:`✓ ${pk(["ยืนยัน Job นี้","ຢືນຢັນ Job ນີ້","Confirm this job"])}`}</button>
