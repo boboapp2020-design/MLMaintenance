@@ -467,7 +467,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r89";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r90";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1407,7 +1407,7 @@ function taskPrevPct(tid, w, wt){
 function isKeepEntry(e){ return /คงค่าเดิม|keep|ຄົງຄ່າ/.test(e&&e.note||""); }
 function unitsRecordedOn(dateStr){
   const set=new Set();
-  ENTRIES.forEach(e=>{ if(e.date===dateStr && !/-PIN$/.test(String(e.taskId))) set.add(e.taskId.split("-")[0]); });   /* ไม่นับแถวเปลี่ยน PIN เป็นการบันทึกงาน */
+  ENTRIES.forEach(e=>{ const t=String(e.taskId); if(e.date===dateStr && !/-PIN$/.test(t) && t.indexOf("-PLAN")<0) set.add(t.split("-")[0]); });   /* ไม่นับแถวเปลี่ยน PIN / แถวแผนปีหน้า เป็นการบันทึกงาน */
   return set;
 }
 /* Job/Task ที่แสดงจริง (ตัด placeholder ของหน่วยที่ยังไม่มีแผนงานจริงออก) */
@@ -1546,7 +1546,8 @@ let LAST_SIG=null;   // ลายเซ็นข้อมูลล่าสุ�
 function entriesSig(){ return ENTRIES.length+"|"+ENTRIES.reduce((s,e)=>s+(+e.pct||0),0).toFixed(1); }
 const NAV=[["over",["ภาพรวม","ພາບລວມ","Overview"],"grid"],["units",["หน่วยงาน","ໜ່ວຍງານ","Units"],"units"],
  ["jobs",["งานซ่อม","ວຽກສ້ອມແປງ","Jobs"],"wrench"],["ana",["การวิเคราะห์","ການວິເຄາະ","Analytics"],"chart"],
- ["rep",["รายงาน","ລາຍງານ","Report"],"report"],["entry",["บันทึกข้อมูล","ບັນທຶກຂໍ້ມູນ","Data Entry"],"edit"]];
+ ["rep",["รายงาน","ລາຍງານ","Report"],"report"],["entry",["บันทึกข้อมูล","ບັນທຶກຂໍ້ມູນ","Data Entry"],"edit"],
+ ["plan",["ตั้งแผนปีหน้า","ຕັ້ງແຜນປີໜ້າ","Next Plan"],"gear"]];
 function renderNav(){
   navi.innerHTML=NAV.map(([id,t,ic])=>`<div class="nitem ${PAGE===id?'active':''}" tabindex="0" onclick="go('${id}')">${IC(ICONS[ic],18)}${pk(t)}</div>`).join("");
 }
@@ -1577,7 +1578,7 @@ function renderLang(){
         "Status criteria (variance vs cumulative plan): 🟢 On plan = actual ≥ plan · 🟡 At risk = 0–7 pts behind · 🔴 Late = > 7 pts behind · man-days weighted"])
     +'<br><span class="num" style="opacity:.55">'+BUILD+'</span>';
 }
-function go(p){ PAGE=p; SUBVIEW=false; if(p==='entry'){ DEPT=""; SELJOB=null; } renderNav(); ({over:overview,jobs:jobsPage,units:unitsPage,entry:entryPage,ana:anaPage,rep:repPage})[p](); window.scrollTo(0,0); }
+function go(p){ PAGE=p; SUBVIEW=false; if(p==='entry'){ DEPT=""; SELJOB=null; } if(p==='plan'){ PLAN_DEPT=""; } renderNav(); ({over:overview,jobs:jobsPage,units:unitsPage,entry:entryPage,ana:anaPage,rep:repPage,plan:planPage})[p](); window.scrollTo(0,0); }
 function setWeek(w){ WNOW=parseInt(w); go(PAGE); }
 /* เลื่อนสัปดาห์ที่กำลังบันทึก (สำหรับกรอกย้อนหลังสัปดาห์ก่อนๆ) — ไม่เกินสัปดาห์ปัจจุบัน */
 function entryWeek(d){ WNOW=Math.max(1,Math.min(REALWK,WNOW+d)); SELJOB=SELJOB; entryDeptPage(); }
@@ -1829,9 +1830,9 @@ function setDept(code){
   if(code && !PIN_OK[code]){ openPinModal(code); return; }
   DEPT=code||""; SELJOB=null; entryPage();
 }
-let PIN_CODE=null;
-function openPinModal(code){
-  PIN_CODE=code;
+let PIN_CODE=null, PIN_CB=null;   /* PIN_CB = callback หลังปลดล็อกสำเร็จ (ใช้ซ้ำจากหน้าตั้งแผน) — ไม่ตั้ง = flow หน้าบันทึกเดิม */
+function openPinModal(code, cb){
+  PIN_CODE=code; PIN_CB=cb||null;
   document.getElementById("pinTitle").textContent="🔒 "+un(unitByCode(code).name);
   document.getElementById("pinBody").innerHTML = `
     <div class="small" style="margin-bottom:10px;color:var(--mut)">${pk(["ใส่ PIN ประจำแผนกเพื่อเข้าบันทึกข้อมูล","ໃສ່ PIN ຂອງພະແນກເພື່ອບັນທຶກ","Enter the department PIN to record data"])}</div>
@@ -1849,7 +1850,9 @@ function openPinModal(code){
 function closePinModal(){ document.getElementById("pinModal").classList.remove("open"); }
 function pinSubmit(){
   const v=(document.getElementById("pinInp").value||"").trim();
-  if(v===deptPin(PIN_CODE)){ PIN_OK[PIN_CODE]=true; closePinModal(); DEPT=PIN_CODE; SELJOB=null; entryPage(); }
+  if(v===deptPin(PIN_CODE)){ PIN_OK[PIN_CODE]=true; closePinModal();
+    if(PIN_CB){ const f=PIN_CB; PIN_CB=null; f(PIN_CODE); return; }
+    DEPT=PIN_CODE; SELJOB=null; entryPage(); }
   else{ document.getElementById("pinErr").textContent=pk(["PIN ไม่ถูกต้อง ลองใหม่","PIN ບໍ່ຖືກຕ້ອງ","Wrong PIN — try again"]);
     const i=document.getElementById("pinInp"); i.value=""; i.focus(); }
 }
@@ -2430,6 +2433,231 @@ function exportDeptForm(codeArg){
     setTimeout(()=>{ a.remove(); URL.revokeObjectURL(a.href); },100);
   }catch(err){ alert("Export error: "+err.message); }
   return xml;
+}
+
+/* ============ ตั้งแผนซ่อมปีหน้า (ฤดูกาล 2027) ============
+   โมเดลตาม R1: ฤดูกาล (วันเริ่ม/สัปดาห์/สัปดาห์ 5 วัน) → กำลังพลรายสัปดาห์รายแผนก (แรง=คน×วัน) → เส้นเป้าสะสมอัตโนมัติ
+   + โครง Job/Task (ชื่อ น้ำหนัก ช่วงสัปดาห์) ครบพร้อมใช้เป็นแผนจริงฤดูหน้า
+   เก็บใน Google Sheet เป็นแถวพิเศษ (append API เดิม · ค่าล่าสุดชนะ · route เข้าแท็บแผนกตาม prefix):
+     <CODE>-PLAN27-CREWA/B  note=จำนวนคน w1-14 / w15-28 (คั่น ,)
+     <CODE>-PLAN27-MAN      note=manifest "1:9,2:5" (Jobลำดับ:จำนวนTask) — ตัวกำหนดว่าแถวไหนยังมีผล (ลบ Job/Task = save ใหม่ manifest หด)
+     <CODE>-PLAN27-Jn       pct=น้ำหนักJob(%แผนก) note=ชื่อJob
+     <CODE>-PLAN27-Jn-Tm    pct=น้ำหนักTaskในJob note="ชื่อ|wkเริ่ม|wkจบ"
+     MIL-PLAN27-SEASON      note="start=2027-04-19|weeks=28|d5=2,14,21,28"
+   แถว -PLAN ไม่กระทบผลปีนี้ (ไม่อยู่ใน TASK_INDEX · เช็คชื่อกรองออกแล้ว) */
+const PLAN_YEAR="27";
+let PLAN_DEPT="", PLAN_EDIT=null;
+function planKey(code,rest){ return code+"-PLAN"+PLAN_YEAR+(rest?"-"+rest:""); }
+function latestPlanRow(tid){ let last=null; ENTRIES.forEach(e=>{ if(String(e.taskId)===tid && (!last || e.date>=last.date)) last=e; }); return last; }
+function planSeason(){
+  const s={start:"2027-04-19", weeks:28, d5:[2,14,21,28]};
+  const r=latestPlanRow("MIL-PLAN"+PLAN_YEAR+"-SEASON");
+  if(r&&r.note){ String(r.note).split("|").forEach(p=>{ const i=p.indexOf("="); if(i<0) return; const k=p.slice(0,i), v=p.slice(i+1);
+    if(k==="start"&&/^\d{4}-\d{2}-\d{2}$/.test(v)) s.start=v;
+    if(k==="weeks") s.weeks=Math.max(4,Math.min(40,+v||28));
+    if(k==="d5") s.d5=v?v.split(",").map(Number).filter(n=>n>=1):[]; }); }
+  return s;
+}
+function planDaysArr(se){ return Array.from({length:se.weeks},(_,i)=>se.d5.includes(i+1)?5:6); }
+function planWeekLabel(se,w){ const p=se.start.split("-"); const d=new Date(+p[0],+p[1]-1,+p[2]+(w-1)*7); const d2=new Date(d.getTime()+5*86400000);
+  return d.getDate()+"/"+(d.getMonth()+1)+"–"+d2.getDate()+"/"+(d2.getMonth()+1); }
+function loadDeptPlan(code){
+  const man=latestPlanRow(planKey(code,"MAN")); if(!man||!man.note) return null;
+  const se=planSeason();
+  const counts=String(man.note).split(",").map(x=>x.split(":")).filter(a=>a.length===2&&+a[1]>=0);
+  const ca=latestPlanRow(planKey(code,"CREWA")), cb=latestPlanRow(planKey(code,"CREWB"));
+  let crew=((ca&&ca.note)?ca.note.split(","):[]).concat((cb&&cb.note)?cb.note.split(","):[]).map(x=>Math.max(0,+x||0));
+  crew=crew.slice(0,se.weeks); while(crew.length<se.weeks) crew.push(0);
+  const jobs=counts.map(a=>{
+    const jn=a[0], tc=+a[1];
+    const jr=latestPlanRow(planKey(code,"J"+jn));
+    const tasks=[];
+    for(let t=1;t<=tc;t++){ const trw=latestPlanRow(planKey(code,"J"+jn+"-T"+t)); if(!trw) continue;
+      const parts=String(trw.note||"").split("|");
+      tasks.push({name:parts[0]||("Task "+t), s:Math.max(1,+parts[1]||1), e:Math.min(se.weeks,+parts[2]||se.weeks), wt:+trw.pct||0}); }
+    return {name:(jr&&jr.note)||("Job "+jn), w:jr?(+jr.pct||0):0, tasks};
+  });
+  return {crew, jobs};
+}
+/* แผนตั้งต้น = โครงปีนี้ (Job/Task/น้ำหนัก/ช่วง + กำลังพลจากแผน R1 ปีนี้) — ให้แผนกแก้ต่อ ไม่ต้องเริ่มจากศูนย์ */
+function defaultDeptPlan(code){
+  const se=planSeason(), days=planDaysArr(se);
+  const u=unitByCode(code);
+  const crew=Array.from({length:se.weeks},(_,i)=>{
+    const f=(PLAN_FORCE[code]&&PLAN_FORCE[code][Math.min(i,PLAN_FORCE[code].length-1)])||0;
+    const d=PLAN_DAYS[Math.min(i,PLAN_DAYS.length-1)]||6;
+    return Math.round(f/d); });
+  const jobs=visJobs(u).map(j=>{
+    const jw=+(j.tasks.reduce((a,t)=>a+t.wt,0)).toFixed(2);
+    return {name:j.name, w:jw, tasks:j.tasks.map(t=>({name:t.name,
+      wt:+(jw>0?t.wt/jw*100:0).toFixed(2), s:Math.max(1,Math.round(t.s)), e:Math.min(se.weeks,Math.round(t.e))}))};
+  });
+  return {crew, jobs};
+}
+function planCurveSvg(crew,days,w,h){
+  w=w||620; h=h||160; const P=26;
+  const force=crew.map((c,i)=>c*(days[i]||6)); const tot=force.reduce((a,b)=>a+b,0);
+  if(tot<=0) return `<div class="small" style="padding:14px;color:var(--mut)">ยังไม่มีกำลังพล — กรอกจำนวนคนก่อน เส้นเป้าจะขึ้นทันที</div>`;
+  let cum=0; const N=crew.length;
+  const pts=force.map((f,i)=>{ cum+=f; return [P+(w-2*P)*(i)/(N-1), h-P-(h-2*P)*cum/tot]; });
+  const poly=pts.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ");
+  const grid=[0,25,50,75,100].map(g=>{ const y=h-P-(h-2*P)*g/100;
+    return `<line x1="${P}" y1="${y}" x2="${w-P}" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="${P-4}" y="${y+3}" text-anchor="end" font-size="9" fill="var(--mut)">${g}</text>`; }).join("");
+  return `<svg width="100%" viewBox="0 0 ${w} ${h}">${grid}
+    <polyline points="${poly}" fill="none" stroke="var(--blue)" stroke-width="2.5" stroke-linejoin="round"/>
+    ${pts.map((p,i)=> (i+1)%4===0||i===0||i===N-1 ? `<text x="${p[0]}" y="${h-8}" text-anchor="middle" font-size="8.5" fill="var(--mut)">${i+1}</text>`:"").join("")}
+  </svg>`;
+}
+function planPage(){ if(!PLAN_DEPT) planPicker(); else planEditor(); }
+function planPicker(){
+  SUBVIEW=true;
+  const se=planSeason(), days=planDaysArr(se);
+  const rows=DATA.flatMap(s=>s.units).map(u=>{
+    const saved=loadDeptPlan(u.code);
+    const st = saved ? (function(){ const f=saved.crew.reduce((a,c,i)=>a+c*days[i],0); const nt=saved.jobs.reduce((a,j)=>a+j.tasks.length,0);
+      return `<span class="chip c-good">✓ ตั้งแล้ว · ${saved.jobs.length} Job / ${nt} Task / ${f.toLocaleString()} แรง</span>`; })()
+      : `<span class="chip c-warn">ยังไม่ตั้งแผน</span>`;
+    return `<div class="deptcard" tabindex="0" onclick="planSetDept('${u.code}')">
+      <span class="dc-ic">${unitBub(u.name,22)}</span>
+      <span class="dc-nm">${un(u.name)}<span>${u.owner}</span></span>
+      <span class="dc-st" style="font-size:12px;font-weight:600">${st}</span></div>`;
+  }).join("");
+  app.innerHTML = pagehead(pk(["ตั้งแผนซ่อม ฤดูกาล 2027","ຕັ້ງແຜນສ້ອມ 2027","Repair Plan 2027"]),
+    pk(["วางแผนฤดูซ่อมปีหน้าไว้ล่วงหน้า — แผนกแก้ของตัวเองด้วย PIN แผนก · เก็บใน Google Sheet","ວາງແຜນລ່ວງໜ້າ","Plan next season · dept PIN required · stored in Google Sheet"])) + `
+  <div class="card"><h2>📅 ${pk(["ฤดูกาลซ่อม 2027","ລະດູການ 2027","Season 2027"])}</h2>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:end">
+      <div class="fld"><label class="small">${pk(["วันเริ่ม (วันจันทร์)","ວັນເລີ່ມ","Start (Monday)"])}</label>
+        <input id="plSeasonStart" type="date" value="${se.start}" style="padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit"></div>
+      <div class="fld"><label class="small">${pk(["จำนวนสัปดาห์","ຈຳນວນອາທິດ","Weeks"])}</label>
+        <input id="plSeasonWeeks" type="number" min="4" max="40" value="${se.weeks}" style="width:80px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit"></div>
+      <div class="fld" style="flex:1;min-width:220px"><label class="small">${pk(["สัปดาห์ที่ทำงาน 5 วัน (มีวันหยุด) — คั่นด้วย ,","ອາທິດ 5 ວັນ","5-day weeks (holidays), comma-sep"])}</label>
+        <input id="plSeasonD5" value="${se.d5.join(",")}" style="width:100%;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit"></div>
+      <button class="btn btn-o" onclick="planSaveSeason()">💾 ${pk(["บันทึกฤดูกาล","ບັນທຶກ","Save season"])}</button>
+    </div>
+    <div class="small" style="margin-top:8px;color:var(--mut)">${pk(["สัปดาห์ 1 = ","ອາທິດ 1 = ",""])}${planWeekLabel(se,1)} · ${pk(["สัปดาห์สุดท้าย = ","ສຸດທ້າຍ = ","last = "])}${planWeekLabel(se,se.weeks)} · ${pk(["วันทำงานรวม","ວັນລວມ","workdays"])} ${planDaysArr(se).reduce((a,b)=>a+b,0)} ${pk(["วัน","ວັນ","days"])}</div>
+  </div>
+  <div class="card"><h2>🏭 ${pk(["เลือกแผนกเพื่อตั้ง/แก้แผน (ใช้ PIN แผนก)","ເລືອກພະແນກ (PIN)","Pick a department (dept PIN)"])}</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px">${rows}</div></div>`;
+}
+function planSaveSeason(){
+  const st=document.getElementById("plSeasonStart").value||"2027-04-19";
+  const wk=Math.max(4,Math.min(40,+document.getElementById("plSeasonWeeks").value||28));
+  const d5=(document.getElementById("plSeasonD5").value||"").split(",").map(s=>+s.trim()).filter(n=>n>=1&&n<=wk);
+  const entry=sanEntry({date:todayISO(), taskId:"MIL-PLAN"+PLAN_YEAR+"-SEASON", pct:0, mh:0, by:"ตั้งแผน 2027", note:"start="+st+"|weeks="+wk+"|d5="+d5.join(",")});
+  ENTRIES.push(entry); saveEntries(ENTRIES); pushToSheet(entry);
+  planPicker();
+}
+function planSetDept(code){
+  if(code && !PIN_OK[code]){ openPinModal(code, function(c){ PLAN_DEPT=c; PLAN_EDIT=null; planPage(); }); return; }
+  PLAN_DEPT=code||""; PLAN_EDIT=null; planPage();
+}
+function planEditor(){
+  SUBVIEW=true;
+  const code=PLAN_DEPT, u=unitByCode(code);
+  const se=planSeason(), days=planDaysArr(se);
+  if(!PLAN_EDIT) PLAN_EDIT = loadDeptPlan(code) || defaultDeptPlan(code);
+  const P=PLAN_EDIT;
+  while(P.crew.length<se.weeks) P.crew.push(0); P.crew=P.crew.slice(0,se.weeks);
+  const force=P.crew.map((c,i)=>c*days[i]); const forceTot=force.reduce((a,b)=>a+b,0);
+  const jobWSum=P.jobs.reduce((a,j)=>a+(+j.w||0),0);
+  const crewCells=P.crew.map((c,i)=>`
+    <div style="text-align:center"><div class="small num" style="color:var(--mut);font-size:10px">w${i+1}${days[i]===5?"·5วัน":""}</div>
+      <input type="number" min="0" value="${c}" oninput="planCrew(${i},this.value)" style="width:52px;text-align:center;padding:5px 2px;border:1.5px solid var(--line);border-radius:7px;background:${days[i]===5?'var(--warn-bg)':'var(--card)'};color:var(--ink);font:inherit">
+      <div class="small num" id="plF${i}" style="font-size:10px;color:var(--mut)">${c*days[i]}</div></div>`).join("");
+  const jobsHtml=P.jobs.map((j,ji)=>{
+    const tSum=j.tasks.reduce((a,t)=>a+(+t.wt||0),0);
+    return `<div class="card" style="border-left:4px solid var(--blue)">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+        <b style="color:var(--blue)">Job ${ji+1}</b>
+        <input value="${j.name.replace(/"/g,"")}" oninput="planJob(${ji},'name',this.value)" style="flex:1;min-width:240px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit;font-weight:700">
+        <label class="small">${pk(["น้ำหนัก (% แผนก)","ນ້ຳໜັກ","weight %"])}</label>
+        <input type="number" step="0.01" min="0" value="${j.w}" oninput="planJob(${ji},'w',this.value)" style="width:86px;padding:8px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit;text-align:center">
+        <button class="btn-d" onclick="planDelJob(${ji})">${pk(["ลบ Job","ລຶບ","del"])}</button></div>
+      <div class="scrollx"><table>
+        <tr><th style="width:26px">#</th><th>Task</th><th class="r" style="width:110px">${pk(["น้ำหนักในJob","ນ້ຳໜັກ","wt in job"])}</th><th class="r" style="width:80px">${pk(["เริ่ม (wk)","ເລີ່ມ","from"])}</th><th class="r" style="width:80px">${pk(["จบ (wk)","ຈົບ","to"])}</th><th style="width:50px"></th></tr>
+        ${j.tasks.map((t,ti)=>`<tr>
+          <td class="num small">${ti+1}</td>
+          <td><input value="${t.name.replace(/"/g,"")}" maxlength="100" oninput="planTask(${ji},${ti},'name',this.value)" style="width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--ink);font:inherit"></td>
+          <td class="r"><input type="number" step="0.01" min="0" value="${t.wt}" oninput="planTask(${ji},${ti},'wt',this.value)" style="width:80px;text-align:right;padding:6px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--ink);font:inherit"></td>
+          <td class="r"><input type="number" min="1" max="${se.weeks}" value="${t.s}" oninput="planTask(${ji},${ti},'s',this.value)" style="width:60px;text-align:center;padding:6px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--ink);font:inherit"></td>
+          <td class="r"><input type="number" min="1" max="${se.weeks}" value="${t.e}" oninput="planTask(${ji},${ti},'e',this.value)" style="width:60px;text-align:center;padding:6px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--ink);font:inherit"></td>
+          <td><button class="btn-d" onclick="planDelTask(${ji},${ti})">✕</button></td></tr>`).join("")}
+      </table></div>
+      <div style="display:flex;gap:12px;align-items:center;margin-top:8px">
+        <button class="btn btn-o btnsm" onclick="planAddTask(${ji})">＋ ${pk(["เพิ่ม Task","ເພີ່ມ Task","add task"])}</button>
+        <span class="small num" id="plTS${ji}" style="color:${Math.abs(tSum-100)<0.05?'var(--good)':'var(--crit)'};font-weight:700">Σ น้ำหนัก Task = ${tSum.toFixed(2)} / 100</span></div>
+    </div>`;
+  }).join("");
+  app.innerHTML = pagehead(pk(["ตั้งแผน 2027 — ","ຕັ້ງແຜນ 2027 — ","Plan 2027 — "])+un(u.name), u.owner+" · "+pk(["ฤดูกาลเริ่ม ","ເລີ່ມ ","starts "])+planWeekLabel(se,1)+" · "+se.weeks+" "+pk(["สัปดาห์","ອາທິດ","weeks"])) + `
+  <div class="deptbar noprint">
+    <button class="btn btn-o btnsm" onclick="planSetDept('')">← ${pk(["กลับ","ກັບ","Back"])}</button>
+    <span class="deptname">🗓 ${un(u.name)} · 2027</span>
+    <button class="btn btn-p" style="margin-left:auto" id="plSaveBtn" onclick="planSaveDept()">💾 ${pk(["บันทึกแผนลง Google Sheet","ບັນທຶກແຜນ","Save plan"])}</button></div>
+  <div class="card"><h2>👷 ${pk(["กำลังพลรายสัปดาห์ (จำนวนคน — แรง = คน × วันทำงาน)","ກຳລັງພົນ","Weekly crew (force = crew × days)"])}</h2>
+    <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:10px">
+      <div class="fld"><label class="small">${pk(["เติมเร็ว: คน","ຄົນ","quick: crew"])}</label><input id="plQC" type="number" min="0" value="10" style="width:70px;padding:7px;border:1.5px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;text-align:center"></div>
+      <div class="fld"><label class="small">${pk(["ตั้งแต่ wk","ຈາກ","from wk"])}</label><input id="plQS" type="number" min="1" max="${se.weeks}" value="1" style="width:60px;padding:7px;border:1.5px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;text-align:center"></div>
+      <div class="fld"><label class="small">${pk(["ถึง wk","ຮອດ","to wk"])}</label><input id="plQE" type="number" min="1" max="${se.weeks}" value="${se.weeks}" style="width:60px;padding:7px;border:1.5px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;text-align:center"></div>
+      <button class="btn btn-o btnsm" onclick="planQuickFill()">⚡ ${pk(["เติม","ຕື່ມ","fill"])}</button>
+      <span class="small num" style="margin-left:auto">${pk(["แรงรวมทั้งฤดู","ແຮງລວມ","total force"])} <b id="plFT" style="font-size:16px;color:var(--blue)">${forceTot.toLocaleString()}</b> ${pk(["แรง","ແຮງ","man-days"])}</span></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">${crewCells}</div>
+  </div>
+  <div class="card"><h2>📈 ${pk(["เส้นเป้าหมายสะสม (คำนวณอัตโนมัติจากกำลังพล)","ເສັ້ນເປົ້າ","Cumulative target curve (auto)"])}</h2>
+    <div id="plCurve">${planCurveSvg(P.crew,days)}</div></div>
+  <div style="display:flex;gap:10px;align-items:center;margin:16px 2px 8px">
+    <h2 style="margin:0;font-size:16px">🧩 Job / Task</h2>
+    <span class="small num" id="plJS" style="color:${Math.abs(jobWSum-100)<0.05?'var(--good)':'var(--crit)'};font-weight:700">Σ น้ำหนัก Job = ${jobWSum.toFixed(2)} / 100</span>
+    <button class="btn btn-o btnsm" style="margin-left:auto" onclick="planAddJob()">＋ ${pk(["เพิ่ม Job","ເພີ່ມ Job","add job"])}</button></div>
+  ${jobsHtml}
+  <div class="card noprint" style="display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn btn-p" onclick="planSaveDept()">💾 ${pk(["บันทึกแผนลง Google Sheet","ບັນທຶກແຜນ","Save plan"])}</button></div>`;
+}
+function planCrew(i,v){ const se=planSeason(), days=planDaysArr(se); PLAN_EDIT.crew[i]=Math.max(0,+v||0); planTotals(); const f=document.getElementById("plF"+i); if(f) f.textContent=PLAN_EDIT.crew[i]*days[i]; }
+function planTotals(){ const se=planSeason(), days=planDaysArr(se);
+  const tot=PLAN_EDIT.crew.reduce((a,c,i)=>a+c*days[i],0);
+  const ft=document.getElementById("plFT"); if(ft) ft.textContent=tot.toLocaleString();
+  const cv=document.getElementById("plCurve"); if(cv) cv.innerHTML=planCurveSvg(PLAN_EDIT.crew,days);
+}
+function planQuickFill(){ const c=+document.getElementById("plQC").value||0, s=+document.getElementById("plQS").value||1, e=+document.getElementById("plQE").value||PLAN_EDIT.crew.length;
+  for(let i=s-1;i<=e-1&&i<PLAN_EDIT.crew.length;i++) if(i>=0) PLAN_EDIT.crew[i]=c;
+  planEditor(); }
+function planJob(ji,k,v){ if(k==='w'){ PLAN_EDIT.jobs[ji].w=+v||0; const js=document.getElementById("plJS"); if(js){ const s=PLAN_EDIT.jobs.reduce((a,j)=>a+(+j.w||0),0); js.textContent="Σ น้ำหนัก Job = "+s.toFixed(2)+" / 100"; js.style.color=Math.abs(s-100)<0.05?"var(--good)":"var(--crit)"; } } else PLAN_EDIT.jobs[ji][k]=v; }
+function planTask(ji,ti,k,v){ const t=PLAN_EDIT.jobs[ji].tasks[ti];
+  if(k==='name') t.name=v; else t[k]=+v||0;
+  if(k==='wt'){ const ts=document.getElementById("plTS"+ji); if(ts){ const s=PLAN_EDIT.jobs[ji].tasks.reduce((a,x)=>a+(+x.wt||0),0); ts.textContent="Σ น้ำหนัก Task = "+s.toFixed(2)+" / 100"; ts.style.color=Math.abs(s-100)<0.05?"var(--good)":"var(--crit)"; } } }
+function planAddJob(){ PLAN_EDIT.jobs.push({name:"Job ใหม่", w:0, tasks:[{name:"Task ใหม่", wt:100, s:1, e:planSeason().weeks}]}); planEditor(); }
+function planDelJob(ji){ if(!confirm(pk(["ลบ Job นี้ทั้งชุด?","ລຶບ Job?","Delete this job?"]))) return; PLAN_EDIT.jobs.splice(ji,1); planEditor(); }
+function planAddTask(ji){ PLAN_EDIT.jobs[ji].tasks.push({name:"Task ใหม่", wt:0, s:1, e:planSeason().weeks}); planEditor(); }
+function planDelTask(ji,ti){ PLAN_EDIT.jobs[ji].tasks.splice(ti,1); planEditor(); }
+function planSaveDept(){
+  const code=PLAN_DEPT, P=PLAN_EDIT; if(!code||!P) return;
+  const jw=P.jobs.reduce((a,j)=>a+(+j.w||0),0);
+  const warn=[];
+  if(Math.abs(jw-100)>0.05) warn.push("Σ น้ำหนัก Job = "+jw.toFixed(2)+" (ควรเป็น 100)");
+  P.jobs.forEach((j,ji)=>{ const ts=j.tasks.reduce((a,t)=>a+(+t.wt||0),0); if(Math.abs(ts-100)>0.05) warn.push("Job "+(ji+1)+": Σ Task = "+ts.toFixed(2)); });
+  if(warn.length && !confirm("⚠️ "+warn.join("\n")+"\n\n"+pk(["บันทึกต่อหรือไม่?","ບັນທຶກຕໍ່?","Save anyway?"]))) return;
+  const rows=[];
+  const half=Math.ceil(P.crew.length/2);
+  rows.push({taskId:planKey(code,"CREWA"), pct:0, note:P.crew.slice(0,half).join(",")});
+  rows.push({taskId:planKey(code,"CREWB"), pct:0, note:P.crew.slice(half).join(",")});
+  rows.push({taskId:planKey(code,"MAN"), pct:0, note:P.jobs.map((j,ji)=>(ji+1)+":"+j.tasks.length).join(",")});
+  P.jobs.forEach((j,ji)=>{
+    rows.push({taskId:planKey(code,"J"+(ji+1)), pct:+(+j.w||0).toFixed(2), note:String(j.name).slice(0,110)});
+    j.tasks.forEach((t,ti)=>{ rows.push({taskId:planKey(code,"J"+(ji+1)+"-T"+(ti+1)), pct:+(+t.wt||0).toFixed(2),
+      note:String(t.name).slice(0,100)+"|"+(t.s||1)+"|"+(t.e||1)}); });
+  });
+  const btn=document.getElementById("plSaveBtn"); if(btn){ btn.disabled=true; btn.textContent="⏳ กำลังบันทึก 0/"+rows.length; }
+  let i=0;
+  (function next(){
+    if(i>=rows.length){
+      saveEntries(ENTRIES);
+      alert("✓ "+pk(["บันทึกแผน 2027 ของแผนกแล้ว ("+rows.length+" รายการ) — เครื่องอื่นเห็นหลัง sync","ບັນທຶກແລ້ວ","Plan saved ("+rows.length+" rows)"]));
+      planSetDept(""); return; }
+    const e=sanEntry({date:todayISO(), taskId:rows[i].taskId, pct:rows[i].pct, mh:0, by:"ตั้งแผน 2027", note:rows[i].note});
+    ENTRIES.push(e); pushToSheet(e);
+    i++; if(btn) btn.textContent="⏳ กำลังบันทึก "+i+"/"+rows.length;
+    setTimeout(next, 130);
+  })();
 }
 
 /* ============ การวิเคราะห์ ============ */
