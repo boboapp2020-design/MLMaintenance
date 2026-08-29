@@ -543,7 +543,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r114";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r115";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2078,20 +2078,6 @@ function entryDailyPage(){
   SUBVIEW=true;
   const today=new Date();
   const dnames=["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัส","ศุกร์","เสาร์"];
-  /* วันหยุด (อาทิตย์ + เสาร์เว้นเสาร์) → บันทึกไม่ได้ ข้ามไปเลย */
-  if(isHolidayDate(today)){
-    app.innerHTML = pagehead(un(u.name)+" — "+pk(["บันทึกรายวัน","ບັນທຶກລາຍວັນ","Daily log"]),
-      un(DATA.find(s=>s.units.includes(u)).name)+" · "+u.owner) + `
-    <div class="deptbar"><button class="btn btn-o btnsm" onclick="setDept('')">← ${pk(["กลับ","ກັບ","Back"])}</button>
-      <span class="deptname">📅 ${dnames[today.getDay()]} ${fmtDate(today)}</span></div>
-    <div class="card" style="text-align:center;padding:40px 20px">
-      <div style="font-size:44px">🌴</div>
-      <h2 style="margin:8px 0 4px">${pk(["วันนี้เป็นวันหยุด","ມື້ນີ້ວັນພັກ","Today is a day off"])}</h2>
-      <div class="small" style="color:var(--mut)">${pk(["ไม่ต้องบันทึกงาน · วันหยุด = อาทิตย์ทุกสัปดาห์ + เสาร์เว้นเสาร์","ບໍ່ຕ້ອງບັນທຶກ","No entry needed · off = every Sunday + alternate Saturdays"])}</div>
-    </div>
-    <div id="entryToast"></div>`;
-    return;
-  }
   const plans=todayPlans(u.code);
   const resOf=p=>todayResult(p.taskId);
   const doneN=plans.filter(p=>{const r=resOf(p); return r&&/^\[ผล\]/.test(r.note);}).length;
@@ -2223,9 +2209,7 @@ function entryDailyPage(){
 }
 function planForToday(tid){ const d=todayISO(); let last=null;
   ENTRIES.forEach(e=>{ if(e.date===d && e.taskId===tid && isPlanNote(e) && (!last||e.date>=last.date)) last=e; }); return last; }
-function dpHolidayGuard(){ if(isHolidayDate(new Date())){ alert(pk(["วันนี้เป็นวันหยุด บันทึกไม่ได้","ມື້ນີ້ວັນພັກ","Day off — cannot record"])); return true; } return false; }
 function dpPlanTask(ti,tid){
-  if(dpHolidayGuard()) return;
   const raw=(document.getElementById("dpPlan"+ti).value||"").trim();
   if(!raw){ alert(pk(["พิมพ์แผนก่อน","ພິມແຜນກ່ອນ","Type a plan first"])); return; }
   const items=raw.split(/\n|\s\/\s/).map(s=>s.trim().replace(/^\d+[\).\s]*/,"")).filter(Boolean);
@@ -2252,7 +2236,6 @@ function dpPlanOne(){
   const t=document.getElementById("entryToast"); if(t){ t.innerHTML=`<div class="toast">☀️ ${pk(["บันทึกแผนวันนี้แล้ว","ບັນທຶກແຜນແລ້ວ","Plan saved"])}</div>`; setTimeout(()=>t.innerHTML="",2500); }
 }
 function dpDone(pi,tid){
-  if(dpHolidayGuard()) return;
   const x=TASK_INDEX[tid]; if(!x) return;
   const v=parseFloat(document.getElementById("dpPct"+pi).value);
   if(isNaN(v)||v<0||v>100){ alert(pk(["กรอก % ระหว่าง 0–100","ປ້ອນ 0–100","Enter 0–100"])); return; }
@@ -2267,7 +2250,6 @@ function dpDone(pi,tid){
   const t=document.getElementById("entryToast"); if(t){ t.innerHTML=`<div class="toast">✅ ${pk(["ปิดงานแล้ว","ປິດວຽກແລ້ວ","Closed"])} ${fmt1(v)}%</div>`; setTimeout(()=>t.innerHTML="",2500); }
 }
 function dpSkip(pi,tid){
-  if(dpHolidayGuard()) return;
   const rsn=(document.getElementById("dpRsn"+pi).value||"").trim();
   if(!rsn){ alert(pk(["ต้องบอกเหตุผลที่ไม่ได้ทำ","ຕ້ອງບອກເຫດຜົນ","Reason is required"])); return; }
   const entry=sanEntry({date:todayISO(), taskId:tid, pct:taskCurPts(tid), mh:0,
