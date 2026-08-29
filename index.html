@@ -543,7 +543,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r111";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r112";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2140,6 +2140,14 @@ function entryDailyPage(){
   const rows = j.tasks.map((t,ti)=>{
     const plan=planForToday(t.id), res=todayResult(t.id);
     const curPct=fmt1(t.act*100);
+    /* Task ที่เสร็จ 100% แล้ว → ล็อก วางแผน/ปิดงานไม่ได้ */
+    if(actAt(t,WNOW)>=1){
+      return `<div class="card" style="border-left:4px solid var(--good);margin-bottom:8px;padding:11px 14px;opacity:.85">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <b style="font-size:14.5px">${tr(t.name)}</b>
+          <span class="chip c-good" style="margin-left:auto">✓ ${pk(["เสร็จ 100% แล้ว","ສຳເລັດ 100%","done 100%"])}</span></div>
+        <div class="small" style="color:var(--mut);margin-top:4px">🔒 ${pk(["งานนี้เสร็จแล้ว ไม่ต้องวางแผน/บันทึกอีก","ວຽກນີ້ສຳເລັດແລ້ວ","completed — no more planning"])}</div></div>`;
+    }
     const items=plan?String(plan.note).replace(/^\[แผน\]\s*/,"").split(" | ").filter(Boolean):[];
     const border = res?(/^\[ผล\]/.test(res.note)?"var(--good)":"var(--crit)") : (plan?"var(--warn)":"var(--line)");
     const planBlock = items.length?`<ol style="margin:2px 0 8px 20px;padding:0;font-size:13px;line-height:1.6;color:var(--ink)">${items.map(it=>`<li>${it}</li>`).join("")}</ol>`
