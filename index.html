@@ -332,6 +332,10 @@ svg text{font-family:inherit}
 .jpc-title{flex:1;font-size:14.5px;font-weight:800;color:var(--ink);line-height:1.25}
 .jpc-badge{flex:0 0 auto;font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;white-space:nowrap}
 .jpc-mid{display:flex;align-items:center;gap:10px;padding:6px 14px 10px}
+.jpc-mid1{gap:14px}
+.jpc-cright{margin-left:auto;text-align:right}
+.jpc-cright .jpc-cn{font-size:22px;font-weight:800;color:var(--ink)}
+.jpc-cright .jpc-cl{font-size:11px;color:var(--mut);margin-top:1px}
 .jpc-donut{position:relative;width:92px;height:92px;flex:0 0 auto}
 .jpc-donut .jpc-dval{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:17px;font-weight:800;color:var(--ink)}
 .jpc-donut .jpc-dval span{font-size:9.5px;font-weight:500;color:var(--mut);margin-top:1px}
@@ -523,7 +527,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r102";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r103";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2036,10 +2040,12 @@ function entryDailyPage(){
       const js2=jp.filter(p=>{const r=resOf(p); return r&&/^\[ไม่ได้ทำ\]/.test(r.note);}).length;
       const open=jp.length-jd-js2;
       const ja=agg(j.tasks,WNOW);
-      const taskDone=j.tasks.filter(t=>actAt(t,WNOW)>=1).length;
+      const tDone=j.tasks.filter(t=>actAt(t,WNOW)>=1).length;               // งานเสร็จแล้ว (สีเขียว)
+      const tDoing=j.tasks.filter(t=>{const a=actAt(t,WNOW);return a>0&&a<1;}).length;  // กำลังทำ (สีเหลือง)
+      const tNew=j.tasks.filter(t=>actAt(t,WNOW)<=0).length;                // ยังไม่เริ่ม (สีแดง)
       const acc = statusOf(ja.act-ja.plan);        // สีการ์ด = สถานะเทียบแผน (เขียว/เหลือง/แดง)
       const dstate = !jp.length ? "noplan" : (open>0 ? "open" : "done");  // สถานะวางแผน/ปิดงานวันนี้ (ป้าย)
-      return {j, jp, jd, js2, open, ja, taskDone, acc, dstate};
+      return {j, jp, jd, js2, open, ja, tDone, tDoing, tNew, acc, dstate};
     }).filter(r=> DAILY_FILTER==="all" || r.dstate===DAILY_FILTER);
     const SC={good:"#16A34A",warn:"#D97706",crit:"#DC2626"};
     const badge={ noplan:['jpb-crit',pk(["ยังไม่วางแผน","ຍັງບໍ່ວາງແຜນ","no plan"])],
@@ -2053,18 +2059,15 @@ function entryDailyPage(){
           <div class="jpc-title">${tr(j.name)}</div>
           <span class="jpc-badge ${bd[0]}">${bd[1]}${r.dstate==="open"?" "+r.open:""}</span>
         </div>
-        <div class="jpc-mid">
+        <div class="jpc-mid jpc-mid1">
           ${jobDonut(ja1(r.ja.act),col)}
-          <div class="jpc-counts">
-            <div><span class="jpc-cn">${j.tasks.length}</span> task <span class="jpc-cl">· ${pk(["ทั้งหมด","ທັງໝົດ","total"])}</span></div>
-            <div><span class="jpc-cn">${r.taskDone}</span> task <span class="jpc-cl">· ${pk(["เสร็จสิ้น","ສຳເລັດ","done"])}</span></div>
-          </div>
+          <div class="jpc-cright"><span class="jpc-cn">${j.tasks.length}</span> task<div class="jpc-cl">${pk(["ทั้งหมดใน Job","ທັງໝົດ","total in job"])}</div></div>
         </div>
         <div class="jpc-bar"><div style="width:${Math.min(100,r.ja.act)}%;background:${col}"></div></div>
         <div class="jpc-today">
-          <div><span class="jpc-tn">☀️ ${r.open}</span><span class="jpc-tl">${pk(["รอดำเนินการ","ລໍຖ້າ","pending"])}</span></div>
-          <div><span class="jpc-tn" style="color:var(--good)">✅ ${r.jd}</span><span class="jpc-tl">${pk(["เสร็จสิ้น","ສຳເລັດ","done"])}</span></div>
-          <div><span class="jpc-tn" style="color:var(--crit)">❌ ${r.js2}</span><span class="jpc-tl">${pk(["ติดปัญหา","ຕິດບັນຫາ","blocked"])}</span></div>
+          <div><span class="jpc-tn" style="color:var(--good)">${r.tDone}</span><span class="jpc-tl">${pk(["เสร็จแล้ว","ສຳເລັດ","done"])}</span></div>
+          <div><span class="jpc-tn" style="color:var(--warn)">${r.tDoing}</span><span class="jpc-tl">${pk(["กำลังทำ","ກຳລັງເຮັດ","in progress"])}</span></div>
+          <div><span class="jpc-tn" style="color:var(--crit)">${r.tNew}</span><span class="jpc-tl">${pk(["ยังไม่เริ่ม","ຍັງບໍ່ເລີ່ມ","not started"])}</span></div>
         </div>
         <div class="jpc-foot"><span>${pk(["เปิดงาน","ເປີດວຽກ","open"])} ›</span></div>
       </div>`;
