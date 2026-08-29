@@ -324,6 +324,30 @@ svg text{font-family:inherit}
 .st-full{background:#DCFCE7;color:#16A34A}.st-partial{background:#FEF3C7;color:#D97706}.st-crit{background:#FEE2E2;color:#DC2626}.st-blank{background:var(--tint);color:var(--mut)}
 .dc2-prog{height:6px;background:var(--tint2);border-radius:99px;margin-top:16px;overflow:hidden}
 .dc2-prog>div{height:100%;border-radius:99px}
+.jpcgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:22px}
+.jpc{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--line);border-radius:20px;box-shadow:0 6px 20px rgba(30,42,58,.10);cursor:pointer;overflow:hidden;transition:transform .15s,box-shadow .15s}
+.jpc:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(30,42,58,.20)}
+.jpc-head{display:flex;gap:12px;align-items:flex-start;padding:18px 20px 6px}
+.jpc-ic{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.jpc-title{flex:1;font-size:19px;font-weight:800;color:var(--ink);line-height:1.3}
+.jpc-badge{flex:0 0 auto;font-size:12.5px;font-weight:800;padding:5px 13px;border-radius:999px;white-space:nowrap}
+.jpc-mid{display:flex;align-items:center;gap:14px;padding:8px 20px 14px}
+.jpc-donut{position:relative;width:120px;height:120px;flex:0 0 auto}
+.jpc-donut .jpc-dval{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:var(--ink)}
+.jpc-donut .jpc-dval span{font-size:11px;font-weight:500;color:var(--mut);margin-top:2px}
+.jpc-counts{flex:1;display:flex;flex-direction:column;gap:16px;border-left:1px solid var(--line);padding-left:16px}
+.jpc-counts .jpc-cn{font-size:19px;font-weight:800;color:var(--ink)}
+.jpc-counts .jpc-cl{font-size:12px;color:var(--mut)}
+.jpc-bar{height:8px;background:var(--tint2);border-radius:99px;margin:0 20px;overflow:hidden}
+.jpc-bar>div{height:100%;border-radius:99px}
+.jpc-today{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:var(--tint);border-radius:12px;margin:14px 20px 0;padding:12px}
+.jpc-today>div{text-align:center}
+.jpc-today .jpc-tn{display:block;font-size:17px;font-weight:800;color:var(--ink)}
+.jpc-today .jpc-tl{font-size:11.5px;color:var(--mut)}
+.jpc-foot{text-align:right;padding:12px 20px 16px;color:var(--blue);font-weight:800;font-size:14px}
+.jpviewtog{display:inline-flex;border:1.5px solid var(--line);border-radius:10px;overflow:hidden}
+.jpviewtog button{border:none;background:var(--card);color:var(--mut);font:inherit;font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer}
+.jpviewtog button.on{background:var(--blue);color:#fff}
 .jobpickgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px}
 .jobpick{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:18px 20px 16px;cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s;box-shadow:0 4px 14px rgba(30,42,58,.08);position:relative;overflow:hidden}
 .jobpick::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px}
@@ -499,7 +523,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r100";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r101";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1972,7 +1996,20 @@ function todayResult(tid){
 }
 function dpTaskOptions(j){ return j.tasks.map(t=>`<option value="${t.id}">${tr(t.name)} (${fmt1(actAt(t,WNOW)*100)}%)</option>`).join(""); }
 let DAILY_JOB="";   /* Job ที่เลือกอยู่ในหน้าบันทึกรายวัน — "" = หน้าเลือก Job */
+let DAILY_VIEW="card", DAILY_FILTER="all";
 function dailySelectJob(jid){ DAILY_JOB=jid||""; entryDailyPage(); }
+function dailySetView(v){ DAILY_VIEW=v; entryDailyPage(); }
+function dailySetFilter(f){ DAILY_FILTER=f; entryDailyPage(); }
+function ja1(x){ return Math.round(x*10)/10; }
+/* วงแหวน donut แสดง % ความคืบหน้า (ตรงกลางมีตัวเลข) */
+function jobDonut(pct,color){
+  const r=52, C=2*Math.PI*r, arc=Math.max(0,Math.min(1,pct/100))*C;
+  return `<div class="jpc-donut"><svg viewBox="0 0 120 120" width="120" height="120">
+    <circle cx="60" cy="60" r="${r}" fill="none" stroke="var(--tint2)" stroke-width="13"/>
+    <circle cx="60" cy="60" r="${r}" fill="none" stroke="${color}" stroke-width="13" stroke-linecap="round"
+      stroke-dasharray="${arc.toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 60 60)"/></svg>
+    <div class="jpc-dval">${fmt1(pct)}%<span>ความคืบหน้า</span></div></div>`;
+}
 function entryDailyPage(){
   const u=unitByCode(DEPT); if(!u){ setDept(""); return; }
   SUBVIEW=true;
@@ -1991,28 +2028,66 @@ function entryDailyPage(){
     <span class="deptname">📅 ${dnames[today.getDay()]} ${fmtDate(today)} · ${pk(["สัปดาห์","ອາທິດ","wk"])} ${REALWK}${label||""}</span>
     <span class="small" style="margin-left:auto">${pk(["วางแผน","ວາງແຜນ","planned"])} <b>${plans.length}</b> · ✅ <b style="color:var(--good)">${doneN}</b> · ❌ <b style="color:var(--crit)">${skipN}</b>
       <span class="editlink" style="cursor:pointer;font-size:12px;color:var(--mut);text-decoration:underline;margin-left:10px" onclick="entrySetMode('tasks')">${pk(["โหมดรายการ Task (เดิม)","ໂໝດເດີມ","task list mode"])}</span></span></div>`;
-  /* ---- หน้าที่ 1: เลือก Job (การ์ดละ Job พร้อมสถานะวันนี้) ---- */
+  /* ---- หน้าที่ 1: เลือก Job (การ์ดใหญ่: donut + จำนวน task + สรุปวันนี้) ---- */
   if(!DAILY_JOB){
-    const cards=jl.map(j=>{
+    const rows=jl.map(j=>{
       const jp=plans.filter(p=>{const x=TASK_INDEX[p.taskId]; return x&&x.j===j;});
       const jd=jp.filter(p=>{const r=resOf(p); return r&&/^\[ผล\]/.test(r.note);}).length;
       const js2=jp.filter(p=>{const r=resOf(p); return r&&/^\[ไม่ได้ทำ\]/.test(r.note);}).length;
       const open=jp.length-jd-js2;
       const ja=agg(j.tasks,WNOW);
-      const state = !jp.length ? "crit" : (open>0 ? "warn" : "good");
-      const stTxt = !jp.length ? pk(["ยังไม่วางแผน","ຍັງບໍ່ວາງແຜນ","no plan"])
-        : open>0 ? pk(["รอปิดงาน","ລໍປິດ","to close"])+" "+open
-        : "✓ "+pk(["ปิดครบแล้ว","ປິດຄົບ","all closed"]);
-      return `<div class="jobpick jp-${state}" tabindex="0" onclick="dailySelectJob('${j.id}')">
-        <div class="jp-top"><span class="jp-name">${tr(j.name)}</span><span class="jp-badge jpb-${state}">${stTxt}</span></div>
-        <div class="jp-meta">${pk(["ความคืบหน้า","ຄວາມຄืบໜ້າ","progress"])} <b>${fmt1(ja.act)}%</b> · ${j.tasks.length} task</div>
-        <div class="jp-bar"><div class="jp-fill jpf-${state}" style="width:${Math.min(100,ja.act)}%"></div></div>
-        <div class="jp-today">${pk(["วันนี้","ມື້ນີ້","today"])}: ☀️ ${jp.length} &nbsp;<span style="color:var(--good)">✅ ${jd}</span> &nbsp;<span style="color:var(--crit)">❌ ${js2}</span><span class="jp-go">${pk(["เปิด","ເປີດ","open"])} ›</span></div>
+      const taskDone=j.tasks.filter(t=>actAt(t,WNOW)>=1).length;
+      const acc = statusOf(ja.act-ja.plan);        // สีการ์ด = สถานะเทียบแผน (เขียว/เหลือง/แดง)
+      const dstate = !jp.length ? "noplan" : (open>0 ? "open" : "done");  // สถานะวางแผน/ปิดงานวันนี้ (ป้าย)
+      return {j, jp, jd, js2, open, ja, taskDone, acc, dstate};
+    }).filter(r=> DAILY_FILTER==="all" || r.dstate===DAILY_FILTER);
+    const SC={good:"#16A34A",warn:"#D97706",crit:"#DC2626"};
+    const badge={ noplan:['jpb-crit',pk(["ยังไม่วางแผน","ຍັງບໍ່ວາງແຜນ","no plan"])],
+      open:['jpb-warn',pk(["รอปิดงาน","ລໍປິດ","to close"])], done:['jpb-good',"✓ "+pk(["ปิดครบแล้ว","ປິດຄົບ","all closed"])] };
+    const cards=rows.map(r=>{
+      const j=r.j, col=SC[r.acc[1]];
+      const bd=badge[r.dstate];
+      return `<div class="jpc" style="border-left-color:${col}" tabindex="0" onclick="dailySelectJob('${j.id}')">
+        <div class="jpc-head">
+          <div class="jpc-ic" style="background:${col}1f;color:${col}">${unitBub(u.name,26)}</div>
+          <div class="jpc-title">${tr(j.name)}</div>
+          <span class="jpc-badge ${bd[0]}">${bd[1]}${r.dstate==="open"?" "+r.open:""}</span>
+        </div>
+        <div class="jpc-mid">
+          ${jobDonut(ja1(r.ja.act),col)}
+          <div class="jpc-counts">
+            <div><span class="jpc-cn">${j.tasks.length}</span> task<br><span class="jpc-cl">${pk(["ทั้งหมด","ທັງໝົດ","total"])}</span></div>
+            <div><span class="jpc-cn">${r.taskDone}</span> task<br><span class="jpc-cl">${pk(["เสร็จสิ้น","ສຳເລັດ","done"])}</span></div>
+          </div>
+        </div>
+        <div class="jpc-bar"><div style="width:${Math.min(100,r.ja.act)}%;background:${col}"></div></div>
+        <div class="jpc-today">
+          <div><span class="jpc-tn">☀️ ${r.open}</span><span class="jpc-tl">${pk(["รอดำเนินการ","ລໍຖ້າ","pending"])}</span></div>
+          <div><span class="jpc-tn" style="color:var(--good)">✅ ${r.jd}</span><span class="jpc-tl">${pk(["เสร็จสิ้น","ສຳເລັດ","done"])}</span></div>
+          <div><span class="jpc-tn" style="color:var(--crit)">❌ ${r.js2}</span><span class="jpc-tl">${pk(["ติดปัญหา","ຕິດບັນຫາ","blocked"])}</span></div>
+        </div>
+        <div class="jpc-foot"><span>${pk(["เปิดงาน","ເປີດວຽກ","open"])} ›</span></div>
       </div>`;
-    }).join("");
+    }).join("") || `<div class="card"><div class="small" style="padding:12px;color:var(--mut)">${pk(["ไม่มี Job ในเงื่อนไขที่เลือก","ບໍ່ມີ","No jobs match"])}</div></div>`;
+    const table=`<div class="card"><div class="scrollx"><table>
+      <tr><th>Job</th><th class="r">${pk(["คืบหน้า","ຄืบໜ້າ","progress"])}</th><th class="r">Task</th><th class="r">${pk(["เสร็จ","ສຳເລັດ","done"])}</th><th>${pk(["วันนี้","ມື້ນີ້","today"])} ☀️✅❌</th><th>${pk(["สถานะ","ສະຖານະ","status"])}</th><th></th></tr>
+      ${rows.map(r=>{const bd=badge[r.dstate];return `<tr class="clickable" onclick="dailySelectJob('${r.j.id}')">
+        <td><b>${tr(r.j.name)}</b></td><td class="r num">${fmt1(r.ja.act)}%</td><td class="r num">${r.j.tasks.length}</td><td class="r num">${r.taskDone}</td>
+        <td class="num">☀️${r.open} ✅${r.jd} ❌${r.js2}</td><td><span class="chip c-${r.acc[1]}">${bd[1]}${r.dstate==="open"?" "+r.open:""}</span></td>
+        <td style="color:var(--blue)">${pk(["เปิด","ເປີດ","open"])} ›</td></tr>`;}).join("")}
+    </table></div></div>`;
+    const filtOpts=[["all",pk(["ทั้งหมด","ທັງໝົດ","all"])],["noplan",pk(["ยังไม่วางแผน","ຍັງບໍ່ວາງແຜນ","no plan"])],["open",pk(["รอปิดงาน","ລໍປິດ","to close"])],["done",pk(["ปิดครบแล้ว","ປິດຄົບ","closed"])]]
+      .map(o=>`<option value="${o[0]}"${DAILY_FILTER===o[0]?" selected":""}>${o[1]}</option>`).join("");
     app.innerHTML = head + bar("setDept('')") + `
-    <h2 style="margin:18px 4px 12px;font-size:19px">🧩 ${pk(["เลือก Job เพื่อวางแผน / ปิดงานวันนี้","ເລືອກ Job ເພື່ອວາງແຜນ/ປິດວຽກ","Pick a job to plan / close today"])}</h2>
-    <div class="jobpickgrid">${cards}</div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 4px 14px">
+      <div><h2 style="margin:0;font-size:20px">🧩 ${pk(["เลือก Job เพื่อวางแผน / ปิดงานวันนี้","ເລືອກ Job","Pick a job — plan / close today"])}</h2>
+        <div class="small" style="color:var(--mut);margin-top:2px">${pk(["ภาพรวมความคืบหน้างานของแต่ละ Job วันนี้","ພາບລວມ","Each job's progress today"])}</div></div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <div class="jpviewtog"><button class="${DAILY_VIEW==='card'?'on':''}" onclick="dailySetView('card')">▦ ${pk(["การ์ด","ກາດ","cards"])}</button><button class="${DAILY_VIEW==='table'?'on':''}" onclick="dailySetView('table')">☰ ${pk(["ตาราง","ຕາຕະລາງ","table"])}</button></div>
+        <select onchange="dailySetFilter(this.value)" style="padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit">${filtOpts}</select>
+      </div>
+    </div>
+    ${DAILY_VIEW==='table'? table : `<div class="jpcgrid">${cards}</div>`}
     <div id="entryToast"></div>`;
     return;
   }
