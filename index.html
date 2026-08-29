@@ -346,6 +346,12 @@ svg text{font-family:inherit}
 .jpc-counts .jpc-cl{font-size:11px;color:var(--mut)}
 .jpc-bar{height:6px;background:var(--tint2);border-radius:99px;margin:0 14px;overflow:hidden}
 .jpc-bar>div{height:100%;border-radius:99px}
+.jpc-mid2{padding:12px 16px 8px;font-size:15px;font-weight:800;color:var(--ink)}
+.jpc-mid2 .jpc-cl{font-size:12px;font-weight:500;color:var(--mut)}
+.jpc-gauge{position:relative;height:28px;background:var(--tint2);border-radius:99px;margin:0 16px;overflow:hidden}
+.jpc-gauge .jpc-gfill{position:absolute;left:0;top:0;bottom:0;border-radius:99px}
+.jpc-gauge .jpc-gval{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;font-weight:800;color:var(--ink);text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff}
+.jpc-gauge .jpc-glab{font-size:11px;font-weight:500}
 .jpc-today{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--tint);border-radius:10px;margin:10px 14px 0;padding:9px 6px}
 .jpc-today>div{text-align:center}
 .jpc-today .jpc-tn{display:flex;align-items:center;justify-content:center;gap:5px;font-size:14.5px;font-weight:800;color:var(--ink)}
@@ -533,7 +539,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r109";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r110";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2095,11 +2101,8 @@ function entryDailyPage(){
           <div class="jpc-title">${tr(j.name)}</div>
           <span class="jpc-badge ${bd[0]}">${bd[1]}${r.dstate==="open"?" "+r.open:""}</span>
         </div>
-        <div class="jpc-mid jpc-mid1">
-          ${jobDonut(ja1(r.ja.act),col)}
-          <div class="jpc-cright"><span class="jpc-cn">${j.tasks.length}</span> task<div class="jpc-cl">${pk(["ทั้งหมดใน Job","ທັງໝົດ","total in job"])}</div></div>
-        </div>
-        <div class="jpc-bar"><div style="width:${Math.min(100,r.ja.act)}%;background:${col}"></div></div>
+        <div class="jpc-mid2"><span class="jpc-cn">${j.tasks.length}</span> task <span class="jpc-cl">· ${pk(["ทั้งหมดใน Job","ທັງໝົດ","total in job"])}</span></div>
+        <div class="jpc-gauge"><div class="jpc-gfill" style="width:${Math.min(100,r.ja.act)}%;background:${col}"></div><span class="jpc-gval">${fmt1(r.ja.act)}% <span class="jpc-glab">${pk(["ความคืบหน้า","ຄืบໜ້າ","progress"])}</span></span></div>
         <div class="jpc-today">
           <div><span class="jpc-tn" style="color:var(--good)"><i class="light lt-g"></i>${r.tDone}</span><span class="jpc-tl">${pk(["เสร็จแล้ว","ສຳເລັດ","done"])}</span></div>
           <div><span class="jpc-tn" style="color:var(--warn)"><i class="light lt-y"></i>${r.tDoing}</span><span class="jpc-tl">${pk(["กำลังทำ","ກຳລັງເຮັດ","in progress"])}</span></div>
