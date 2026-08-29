@@ -467,7 +467,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r92";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r93";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1257,7 +1257,7 @@ DATA.forEach(s=>s.units.forEach(u=>u.jobs.forEach((j,ji)=>{
 const IGNORE_ENTRIES = { "EVP-J1-T14|2026-08-26": 1 };
 function ignoredEntry(e){ return !!IGNORE_ENTRIES[String(e.taskId)+"|"+normDate(e.date)]; }
 /* ---- ทำความสะอาดข้อมูล entry (กัน stored XSS: ใครก็ POST เข้า Apps Script ได้ ห้ามเชื่อ by/note/taskId แล้วเอาไป render ตรงๆ) ---- */
-function cleanStr(s){ return String(s==null?"":s).replace(/[<>"'`]/g,"").slice(0,120); }
+function cleanStr(s){ return String(s==null?"":s).replace(/[<>"'`]/g,"").slice(0,300); }
 function sanEntry(e){ return {
   date:normDate(e.date),
   taskId:String(e.taskId==null?"":e.taskId).replace(/[^\w\-\.]/g,"").slice(0,40),
@@ -1822,6 +1822,8 @@ let SELJOB=null;
    ค่าเริ่มต้นตามรหัสหน่วยงานโรงงาน · เปลี่ยนได้เอง (เก็บเป็นแถวพิเศษ taskId "<CODE>-PIN" ใน Google Sheet, note=PIN ใหม่ — แถวนี้ไม่ถูกนับเป็นผลงานเพราะไม่มีใน TASK_INDEX)
    ปลดล็อกจำต่อเซสชัน (รีเฟรชหน้า = ถามใหม่) */
 const DEPT_PIN_DEF = { MIL:"3110", EVP:"3210", PAN:"3220", CFG:"3230", GEN:"3310", BLR:"3120", INS:"3300", ELE:"3320", MEC:"3130" };
+/* ปลด PIN ชั่วคราวตามนโยบาย (2026-08-29) — เข้าแผนกได้เลยไม่ต้องใส่รหัส · เปิดกลับ = true */
+const PIN_GATE = false;
 const PIN_OK = {};
 function deptPin(code){
   let pin = DEPT_PIN_DEF[code]||"0000";
@@ -1829,7 +1831,7 @@ function deptPin(code){
   return pin;
 }
 function setDept(code){
-  if(code && !PIN_OK[code]){ openPinModal(code); return; }
+  if(PIN_GATE && code && !PIN_OK[code]){ openPinModal(code); return; }
   DEPT=code||""; SELJOB=null; entryPage();
 }
 let PIN_CODE=null, PIN_CB=null;   /* PIN_CB = callback หลังปลดล็อกสำเร็จ (ใช้ซ้ำจากหน้าตั้งแผน) — ไม่ตั้ง = flow หน้าบันทึกเดิม */
@@ -1920,7 +1922,141 @@ function confirmJob(jid){
   const t=document.getElementById("entryToast"); if(t){ t.innerHTML=`<div class="toast">✓ ${pk(["ยืนยัน Job แล้ว","ຢືນຢັນ Job ແລ້ວ","Job confirmed"])}</div>`; setTimeout(()=>t.innerHTML="",2500); }
 }
 
-function entryPage(){ if(!DEPT) entryPickerPage(); else entryDeptPage(); }
+let ENTRY_MODE="daily";   /* daily = ฟอร์มรายวันเช้า-เย็น (ค่าเริ่มต้นตามนโยบายใหม่) · tasks = หน้ารายการ Task แบบเดิม */
+function entryPage(){ if(!DEPT) entryPickerPage(); else (ENTRY_MODE==="tasks"? entryDeptPage() : entryDailyPage()); }
+function entrySetMode(m){ ENTRY_MODE=m; entryPage(); }
+
+/* ============ บันทึกรายวัน (เช้าวางแผน - เย็นปิดงาน) ============
+   เช้า: เลือกงาน (Task) + พิมพ์แผนของวัน บรรทัดละข้อ → เก็บเป็นแถว note "[แผน] ข้อ1 | ข้อ2" (pct = ค่าเดิม ไม่กระทบตัวเลข)
+   เย็น: การ์ดเดียวกันถาม ทำครบไหม → "ทำแล้ว" ใส่ % ของงาน (แปลงเป็นแต้มอัตโนมัติ) · "ไม่ได้ทำ" ต้องบอกเหตุผล (pct คงเดิม)
+   ทุกแถวคือ entry ปกติ → รายงาน/Audit/S-curve รายสัปดาห์เดิมทำงานต่อเนื่อง */
+function taskCurPts(tid){ const f=latestPctFor(tid); if(f!=null) return f; const x=TASK_INDEX[tid]; return x?Math.round(x.t.act*x.t.wt*100)/100:0; }
+function isPlanNote(e){ return /^\[แผน\]/.test(e&&e.note||""); }
+function isResultNote(e){ return /^\[(ผล|ไม่ได้ทำ)\]/.test(e&&e.note||""); }
+function todayPlans(code){
+  const d=todayISO(), m={};
+  ENTRIES.forEach(e=>{ if(e.date===d && String(e.taskId).indexOf(code+"-")===0 && isPlanNote(e)) m[e.taskId]=e; });
+  return Object.values(m);
+}
+function todayResult(tid){
+  const d=todayISO(); let last=null;
+  ENTRIES.forEach(e=>{ if(e.date===d && e.taskId===tid && isResultNote(e)) last=e; });
+  return last;
+}
+function entryDailyPage(){
+  const u=unitByCode(DEPT); if(!u){ setDept(""); return; }
+  SUBVIEW=true;
+  const today=new Date();
+  const dnames=["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัส","ศุกร์","เสาร์"];
+  const plans=todayPlans(u.code);
+  const doneN=plans.filter(p=>{const r=todayResult(p.taskId); return r&&/^\[ผล\]/.test(r.note);}).length;
+  const skipN=plans.filter(p=>{const r=todayResult(p.taskId); return r&&/^\[ไม่ได้ทำ\]/.test(r.note);}).length;
+  const jobOpts=visJobs(u).map((j,ji)=>`<optgroup label="${tr(j.name)}">${j.tasks.map(t=>{
+    const cur=fmt1(actAt(t,WNOW)*100);
+    return `<option value="${t.id}">${tr(t.name)} (${cur}%)</option>`;}).join("")}</optgroup>`).join("");
+  const planCards = plans.length? plans.map((p,pi)=>{
+    const x=TASK_INDEX[p.taskId]; if(!x) return "";
+    const t=x.t, j=x.j;
+    const items=String(p.note).replace(/^\[แผน\]\s*/,"").split(" | ").filter(Boolean);
+    const res=todayResult(p.taskId);
+    const curPct=fmt1(t.act*100);
+    let foot;
+    if(res && /^\[ผล\]/.test(res.note)){
+      foot=`<div class="small" style="background:var(--good-bg,#DCFCE7);color:var(--good,#16A34A);border-radius:9px;padding:8px 12px;font-weight:700">✅ ${pk(["ปิดงานแล้ว","ປິດວຽກແລ້ວ","closed"])} · ${fmt1((+res.pct||0)/(t.wt||1)*100)}% — <span style="font-weight:500">${String(res.note).replace(/^\[ผล\]\s*/,"")}</span></div>`;
+    } else if(res){
+      foot=`<div class="small" style="background:var(--crit-bg,#FEE2E2);color:var(--crit,#DC2626);border-radius:9px;padding:8px 12px;font-weight:700">❌ ${pk(["ไม่ได้ทำ","ບໍ່ໄດ້ເຮັດ","not done"])} — <span style="font-weight:500">${String(res.note).replace(/^\[ไม่ได้ทำ\]\s*/,"")}</span></div>`;
+    } else {
+      foot=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center" id="dpAct${pi}">
+        <button class="btn btn-p btnsm" onclick="dpShow(${pi},'done')">✅ ${pk(["ทำแล้ว — ใส่ %","ເຮັດແລ້ວ","done — enter %"])}</button>
+        <button class="btn btn-o btnsm" onclick="dpShow(${pi},'skip')">❌ ${pk(["ไม่ได้ทำ","ບໍ່ໄດ້ເຮັດ","not done"])}</button>
+      </div>
+      <div id="dpDone${pi}" style="display:none;margin-top:8px;background:var(--tint);border-radius:10px;padding:10px 12px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <label class="small">${pk(["% ของงานนี้ตอนนี้","% ຂອງວຽກນີ້","% of this task now"])}</label>
+          <input id="dpPct${pi}" type="number" min="0" max="100" step="0.5" value="${fmt1(t.act*100).replace(",","")}"
+            style="width:90px;padding:8px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit;text-align:center;font-size:16px;font-weight:700">
+          <span class="small num" style="color:var(--mut)">(${pk(["เดิม","ເດີມ","was"])} ${curPct}%)</span>
+          <input id="dpTxt${pi}" placeholder="${pk(["ทำอะไรไปแล้วบ้าง (สั้นๆ)","ເຮັດຫຍັງແລ້ວ","what was done"])}" style="flex:1;min-width:180px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit">
+          <button class="btn btn-p btnsm" onclick="dpDone(${pi},'${p.taskId}')">${pk(["บันทึกผล","ບັນທຶກ","save"])}</button>
+        </div>
+      </div>
+      <div id="dpSkip${pi}" style="display:none;margin-top:8px;background:var(--warn-bg,#FEF3C7);border-radius:10px;padding:10px 12px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <label class="small" style="font-weight:700">${pk(["เหตุผลที่ไม่ได้ทำ (จำเป็น)","ເຫດຜົນ (ຈຳເປັນ)","reason (required)"])}</label>
+          <input id="dpRsn${pi}" placeholder="${pk(["เช่น รออะไหล่ / ฝนตก / ติดงานด่วน","ເຊັ່ນ ລໍຖ້າອາໄຫຼ່","e.g. waiting parts"])}" style="flex:1;min-width:200px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit">
+          <button class="btn btn-o btnsm" onclick="dpSkip(${pi},'${p.taskId}')">${pk(["บันทึกเหตุผล","ບັນທຶກ","save"])}</button>
+        </div>
+      </div>`;
+    }
+    return `<div class="card" style="border-left:4px solid ${res?(/^\[ผล\]/.test(res.note)?"var(--good)":"var(--crit)"):"var(--warn)"}">
+      <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px">
+        <b>${tr(t.name)}</b><span class="small" style="color:var(--mut)">· ${tr(j.name)} · ${pk(["ตอนนี้","ຕອນນີ້","now"])} ${curPct}%</span>
+        <span class="small num" style="margin-left:auto;color:var(--mut)">${p.by?("☀️ "+p.by):""}</span></div>
+      <ol style="margin:0 0 10px 20px;padding:0;font-size:13.5px;line-height:1.7">${items.map(it=>`<li>${it}</li>`).join("")}</ol>
+      ${foot}</div>`;
+  }).join("") : `<div class="card"><div class="small" style="padding:10px;color:var(--mut)">📝 ${pk(["ยังไม่มีแผนงานของวันนี้ — วางแผนที่กล่องด้านบนก่อน","ຍັງບໍ່ມີແຜນມື້ນີ້","No plan for today yet — add one above"])}</div></div>`;
+  app.innerHTML = pagehead(un(u.name)+" — "+pk(["บันทึกรายวัน","ບັນທຶກລາຍວັນ","Daily log"]),
+    un(DATA.find(s=>s.units.includes(u)).name)+" · "+u.owner) + `
+  <div class="deptbar">
+    <button class="btn btn-o btnsm" onclick="setDept('')">← ${pk(["กลับ","ກັບ","Back"])}</button>
+    <span class="deptname">📅 ${dnames[today.getDay()]} ${fmtDate(today)} · ${pk(["สัปดาห์","ອາທິດ","wk"])} ${REALWK}</span>
+    <span class="small" style="margin-left:auto">${pk(["วางแผน","ວາງແຜນ","planned"])} <b>${plans.length}</b> · ✅ <b style="color:var(--good)">${doneN}</b> · ❌ <b style="color:var(--crit)">${skipN}</b>
+      <span class="editlink" style="cursor:pointer;font-size:12px;color:var(--mut);text-decoration:underline;margin-left:10px" onclick="entrySetMode('tasks')">${pk(["โหมดรายการ Task (เดิม)","ໂໝດເດີມ","task list mode"])}</span></span></div>
+  <div class="card" style="border-left:4px solid var(--warn)">
+    <h2>☀️ ${pk(["วางแผนงานของวันนี้ — จะทำอะไร","ວາງແຜນມື້ນີ້","Today's plan — what will you do"])}</h2>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:start">
+      <div class="fld" style="flex:1;min-width:260px"><label class="small">${pk(["เลือกงาน (Task)","ເລືອກວຽກ","Pick a task"])}</label>
+        <select id="dpTask" style="width:100%;padding:9px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit">${jobOpts}</select></div>
+      <div class="fld" style="flex:2;min-width:280px"><label class="small">${pk(["จะทำอะไรวันนี้ — พิมพ์บรรทัดละ 1 ข้อ","ຈະເຮັດຫຍັງ — ແຖວລະ 1 ຂໍ້","What today — one item per line"])}</label>
+        <textarea id="dpItems" rows="3" placeholder="1) ...&#10;2) ...&#10;3) ..." style="width:100%;padding:9px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit;resize:vertical"></textarea></div>
+      <div class="fld" style="min-width:150px"><label class="small">${pk(["ผู้บันทึก","ຜູ້ບັນທຶກ","By"])}</label>
+        <input id="dpBy" style="width:100%;padding:9px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit">
+        <button class="btn btn-p" style="margin-top:8px;width:100%" onclick="dpPlan()">＋ ${pk(["บันทึกแผนวันนี้","ບັນທຶກແຜນ","add plan"])}</button></div>
+    </div>
+  </div>
+  <h2 style="margin:16px 2px 8px;font-size:16px">🌙 ${pk(["งานของวันนี้ — ตกเย็นมาปิดงาน","ວຽກມື້ນີ້","Today's work — close in the evening"])}</h2>
+  ${planCards}
+  <div id="entryToast"></div>`;
+}
+function dpShow(pi,which){
+  const d=document.getElementById("dpDone"+pi), s=document.getElementById("dpSkip"+pi);
+  if(d) d.style.display = which==='done'?"block":"none";
+  if(s) s.style.display = which==='skip'?"block":"none";
+}
+function dpPlan(){
+  const tid=document.getElementById("dpTask").value;
+  const raw=(document.getElementById("dpItems").value||"").trim();
+  if(!tid || !raw){ alert(pk(["เลือกงานและพิมพ์แผนอย่างน้อย 1 ข้อก่อน","ເລືອກວຽກ+ພິມແຜນກ່ອນ","Pick a task and type at least one item"])); return; }
+  const items=raw.split("\n").map(s=>s.trim().replace(/^\d+[\).\s]*/,"")).filter(Boolean);
+  const entry=sanEntry({date:todayISO(), taskId:tid, pct:taskCurPts(tid), mh:0,
+    by:(document.getElementById("dpBy").value||"").trim(), note:"[แผน] "+items.join(" | ")});
+  ENTRIES.push(entry); saveEntries(ENTRIES); applyEntries(); pushToSheet(entry);
+  entryDailyPage();
+  const t=document.getElementById("entryToast"); if(t){ t.innerHTML=`<div class="toast">☀️ ${pk(["บันทึกแผนวันนี้แล้ว","ບັນທຶກແຜນແລ້ວ","Plan saved"])}</div>`; setTimeout(()=>t.innerHTML="",2500); }
+}
+function dpDone(pi,tid){
+  const x=TASK_INDEX[tid]; if(!x) return;
+  const v=parseFloat(document.getElementById("dpPct"+pi).value);
+  if(isNaN(v)||v<0||v>100){ alert(pk(["กรอก % ระหว่าง 0–100","ປ້ອນ 0–100","Enter 0–100"])); return; }
+  const cur=x.t.act*100;
+  if(v<cur-0.01 && !confirm(pk(["⚠️ กำลังปรับลดจาก "+fmt1(cur)+"% → "+fmt1(v)+"% ยืนยัน?","⚠️ ຫຼຸດ ຢືນຢັນ?","⚠️ Decreasing "+fmt1(cur)+"% → "+fmt1(v)+"%. Confirm?"]))) return;
+  const pts=Math.round(v*x.t.wt)/100;
+  const txt=(document.getElementById("dpTxt"+pi).value||"").trim();
+  const entry=sanEntry({date:todayISO(), taskId:tid, pct:pts, mh:0,
+    by:(document.getElementById("dpBy")?document.getElementById("dpBy").value:"").trim(), note:"[ผล] "+(txt||"ตามแผน")});
+  ENTRIES.push(entry); saveEntries(ENTRIES); applyEntries(); pushToSheet(entry);
+  entryDailyPage();
+  const t=document.getElementById("entryToast"); if(t){ t.innerHTML=`<div class="toast">✅ ${pk(["ปิดงานแล้ว","ປິດວຽກແລ້ວ","Closed"])} ${fmt1(v)}%</div>`; setTimeout(()=>t.innerHTML="",2500); }
+}
+function dpSkip(pi,tid){
+  const rsn=(document.getElementById("dpRsn"+pi).value||"").trim();
+  if(!rsn){ alert(pk(["ต้องบอกเหตุผลที่ไม่ได้ทำ","ຕ້ອງບອກເຫດຜົນ","Reason is required"])); return; }
+  const entry=sanEntry({date:todayISO(), taskId:tid, pct:taskCurPts(tid), mh:0,
+    by:(document.getElementById("dpBy")?document.getElementById("dpBy").value:"").trim(), note:"[ไม่ได้ทำ] "+rsn});
+  ENTRIES.push(entry); saveEntries(ENTRIES); applyEntries(); pushToSheet(entry);
+  entryDailyPage();
+  const t=document.getElementById("entryToast"); if(t){ t.innerHTML=`<div class="toast">❌ ${pk(["บันทึกเหตุผลแล้ว","ບັນທຶກແລ້ວ","Reason saved"])}</div>`; setTimeout(()=>t.innerHTML="",2500); }
+}
 
 /* หน้าเลือกแผนก */
 function entryPickerPage(){
@@ -2007,7 +2143,7 @@ function entryDeptPage(){
   <div class="deptbar">
     <button class="btn btn-o btnsm" onclick="setDept('')">← ${pk(["กลับ","ກັບຄືນ","Back"])}</button>
     <span class="deptname">🔒 ${un(u.name)}</span>
-    <span class="editlink" style="cursor:pointer;font-size:12px;color:var(--mut);text-decoration:underline" onclick="openPinChange()">${pk(["เปลี่ยน PIN","ປ່ຽນ PIN","change PIN"])}</span>
+    <span class="editlink" style="cursor:pointer;font-size:12px;color:var(--blue);text-decoration:underline;font-weight:700" onclick="entrySetMode('daily')">📅 ${pk(["โหมดบันทึกรายวัน","ໂໝດລາຍວັນ","daily mode"])}</span>
     <span class="wknav">
       <button class="wkbtn" ${WNOW<=1?'disabled':''} onclick="entryWeek(-1)" title="${pk(["สัปดาห์ก่อนหน้า (กรอกย้อนหลัง)","ອາທິດກ່ອນ","previous week"])}">◀</button>
       <span class="wklbl">${pk(["บันทึกของสัปดาห์","ບັນທຶກຂອງອາທິດ","Recording week"])} <b>${WNOW}</b>${WNOW<REALWK?` <span class="wkback">${pk(["ย้อนหลัง","ຍ້ອນຫຼັງ","past"])}</span>`:""}</span>
@@ -2554,7 +2690,7 @@ function planSaveSeason(){
   planPicker();
 }
 function planSetDept(code){
-  if(code && !PIN_OK[code]){ openPinModal(code, function(c){ PLAN_DEPT=c; PLAN_EDIT=null; planPage(); }); return; }
+  if(PIN_GATE && code && !PIN_OK[code]){ openPinModal(code, function(c){ PLAN_DEPT=c; PLAN_EDIT=null; planPage(); }); return; }
   PLAN_DEPT=code||""; PLAN_EDIT=null; planPage();
 }
 function planEditor(){
