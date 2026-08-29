@@ -531,7 +531,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r104";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r105";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1638,8 +1638,30 @@ function renderLang(){
   document.getElementById("foot").innerHTML=
     '<span class="num" style="opacity:.55">'+BUILD+'</span>';
 }
-function go(p){ PAGE=p; SUBVIEW=false; if(p==='entry'){ DEPT=""; SELJOB=null; } if(p==='plan'){ PLAN_DEPT=""; } renderNav(); ({over:overview,jobs:jobsPage,units:unitsPage,entry:entryPage,ana:anaPage,rep:repPage,plan:planPage})[p](); window.scrollTo(0,0); }
+function go(p){ PAGE=p; SUBVIEW=false; if(p==='entry'){ DEPT=""; SELJOB=null; } if(p==='plan'){ PLAN_DEPT=""; } renderNav(); ({over:overview,jobs:jobsPage,units:unitsPage,entry:entryPage,ana:anaPage,rep:repPage,plan:planPage})[p](); window.scrollTo(0,0); saveNav(); }
 function setWeek(w){ WNOW=parseInt(w); go(PAGE); }
+/* จำหน้าที่เปิดอยู่ + สถานะย่อย เพื่อกลับมาที่เดิมหลัง refresh */
+function saveNav(){ try{ localStorage.setItem("idash_nav", JSON.stringify({
+  page:PAGE, dept:DEPT, dj:(typeof DAILY_JOB!=="undefined"?DAILY_JOB:""), em:(typeof ENTRY_MODE!=="undefined"?ENTRY_MODE:"daily"),
+  dv:(typeof DAILY_VIEW!=="undefined"?DAILY_VIEW:"card"), df:(typeof DAILY_FILTER!=="undefined"?DAILY_FILTER:"all"),
+  pd:(typeof PLAN_DEPT!=="undefined"?PLAN_DEPT:""), wnow:WNOW })); }catch(e){} }
+function restoreNav(){
+  let s=null; try{ s=JSON.parse(localStorage.getItem("idash_nav")||"null"); }catch(e){}
+  const RM={over:overview,jobs:jobsPage,units:unitsPage,ana:anaPage,rep:repPage};
+  if(!s||!s.page||(!RM[s.page]&&s.page!=="entry"&&s.page!=="plan")){ overview(); return; }
+  PAGE=s.page;
+  if(typeof ENTRY_MODE!=="undefined") ENTRY_MODE=s.em||"daily";
+  if(typeof DAILY_VIEW!=="undefined") DAILY_VIEW=s.dv||"card";
+  if(typeof DAILY_FILTER!=="undefined") DAILY_FILTER=s.df||"all";
+  if(s.wnow>=1 && s.wnow<=WEEKS) WNOW=s.wnow;
+  renderNav();
+  try{
+    if(PAGE==="entry"){ DEPT=s.dept||""; if(typeof DAILY_JOB!=="undefined") DAILY_JOB=s.dj||""; entryPage(); }
+    else if(PAGE==="plan"){ PLAN_DEPT=s.pd||""; planPage(); }
+    else RM[PAGE]();
+  }catch(e){ PAGE="over"; overview(); }
+  window.scrollTo(0,0);
+}
 /* เลื่อนสัปดาห์ที่กำลังบันทึก (สำหรับกรอกย้อนหลังสัปดาห์ก่อนๆ) — ไม่เกินสัปดาห์ปัจจุบัน */
 function entryWeek(d){ WNOW=Math.max(1,Math.min(REALWK,WNOW+d)); SELJOB=SELJOB; entryDeptPage(); }
 function weekChip(){
@@ -1891,7 +1913,7 @@ function deptPin(code){
 function setDept(code){
   if(PIN_GATE && code && !PIN_OK[code]){ openPinModal(code); return; }
   DEPT=code||""; SELJOB=null; if(typeof DAILY_JOB!=="undefined") DAILY_JOB="";
-  entryPage();
+  entryPage(); saveNav();
 }
 let PIN_CODE=null, PIN_CB=null;   /* PIN_CB = callback หลังปลดล็อกสำเร็จ (ใช้ซ้ำจากหน้าตั้งแผน) — ไม่ตั้ง = flow หน้าบันทึกเดิม */
 function openPinModal(code, cb){
@@ -1983,7 +2005,7 @@ function confirmJob(jid){
 
 let ENTRY_MODE="daily";   /* daily = ฟอร์มรายวันเช้า-เย็น (ค่าเริ่มต้นตามนโยบายใหม่) · tasks = หน้ารายการ Task แบบเดิม */
 function entryPage(){ if(!DEPT) entryPickerPage(); else (ENTRY_MODE==="tasks"? entryDeptPage() : entryDailyPage()); }
-function entrySetMode(m){ ENTRY_MODE=m; entryPage(); }
+function entrySetMode(m){ ENTRY_MODE=m; entryPage(); saveNav(); }
 
 /* ============ บันทึกรายวัน (เช้าวางแผน - เย็นปิดงาน) ============
    เช้า: เลือกงาน (Task) + พิมพ์แผนของวัน บรรทัดละข้อ → เก็บเป็นแถว note "[แผน] ข้อ1 | ข้อ2" (pct = ค่าเดิม ไม่กระทบตัวเลข)
@@ -2005,9 +2027,9 @@ function todayResult(tid){
 function dpTaskOptions(j){ return j.tasks.map(t=>`<option value="${t.id}">${tr(t.name)} (${fmt1(actAt(t,WNOW)*100)}%)</option>`).join(""); }
 let DAILY_JOB="";   /* Job ที่เลือกอยู่ในหน้าบันทึกรายวัน — "" = หน้าเลือก Job */
 let DAILY_VIEW="card", DAILY_FILTER="all";
-function dailySelectJob(jid){ DAILY_JOB=jid||""; entryDailyPage(); }
-function dailySetView(v){ DAILY_VIEW=v; entryDailyPage(); }
-function dailySetFilter(f){ DAILY_FILTER=f; entryDailyPage(); }
+function dailySelectJob(jid){ DAILY_JOB=jid||""; entryDailyPage(); saveNav(); }
+function dailySetView(v){ DAILY_VIEW=v; entryDailyPage(); saveNav(); }
+function dailySetFilter(f){ DAILY_FILTER=f; entryDailyPage(); saveNav(); }
 function ja1(x){ return Math.round(x*10)/10; }
 /* วงแหวน donut แสดง % ความคืบหน้า (ตรงกลางมีตัวเลข) */
 function jobDonut(pct,color){
@@ -2833,8 +2855,8 @@ function planSaveSeason(){
   planPicker();
 }
 function planSetDept(code){
-  if(PIN_GATE && code && !PIN_OK[code]){ openPinModal(code, function(c){ PLAN_DEPT=c; PLAN_EDIT=null; planPage(); }); return; }
-  PLAN_DEPT=code||""; PLAN_EDIT=null; planPage();
+  if(PIN_GATE && code && !PIN_OK[code]){ openPinModal(code, function(c){ PLAN_DEPT=c; PLAN_EDIT=null; planPage(); saveNav(); }); return; }
+  PLAN_DEPT=code||""; PLAN_EDIT=null; planPage(); saveNav();
 }
 function planEditor(){
   SUBVIEW=true;
@@ -3157,6 +3179,6 @@ function repPage(){
   </div>`;
 }
 
-renderLang(); renderNav(); overview();
+renderLang(); renderNav(); restoreNav();
 if(SHEET_API) syncFromSheet();
 </script>
