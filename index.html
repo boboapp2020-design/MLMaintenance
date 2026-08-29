@@ -311,18 +311,20 @@ svg text{font-family:inherit}
 .deptcol{display:flex;flex-direction:column;gap:10px}
 .deptcolhd{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13.5px;padding:2px 2px 6px;border-bottom:2px solid var(--line);margin-bottom:2px}
 .deptcolhd .swatch{width:11px;height:11px;border-radius:3px}
+.deptsections{gap:26px}
 .deptcol2{display:flex;flex-direction:column}
-.deptcolhd2{display:flex;align-items:center;gap:9px;font-weight:800;font-size:16px;padding:0 2px 10px;border-bottom:2px solid var(--line);margin-bottom:14px}
-.deptcolhd2 .dot{width:13px;height:13px;border-radius:50%;flex:0 0 auto}
-.dc2-list{display:flex;flex-direction:column;gap:14px;flex:1}
-.deptcard2{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px 18px;cursor:pointer;box-shadow:0 2px 10px rgba(30,42,58,.06);transition:transform .15s,box-shadow .15s}
-.deptcard2:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(30,42,58,.15)}
-.deptcard2 .dc2-ic{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
-.deptcard2 .dc2-nm{flex:1;font-weight:800;font-size:16px;color:var(--ink);line-height:1.3}
-.deptcard2 .dc2-nm span{display:block;font-weight:500;font-size:12.5px;color:var(--mut);margin-top:3px}
-.deptcard2 .dc2-st{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex:0 0 auto}
+.deptcolhd2{display:flex;align-items:center;gap:11px;font-weight:800;font-size:19px;padding:0 2px 12px;border-bottom:3px solid var(--line);margin-bottom:18px}
+.deptcolhd2 .dot{width:15px;height:15px;border-radius:50%;flex:0 0 auto}
+.dc2-list{display:flex;flex-direction:column;gap:18px;flex:1}
+.deptcard2{display:flex;align-items:center;gap:18px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px 22px;cursor:pointer;box-shadow:0 4px 14px rgba(30,42,58,.08),0 10px 26px rgba(30,42,58,.06);transition:transform .16s,box-shadow .16s}
+.deptcard2:hover{transform:translateY(-3px);box-shadow:0 16px 38px rgba(30,42,58,.18)}
+.deptcard2 .dc2-ic{width:64px;height:64px;border-radius:18px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.deptcard2 .dc2-ic svg{width:32px;height:32px}
+.deptcard2 .dc2-nm{flex:1;font-weight:800;font-size:20px;color:var(--ink);line-height:1.25}
+.deptcard2 .dc2-nm span{display:block;font-weight:500;font-size:14px;color:var(--mut);margin-top:4px}
+.deptcard2 .dc2-st{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;flex:0 0 auto}
 .st-full{background:#DCFCE7;color:#16A34A}.st-partial{background:#FEF3C7;color:#D97706}.st-crit{background:#FEE2E2;color:#DC2626}.st-blank{background:var(--tint);color:var(--mut)}
-.dc2-prog{height:6px;background:var(--tint2);border-radius:99px;margin-top:16px;overflow:hidden}
+.dc2-prog{height:9px;background:var(--tint2);border-radius:99px;margin-top:20px;overflow:hidden}
 .dc2-prog>div{height:100%;border-radius:99px}
 .jpcgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(288px,1fr));gap:14px}
 .jpc{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:14px;box-shadow:0 2px 8px rgba(30,42,58,.06),0 8px 20px rgba(30,42,58,.05);cursor:pointer;overflow:hidden;transition:transform .16s,box-shadow .16s}
@@ -531,7 +533,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r105";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r106";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
