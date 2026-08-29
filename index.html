@@ -533,7 +533,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r107";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r108";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1484,6 +1484,15 @@ function visJobs(u){ return u.blank ? [] : u.jobs; }
 function activeTasksOf(u){
   return unitTasks(u).filter(t=> !t.placeholder && t.s<=WNOW && actAt(t,WNOW)<1 );
 }
+/* ===== การบันทึกรายวัน (ทำทุกวัน ยกเว้นอาทิตย์) ===== */
+function isSundayToday(){ return new Date().getDay()===0; }
+/* แผนกนี้ "บันทึกวันนี้" แล้วหรือยัง — มี entry ของวันนี้ที่เป็นการบันทึกจริง (แผน/ผล/%) ไม่นับ PIN/แผนปีหน้า */
+function deptRecordedToday(code){
+  const d=todayISO(); let n=0;
+  ENTRIES.forEach(e=>{ const t=String(e.taskId);
+    if(e.date===d && t.indexOf(code+"-")===0 && !/-PIN$/.test(t) && t.indexOf("-PLAN")<0) n++; });
+  return n;
+}
 /* สถานะการบันทึกของ "สัปดาห์ที่กำลังดู": none=ไม่บันทึก, partial=ไม่ครบ, full=ครบ (ระดับ Task) */
 function complianceToday(){
   const tasksByUnit={};   // code -> Set(taskId ที่บันทึกในสัปดาห์นี้ — สัปดาห์ live นับเฉพาะบันทึกจริง)
@@ -2222,25 +2231,24 @@ function dpSkip(pi,tid){
 
 /* หน้าเลือกแผนก */
 function entryPickerPage(){
-  const comp=complianceToday();
+  const sun=isSundayToday();
   const cols=DATA.map(s=>{
     const items=s.units.map(u=>{
-      const c=comp.find(x=>x.u.code===u.code);
-      /* หน่วย blank (ยังไม่มีแผนจริง) ไม่มีสถานะบันทึก แสดงจุดเทา "รอข้อมูล" */
-      const st=c?c.state:"blank";
-      const ic=st==="full"?"✓":st==="partial"?"!":st==="blank"?"·":"✗";
+      /* บันทึกรายวัน: อาทิตย์=วันหยุด(เทา) · blank=รอข้อมูล(เทา) · อื่นๆ บันทึกวันนี้แล้ว=เขียว ยัง=แดง */
+      const st = u.blank ? "blank" : sun ? "off" : (deptRecordedToday(u.code)>0 ? "full" : "crit");
+      const ic=st==="full"?"✓":st==="off"?"–":st==="blank"?"·":"✗";
       return `<div class="deptcard2" tabindex="0" onclick="setDept('${u.code}')">
         <div class="dc2-ic" style="background:${s.color}1f;color:${s.color}">${unitBub(u.name,26)}</div>
         <div class="dc2-nm">${un(u.name)}<span>${u.owner}</span></div>
-        <div class="dc2-st st-${st}" title="${st==="blank"?pk(["รอนำเข้าแผนงานจริง","ລໍຖ້ານຳເຂົ້າ","awaiting real data"]):(st==="full"?pk(["บันทึกครบสัปดาห์นี้","ຄົບ","complete"]):st==="partial"?pk(["บันทึกไม่ครบ","ບໍ່ຄົບ","partial"]):pk(["ยังไม่บันทึกสัปดาห์นี้","ຍັງ","not yet"]))}">${ic}</div></div>`;}).join("");
+        <div class="dc2-st st-${st==="off"?"blank":st}" title="${st==="full"?pk(["บันทึกวันนี้แล้ว","ບັນທຶກມື້ນີ້ແລ້ວ","recorded today"]):st==="off"?pk(["วันอาทิตย์ วันหยุด","ວັນອາທິດ ພັກ","Sunday off"]):st==="blank"?pk(["รอนำเข้าแผนงานจริง","ລໍຖ້ານຳເຂົ້າ","awaiting data"]):pk(["ยังไม่บันทึกวันนี้","ຍັງບໍ່ບັນທຶກມື້ນີ້","not recorded today"])}">${ic}</div></div>`;}).join("");
     const sp=+(agg(secTasks(s),REPORT_WK).act).toFixed(1);
     return `<div class="deptcol2"><div class="deptcolhd2" style="color:${s.color}"><span class="dot" style="background:${s.color}"></span>${un(s.name)}</div>
       <div class="dc2-list">${items}</div>
       <div class="dc2-prog"><div style="width:${Math.min(100,sp)}%;background:${s.color}"></div></div></div>`;}).join("");
-  app.innerHTML = pagehead(pk(["บันทึก % งานซ่อมรายสัปดาห์","ບັນທຶກ % ວຽກສ້ອມແປງລາຍອາທິດ","Weekly Progress Entry"]),
-    pk(["เลือกแผนกของคุณเพื่อเข้าไปบันทึกงาน · update ทุกวันเสาร์","ເລືອກໜ່ວຍງານຂອງທ່ານ · ອັບເດດທຸກວັນເສົາ","Choose your unit to record · update every Saturday"])) + `
+  app.innerHTML = pagehead(pk(["บันทึกงานซ่อมรายวัน","ບັນທຶກວຽກສ້ອມແປງລາຍວັນ","Daily Progress Entry"]),
+    pk(["เลือกแผนกของคุณเพื่อบันทึกงาน · บันทึกทุกวัน (ยกเว้นวันอาทิตย์)","ເລືອກໜ່ວຍງານ · ບັນທຶກທຸກວັນ (ຍົກເວັ້ນວັນອາທິດ)","Choose your unit · record daily (except Sunday)"])) + `
   <div class="card"><h2>👇 ${pk(["เลือกแผนกของคุณ","ເລືອກໜ່ວຍງານຂອງທ່ານ","Select your unit"])}</h2>
-    <div class="sub">${pk(["กดแผนกของคุณเพื่อบันทึก · ✓ ครบ · ! ไม่ครบ · ✗ ยังไม่บันทึกสัปดาห์นี้","ກົດພະແນກຂອງທ່ານ · ✓ ຄົບ · ! ບໍ່ຄົບ · ✗ ຍັງ","Tap your unit · ✓ complete · ! partial · ✗ none this week"])}</div>
+    <div class="sub">${sun?pk(["📅 วันนี้วันอาทิตย์ — วันหยุด ไม่ต้องบันทึก","📅 ວັນອາທິດ ພັກ","📅 Sunday — day off"]):pk(["กดแผนกของคุณเพื่อบันทึกวันนี้ · ✓ บันทึกแล้ว · ✗ ยังไม่บันทึกวันนี้","ກົດພະແນກ · ✓ ບັນທຶກແລ້ວ · ✗ ຍັງ","Tap your unit · ✓ recorded · ✗ not yet today"])}</div>
     <div class="deptsections">${cols}</div>
   </div>`;
 }
@@ -3103,7 +3111,7 @@ function repPage(){
         :`<div class="small">${pk(["ไม่มี Task ใกล้ครบกำหนด","ບໍ່ມີ Task ໃກ້ຄົບກຳນົດ","None due soon"])}</div>`}
     </div>
   </div>
-  <div class="card"><h2>6. ${pk(["ตารางเช็คการบันทึกรายสัปดาห์ (update ทุกวันเสาร์)","ຕາຕະລາງກວດການບັນທຶກລາຍອາທິດ","Weekly entry attendance (update every Saturday)"])}</h2>
+  <div class="card"><h2>6. ${pk(["ตารางเช็คการบันทึก (บันทึกทุกวัน ยกเว้นอาทิตย์ · สรุปราย wk)","ຕາຕະລາງກວດການບັນທຶກລາຍອາທິດ","Weekly entry attendance (update every Saturday)"])}</h2>
     <div class="sub">${pk(["✓ บันทึกแล้ว · ✗ ยังไม่บันทึก · — ยังไม่มีแผน/ยังไม่เริ่มงาน · คอลัมน์ฟ้า = สัปดาห์ปัจจุบัน","✓ ບັນທຶກແລ້ວ · ✗ ຍັງບໍ່ບັນທຶກ · — ຍັງບໍ່ມີແຜນ","✓ recorded · ✗ not yet · — no plan/not started · blue col = current week"])}</div>
     ${(function(){
       const N=Math.min(WNOW,10);
