@@ -311,6 +311,25 @@ svg text{font-family:inherit}
 .deptcol{display:flex;flex-direction:column;gap:10px}
 .deptcolhd{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13.5px;padding:2px 2px 6px;border-bottom:2px solid var(--line);margin-bottom:2px}
 .deptcolhd .swatch{width:11px;height:11px;border-radius:3px}
+.jobpickgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px}
+.jobpick{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:18px 20px 16px;cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s;box-shadow:0 4px 14px rgba(30,42,58,.08);position:relative;overflow:hidden}
+.jobpick::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px}
+.jobpick.jp-crit::before{background:var(--crit)} .jobpick.jp-warn::before{background:var(--warn)} .jobpick.jp-good::before{background:var(--good)}
+.jobpick:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(30,42,58,.20)}
+.jobpick.jp-crit:hover{border-color:var(--crit);box-shadow:0 12px 30px rgba(220,38,38,.28)}
+.jobpick.jp-warn:hover{border-color:var(--warn);box-shadow:0 12px 30px rgba(217,119,6,.28)}
+.jobpick.jp-good:hover{border-color:var(--good);box-shadow:0 12px 30px rgba(22,163,74,.28)}
+.jobpick .jp-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
+.jobpick .jp-name{font-size:17px;font-weight:800;color:var(--ink);line-height:1.35}
+.jobpick .jp-badge{flex:0 0 auto;font-size:12.5px;font-weight:800;padding:5px 12px;border-radius:999px;white-space:nowrap}
+.jpb-crit{background:#FEE2E2;color:#DC2626} .jpb-warn{background:#FEF3C7;color:#B45309} .jpb-good{background:#DCFCE7;color:#16A34A}
+.jobpick .jp-meta{font-size:13.5px;color:var(--mut);margin-bottom:8px}
+.jobpick .jp-meta b{color:var(--ink);font-size:15px}
+.jobpick .jp-bar{height:8px;background:var(--tint2);border-radius:99px;overflow:hidden;margin-bottom:10px}
+.jobpick .jp-fill{height:100%;border-radius:99px}
+.jpf-crit{background:var(--crit)} .jpf-warn{background:var(--warn)} .jpf-good{background:var(--good)}
+.jobpick .jp-today{display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:700;color:var(--ink)}
+.jobpick .jp-go{margin-left:auto;color:var(--blue);font-weight:800}
 .deptcard{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid var(--line);border-radius:12px;cursor:pointer;transition:all .15s;background:var(--card)}
 .deptcard:hover{border-color:var(--blue);background:var(--tint);transform:translateY(-1px);box-shadow:var(--shadow)}
 .deptcard .dc-ic{flex:0 0 42px;height:42px;border-radius:10px;background:var(--tint2);display:flex;align-items:center;justify-content:center;color:var(--blue)}
@@ -467,7 +486,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r96";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r97";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1973,16 +1992,20 @@ function entryDailyPage(){
       const js2=jp.filter(p=>{const r=resOf(p); return r&&/^\[ไม่ได้ทำ\]/.test(r.note);}).length;
       const open=jp.length-jd-js2;
       const ja=agg(j.tasks,WNOW);
-      const st = !jp.length? `<span class="chip c-crit">${pk(["ยังไม่วางแผน","ຍັງບໍ່ວາງແຜນ","no plan"])}</span>`
-        : open>0? `<span class="chip c-warn">${pk(["รอปิด","ລໍປິດ","open"])} ${open}</span>`
-        : `<span class="chip c-good">✓ ${pk(["ปิดครบ","ປິດຄົບ","closed"])} ${jp.length}</span>`;
-      return `<div class="deptcard" tabindex="0" onclick="dailySelectJob('${j.id}')">
-        <span class="dc-nm">${tr(j.name)}<span class="num">${pk(["ตอนนี้","ຕອນນີ້","now"])} ${fmt1(ja.act)}% · ${j.tasks.length} task · ${pk(["วันนี้","ມື້ນີ້","today"])}: ☀️${jp.length} ✅${jd} ❌${js2}</span></span>
-        <span class="dc-st" style="display:flex;align-items:center;gap:8px;font-size:13px">${st} <span style="color:var(--mut);font-size:18px">›</span></span></div>`;
+      const state = !jp.length ? "crit" : (open>0 ? "warn" : "good");
+      const stTxt = !jp.length ? pk(["ยังไม่วางแผน","ຍັງບໍ່ວາງແຜນ","no plan"])
+        : open>0 ? pk(["รอปิดงาน","ລໍປິດ","to close"])+" "+open
+        : "✓ "+pk(["ปิดครบแล้ว","ປິດຄົບ","all closed"]);
+      return `<div class="jobpick jp-${state}" tabindex="0" onclick="dailySelectJob('${j.id}')">
+        <div class="jp-top"><span class="jp-name">${tr(j.name)}</span><span class="jp-badge jpb-${state}">${stTxt}</span></div>
+        <div class="jp-meta">${pk(["ความคืบหน้า","ຄວາມຄืบໜ້າ","progress"])} <b>${fmt1(ja.act)}%</b> · ${j.tasks.length} task</div>
+        <div class="jp-bar"><div class="jp-fill jpf-${state}" style="width:${Math.min(100,ja.act)}%"></div></div>
+        <div class="jp-today">${pk(["วันนี้","ມື້ນີ້","today"])}: ☀️ ${jp.length} &nbsp;<span style="color:var(--good)">✅ ${jd}</span> &nbsp;<span style="color:var(--crit)">❌ ${js2}</span><span class="jp-go">${pk(["เปิด","ເປີດ","open"])} ›</span></div>
+      </div>`;
     }).join("");
     app.innerHTML = head + bar("setDept('')") + `
-    <div class="card"><h2>🧩 ${pk(["เลือก Job เพื่อวางแผน / ปิดงานวันนี้","ເລືອກ Job ເພື່ອວາງແຜນ/ປິດວຽກ","Pick a job to plan / close today"])}</h2>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px">${cards}</div></div>
+    <h2 style="margin:18px 4px 12px;font-size:19px">🧩 ${pk(["เลือก Job เพื่อวางแผน / ปิดงานวันนี้","ເລືອກ Job ເພື່ອວາງແຜນ/ປິດວຽກ","Pick a job to plan / close today"])}</h2>
+    <div class="jobpickgrid">${cards}</div>
     <div id="entryToast"></div>`;
     return;
   }
