@@ -311,6 +311,19 @@ svg text{font-family:inherit}
 .deptcol{display:flex;flex-direction:column;gap:10px}
 .deptcolhd{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13.5px;padding:2px 2px 6px;border-bottom:2px solid var(--line);margin-bottom:2px}
 .deptcolhd .swatch{width:11px;height:11px;border-radius:3px}
+.deptcol2{display:flex;flex-direction:column}
+.deptcolhd2{display:flex;align-items:center;gap:9px;font-weight:800;font-size:16px;padding:0 2px 10px;border-bottom:2px solid var(--line);margin-bottom:14px}
+.deptcolhd2 .dot{width:13px;height:13px;border-radius:50%;flex:0 0 auto}
+.dc2-list{display:flex;flex-direction:column;gap:14px;flex:1}
+.deptcard2{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px 18px;cursor:pointer;box-shadow:0 2px 10px rgba(30,42,58,.06);transition:transform .15s,box-shadow .15s}
+.deptcard2:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(30,42,58,.15)}
+.deptcard2 .dc2-ic{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.deptcard2 .dc2-nm{flex:1;font-weight:800;font-size:16px;color:var(--ink);line-height:1.3}
+.deptcard2 .dc2-nm span{display:block;font-weight:500;font-size:12.5px;color:var(--mut);margin-top:3px}
+.deptcard2 .dc2-st{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex:0 0 auto}
+.st-full{background:#DCFCE7;color:#16A34A}.st-partial{background:#FEF3C7;color:#D97706}.st-crit{background:#FEE2E2;color:#DC2626}.st-blank{background:var(--tint);color:var(--mut)}
+.dc2-prog{height:6px;background:var(--tint2);border-radius:99px;margin-top:16px;overflow:hidden}
+.dc2-prog>div{height:100%;border-radius:99px}
 .jobpickgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px}
 .jobpick{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:18px 20px 16px;cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s;box-shadow:0 4px 14px rgba(30,42,58,.08);position:relative;overflow:hidden}
 .jobpick::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px}
@@ -486,7 +499,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r99";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r100";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2112,17 +2125,19 @@ function entryPickerPage(){
       const c=comp.find(x=>x.u.code===u.code);
       /* หน่วย blank (ยังไม่มีแผนจริง) ไม่มีสถานะบันทึก แสดงจุดเทา "รอข้อมูล" */
       const st=c?c.state:"blank";
-      const col=st==="full"?"var(--good)":st==="partial"?"var(--warn)":st==="blank"?"var(--mut)":"var(--crit)";
-      const ic=st==="full"?"✓":st==="partial"?"◐":st==="blank"?"·":"✗";
-      return `<div class="deptcard" tabindex="0" onclick="setDept('${u.code}')">
-        <div class="dc-ic">${unitBub(u.name,20)}</div>
-        <div class="dc-nm">${un(u.name)}<span>${u.owner}</span></div>
-        <div class="dc-st" style="color:${col}" title="${st==="blank"?pk(["รอนำเข้าแผนงานจริง","ລໍຖ້ານຳເຂົ້າ","awaiting real data"]):""}">${ic}</div></div>`;}).join("");
-    return `<div class="deptcol"><div class="deptcolhd"><span class="swatch" style="background:${s.color}"></span>${un(s.name)}</div>${items}</div>`;}).join("");
+      const ic=st==="full"?"✓":st==="partial"?"!":st==="blank"?"·":"✗";
+      return `<div class="deptcard2" tabindex="0" onclick="setDept('${u.code}')">
+        <div class="dc2-ic" style="background:${s.color}1f;color:${s.color}">${unitBub(u.name,26)}</div>
+        <div class="dc2-nm">${un(u.name)}<span>${u.owner}</span></div>
+        <div class="dc2-st st-${st}" title="${st==="blank"?pk(["รอนำเข้าแผนงานจริง","ລໍຖ້ານຳເຂົ້າ","awaiting real data"]):(st==="full"?pk(["บันทึกครบสัปดาห์นี้","ຄົບ","complete"]):st==="partial"?pk(["บันทึกไม่ครบ","ບໍ່ຄົບ","partial"]):pk(["ยังไม่บันทึกสัปดาห์นี้","ຍັງ","not yet"]))}">${ic}</div></div>`;}).join("");
+    const sp=+(agg(secTasks(s),REPORT_WK).act).toFixed(1);
+    return `<div class="deptcol2"><div class="deptcolhd2" style="color:${s.color}"><span class="dot" style="background:${s.color}"></span>${un(s.name)}</div>
+      <div class="dc2-list">${items}</div>
+      <div class="dc2-prog"><div style="width:${Math.min(100,sp)}%;background:${s.color}"></div></div></div>`;}).join("");
   app.innerHTML = pagehead(pk(["บันทึก % งานซ่อมรายสัปดาห์","ບັນທຶກ % ວຽກສ້ອມແປງລາຍອາທິດ","Weekly Progress Entry"]),
     pk(["เลือกแผนกของคุณเพื่อเข้าไปบันทึกงาน · update ทุกวันเสาร์","ເລືອກໜ່ວຍງານຂອງທ່ານ · ອັບເດດທຸກວັນເສົາ","Choose your unit to record · update every Saturday"])) + `
   <div class="card"><h2>👇 ${pk(["เลือกแผนกของคุณ","ເລືອກໜ່ວຍງານຂອງທ່ານ","Select your unit"])}</h2>
-    <div class="sub">${pk(["📅 บันทึกทุกสัปดาห์ · update ทุกวันเสาร์ — กดแผนกของคุณเพื่อบันทึก (✓ ครบ · ◐ ไม่ครบ · ✗ ยังไม่บันทึกสัปดาห์นี้)","📅 ບັນທຶກທຸກອາທິດ · ອັບເດດທຸກວັນເສົາ (✓ ຄົບ · ◐ ບໍ່ຄົບ · ✗ ຍັງບໍ່ບັນທຶກ)","📅 Record weekly · update every Saturday — tap your unit (✓ full · ◐ partial · ✗ none this week)"])}</div>
+    <div class="sub">${pk(["กดแผนกของคุณเพื่อบันทึก · ✓ ครบ · ! ไม่ครบ · ✗ ยังไม่บันทึกสัปดาห์นี้","ກົດພະແນກຂອງທ່ານ · ✓ ຄົບ · ! ບໍ່ຄົບ · ✗ ຍັງ","Tap your unit · ✓ complete · ! partial · ✗ none this week"])}</div>
     <div class="deptsections">${cols}</div>
   </div>`;
 }
