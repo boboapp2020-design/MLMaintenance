@@ -533,7 +533,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r106";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r107";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2107,15 +2107,12 @@ function entryDailyPage(){
         <td class="num">☀️${r.open} ✅${r.jd} ❌${r.js2}</td><td><span class="chip c-${r.acc[1]}">${bd[1]}${r.dstate==="open"?" "+r.open:""}</span></td>
         <td style="color:var(--blue)">${pk(["เปิด","ເປີດ","open"])} ›</td></tr>`;}).join("")}
     </table></div></div>`;
-    const filtOpts=[["all",pk(["ทั้งหมด","ທັງໝົດ","all"])],["noplan",pk(["ยังไม่วางแผน","ຍັງບໍ່ວາງແຜນ","no plan"])],["open",pk(["รอปิดงาน","ລໍປິດ","to close"])],["done",pk(["ปิดครบแล้ว","ປິດຄົບ","closed"])]]
-      .map(o=>`<option value="${o[0]}"${DAILY_FILTER===o[0]?" selected":""}>${o[1]}</option>`).join("");
     app.innerHTML = head + bar("setDept('')") + `
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 4px 14px">
       <div><h2 style="margin:0;font-size:20px">🧩 ${pk(["เลือก Job เพื่อวางแผน / ปิดงานวันนี้","ເລືອກ Job","Pick a job — plan / close today"])}</h2>
         <div class="small" style="color:var(--mut);margin-top:2px">${pk(["ภาพรวมความคืบหน้างานของแต่ละ Job วันนี้","ພາບລວມ","Each job's progress today"])}</div></div>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
         <div class="jpviewtog"><button class="${DAILY_VIEW==='card'?'on':''}" onclick="dailySetView('card')">▦ ${pk(["การ์ด","ກາດ","cards"])}</button><button class="${DAILY_VIEW==='table'?'on':''}" onclick="dailySetView('table')">☰ ${pk(["ตาราง","ຕາຕະລາງ","table"])}</button></div>
-        <select onchange="dailySetFilter(this.value)" style="padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit">${filtOpts}</select>
       </div>
     </div>
     ${DAILY_VIEW==='table'? table : `<div class="jpcgrid">${cards}</div>`}
