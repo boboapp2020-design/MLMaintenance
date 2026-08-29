@@ -486,7 +486,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r98";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r99";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2003,67 +2003,66 @@ function entryDailyPage(){
     <div id="entryToast"></div>`;
     return;
   }
-  /* ---- หน้าที่ 2: ราย Job — วางแผน + ปิดงานเฉพาะ Job นี้ ---- */
+  /* ---- หน้าที่ 2: ราย Job — แตกทุก Task เป็นการ์ด (วางแผนเช้า + ปิดงานเย็นในตัวเอง) ---- */
   const j=jl.find(x=>x.id===DAILY_JOB);
   const jaSel=agg(j.tasks,WNOW);
-  const jplans=plans.filter(p=>{const x=TASK_INDEX[p.taskId]; return x&&x.j===j;});
-  const planCards = jplans.length? jplans.map((p,pi)=>{
-    const x=TASK_INDEX[p.taskId]; if(!x) return "";
-    const t=x.t, j=x.j;
-    const items=String(p.note).replace(/^\[แผน\]\s*/,"").split(" | ").filter(Boolean);
-    const res=todayResult(p.taskId);
+  const rows = j.tasks.map((t,ti)=>{
+    const plan=planForToday(t.id), res=todayResult(t.id);
     const curPct=fmt1(t.act*100);
-    let foot;
+    const items=plan?String(plan.note).replace(/^\[แผน\]\s*/,"").split(" | ").filter(Boolean):[];
+    const border = res?(/^\[ผล\]/.test(res.note)?"var(--good)":"var(--crit)") : (plan?"var(--warn)":"var(--line)");
+    const planBlock = items.length?`<ol style="margin:2px 0 8px 20px;padding:0;font-size:13px;line-height:1.6;color:var(--ink)">${items.map(it=>`<li>${it}</li>`).join("")}</ol>`
+      :`<div style="display:flex;gap:8px;align-items:center;margin:2px 0 8px">
+        <input id="dpPlan${ti}" placeholder="☀️ ${pk(["จะทำอะไรกับงานนี้วันนี้","ຈະເຮັດຫຍັງ","plan for today"])}" style="flex:1;min-width:160px;padding:7px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit">
+        <button class="btn btn-o btnsm" onclick="dpPlanTask(${ti},'${t.id}')">${pk(["วางแผน","ວາງແຜນ","plan"])}</button></div>`;
+    let closeBlock;
     if(res && /^\[ผล\]/.test(res.note)){
-      foot=`<div class="small" style="background:var(--good-bg,#DCFCE7);color:var(--good,#16A34A);border-radius:9px;padding:8px 12px;font-weight:700">✅ ${pk(["ปิดงานแล้ว","ປິດວຽກແລ້ວ","closed"])} · ${fmt1((+res.pct||0)/(t.wt||1)*100)}% — <span style="font-weight:500">${String(res.note).replace(/^\[ผล\]\s*/,"")}</span></div>`;
+      closeBlock=`<div class="small" style="background:#DCFCE7;color:#16A34A;border-radius:9px;padding:7px 12px;font-weight:700">✅ ${pk(["ปิดงานแล้ว","ປິດແລ້ວ","closed"])} ${fmt1((+res.pct||0)/(t.wt||1)*100)}% — <span style="font-weight:500">${String(res.note).replace(/^\[ผล\]\s*/,"")}</span></div>`;
     } else if(res){
-      foot=`<div class="small" style="background:var(--crit-bg,#FEE2E2);color:var(--crit,#DC2626);border-radius:9px;padding:8px 12px;font-weight:700">❌ ${pk(["ไม่ได้ทำ","ບໍ່ໄດ້ເຮັດ","not done"])} — <span style="font-weight:500">${String(res.note).replace(/^\[ไม่ได้ทำ\]\s*/,"")}</span></div>`;
+      closeBlock=`<div class="small" style="background:#FEE2E2;color:#DC2626;border-radius:9px;padding:7px 12px;font-weight:700">❌ ${pk(["ไม่ได้ทำ","ບໍ່ໄດ້ເຮັດ","not done"])} — <span style="font-weight:500">${String(res.note).replace(/^\[ไม่ได้ทำ\]\s*/,"")}</span></div>`;
     } else {
-      foot=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center" id="dpAct${pi}">
-        <button class="btn btn-p btnsm" onclick="dpShow(${pi},'done')">✅ ${pk(["ทำแล้ว — ใส่ %","ເຮັດແລ້ວ","done — enter %"])}</button>
-        <button class="btn btn-o btnsm" onclick="dpShow(${pi},'skip')">❌ ${pk(["ไม่ได้ทำ","ບໍ່ໄດ້ເຮັດ","not done"])}</button>
-      </div>
-      <div id="dpDone${pi}" style="display:none;margin-top:8px;background:var(--tint);border-radius:10px;padding:10px 12px">
+      closeBlock=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-p btnsm" onclick="dpShow(${ti},'done')">✅ ${pk(["ทำแล้ว — ใส่ %","ເຮັດແລ້ວ","done — %"])}</button>
+        <button class="btn btn-o btnsm" onclick="dpShow(${ti},'skip')">❌ ${pk(["ไม่ได้ทำ","ບໍ່ໄດ້ເຮັດ","not done"])}</button></div>
+      <div id="dpDone${ti}" style="display:none;margin-top:8px;background:var(--tint);border-radius:10px;padding:10px 12px">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <label class="small">${pk(["% ของงานนี้ตอนนี้","% ຂອງວຽກນີ້","% of this task now"])}</label>
-          <input id="dpPct${pi}" type="number" min="0" max="100" step="0.5" value="${fmt1(t.act*100).replace(",","")}"
-            style="width:90px;padding:8px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit;text-align:center;font-size:16px;font-weight:700">
+          <label class="small">${pk(["% ตอนนี้","% ຕອນນີ້","% now"])}</label>
+          <input id="dpPct${ti}" type="number" min="0" max="100" step="0.5" value="${fmt1(t.act*100).replace(",","")}" style="width:90px;padding:8px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit;text-align:center;font-size:16px;font-weight:700">
           <span class="small num" style="color:var(--mut)">(${pk(["เดิม","ເດີມ","was"])} ${curPct}%)</span>
-          <input id="dpTxt${pi}" placeholder="${pk(["ทำอะไรไปแล้วบ้าง (สั้นๆ)","ເຮັດຫຍັງແລ້ວ","what was done"])}" style="flex:1;min-width:180px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit">
-          <button class="btn btn-p btnsm" onclick="dpDone(${pi},'${p.taskId}')">${pk(["บันทึกผล","ບັນທຶກ","save"])}</button>
-        </div>
-      </div>
-      <div id="dpSkip${pi}" style="display:none;margin-top:8px;background:var(--warn-bg,#FEF3C7);border-radius:10px;padding:10px 12px">
+          <input id="dpTxt${ti}" placeholder="${pk(["ทำอะไรไปแล้ว (สั้นๆ)","ເຮັດຫຍັງແລ້ວ","what was done"])}" style="flex:1;min-width:160px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit">
+          <button class="btn btn-p btnsm" onclick="dpDone(${ti},'${t.id}')">${pk(["บันทึก","ບັນທຶກ","save"])}</button></div></div>
+      <div id="dpSkip${ti}" style="display:none;margin-top:8px;background:#FEF3C7;border-radius:10px;padding:10px 12px">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <label class="small" style="font-weight:700">${pk(["เหตุผลที่ไม่ได้ทำ (จำเป็น)","ເຫດຜົນ (ຈຳເປັນ)","reason (required)"])}</label>
-          <input id="dpRsn${pi}" placeholder="${pk(["เช่น รออะไหล่ / ฝนตก / ติดงานด่วน","ເຊັ່ນ ລໍຖ້າອາໄຫຼ່","e.g. waiting parts"])}" style="flex:1;min-width:200px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit">
-          <button class="btn btn-o btnsm" onclick="dpSkip(${pi},'${p.taskId}')">${pk(["บันทึกเหตุผล","ບັນທຶກ","save"])}</button>
-        </div>
-      </div>`;
+          <label class="small" style="font-weight:700">${pk(["เหตุผล (จำเป็น)","ເຫດຜົນ","reason"])}</label>
+          <input id="dpRsn${ti}" placeholder="${pk(["เช่น รออะไหล่ / ฝนตก","ເຊັ່ນ ລໍຖ້າອາໄຫຼ່","e.g. waiting parts"])}" style="flex:1;min-width:180px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit">
+          <button class="btn btn-o btnsm" onclick="dpSkip(${ti},'${t.id}')">${pk(["บันทึก","ບັນທຶກ","save"])}</button></div></div>`;
     }
-    return `<div class="card" style="border-left:4px solid ${res?(/^\[ผล\]/.test(res.note)?"var(--good)":"var(--crit)"):"var(--warn)"};margin-bottom:10px">
-      <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin-bottom:6px">
-        <b>${tr(t.name)}</b><span class="small" style="color:var(--mut)">${pk(["ตอนนี้","ຕອນນີ້","now"])} ${curPct}%</span>
-        <span class="small num" style="margin-left:auto;color:var(--mut)">${p.by?("☀️ "+p.by):""}</span></div>
-      <ol style="margin:0 0 10px 20px;padding:0;font-size:13.5px;line-height:1.7">${items.map(it=>`<li>${it}</li>`).join("")}</ol>
-      ${foot}</div>`;
-  }).join("") : `<div class="card"><div class="small" style="padding:10px;color:var(--mut)">📝 ${pk(["ยังไม่มีแผนของ Job นี้วันนี้ — วางแผนที่กล่องด้านบนก่อน","ຍັງບໍ່ມີແຜນ Job ນີ້","No plan for this job today — add one above"])}</div></div>`;
+    return `<div class="card" style="border-left:4px solid ${border};margin-bottom:8px;padding:11px 14px">
+      <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin-bottom:2px">
+        <b style="font-size:14.5px">${tr(t.name)}</b>
+        <span class="small num" style="color:var(--mut)">${pk(["ตอนนี้","ຕອນນີ້","now"])} ${curPct}%${plan&&plan.by?" · ☀️ "+plan.by:""}</span></div>
+      ${planBlock}${closeBlock}</div>`;
+  }).join("");
   app.innerHTML = head + bar("dailySelectJob('')"," · "+tr(j.name)) + `
-  <div class="card" style="border-left:4px solid var(--warn)">
-    <h2>☀️ ${pk(["วางแผนวันนี้ — จะทำอะไร","ວາງແຜນມື້ນີ້","Plan today"])} <span class="thin num">· ${tr(j.name)} · ${pk(["รวม","ລວມ","total"])} ${fmt1(jaSel.act)}%</span></h2>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:start">
-      <div class="fld" style="flex:1;min-width:260px"><label class="small">${pk(["เลือกงาน (Task) ของ Job นี้","ເລືອກວຽກ","Pick a task in this job"])}</label>
-        <select id="dpTask" style="width:100%;padding:9px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit">${dpTaskOptions(j)}</select></div>
-      <div class="fld" style="flex:2;min-width:280px"><label class="small">${pk(["จะทำอะไรวันนี้ — พิมพ์บรรทัดละ 1 ข้อ","ຈະເຮັດຫຍັງ — ແຖວລະ 1 ຂໍ້","What today — one per line"])}</label>
-        <textarea id="dpItems" rows="3" placeholder="1) ...&#10;2) ...&#10;3) ..." style="width:100%;padding:9px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit;resize:vertical"></textarea></div>
-      <div class="fld" style="min-width:150px"><label class="small">${pk(["ผู้บันทึก","ຜູ້ບັນທຶກ","By"])}</label>
-        <input id="dpBy" style="width:100%;padding:9px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit">
-        <button class="btn btn-p" style="margin-top:8px;width:100%" onclick="dpPlanOne()">＋ ${pk(["บันทึกแผนวันนี้","ບັນທຶກແຜນ","add plan"])}</button></div>
-    </div>
-  </div>
-  <h2 style="margin:16px 2px 8px;font-size:16px">🌙 ${pk(["งานวันนี้ของ Job นี้ — ตกเย็นมาปิดงาน","ວຽກມື້ນີ້ຂອງ Job ນີ້","This job's items today — close in the evening"])}</h2>
-  ${planCards}
+  <div class="card" style="border-left:4px solid var(--blue);display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+    <b style="font-size:15px">${tr(j.name)}</b><span class="num" style="color:var(--mut)">${pk(["รวม","ລວມ","total"])} ${fmt1(jaSel.act)}% · ${j.tasks.length} task</span>
+    <div class="fld" style="margin-left:auto;min-width:200px"><label class="small">${pk(["ผู้บันทึก (ใช้ทุก Task)","ຜູ້ບັນທຶກ","By (all tasks)"])}</label>
+      <input id="dpBy" style="width:100%;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit"></div></div>
+  <div class="small" style="margin:4px 4px 10px;color:var(--mut)">☀️ ${pk(["เช้า: พิมพ์แผนของแต่ละ Task แล้วกดวางแผน · 🌙 เย็น: กด ✅ ใส่ % หรือ ❌ บอกเหตุผล","ເຊົ້າວາງແຜນ · ແລງປິດງານ","morning plan · evening close"])}</div>
+  ${rows}
   <div id="entryToast"></div>`;
+}
+function planForToday(tid){ const d=todayISO(); let last=null;
+  ENTRIES.forEach(e=>{ if(e.date===d && e.taskId===tid && isPlanNote(e) && (!last||e.date>=last.date)) last=e; }); return last; }
+function dpPlanTask(ti,tid){
+  const raw=(document.getElementById("dpPlan"+ti).value||"").trim();
+  if(!raw){ alert(pk(["พิมพ์แผนก่อน","ພິມແຜນກ່ອນ","Type a plan first"])); return; }
+  const items=raw.split(/\n|\s\/\s/).map(s=>s.trim().replace(/^\d+[\).\s]*/,"")).filter(Boolean);
+  const entry=sanEntry({date:todayISO(), taskId:tid, pct:taskCurPts(tid), mh:0,
+    by:(document.getElementById("dpBy")?document.getElementById("dpBy").value:"").trim(), note:"[แผน] "+items.join(" | ")});
+  ENTRIES.push(entry); saveEntries(ENTRIES); applyEntries(); pushToSheet(entry);
+  entryDailyPage();
+  const t=document.getElementById("entryToast"); if(t){ t.innerHTML=`<div class="toast">☀️ ${pk(["บันทึกแผนแล้ว","ບັນທຶກແຜນແລ້ວ","Plan saved"])}</div>`; setTimeout(()=>t.innerHTML="",2500); }
 }
 function dpShow(pi,which){
   const d=document.getElementById("dpDone"+pi), s=document.getElementById("dpSkip"+pi);
