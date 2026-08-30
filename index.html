@@ -448,7 +448,7 @@ svg text{font-family:inherit}
 .tc-lock{font-size:12px;color:var(--mut);font-weight:700;background:var(--tint2);border-radius:8px;padding:6px 11px}
 .tc-del{color:var(--crit) !important;border-color:var(--crit) !important;margin-right:auto}
 .tc-del:hover{background:var(--crit-bg) !important}
-.sg-head,.sg-row{display:grid;grid-template-columns:1.4fr 1fr 1.6fr 1.4fr;gap:8px;align-items:center}
+.sg-head,.sg-row{display:grid;grid-template-columns:1.3fr 1fr 2.4fr;gap:8px;align-items:center}
 .sg-head{font-size:11px;font-weight:800;color:var(--mut);letter-spacing:.3px;margin-bottom:6px;padding:0 2px}
 .sg-rows{display:flex;flex-direction:column;gap:8px}
 .sg-row .sg-plan{font-size:13px;font-weight:700;color:var(--ink);background:var(--tint);border-radius:9px;padding:8px 10px;min-width:0;word-break:break-word}
@@ -607,7 +607,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r121";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r122";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2188,12 +2188,12 @@ function taskCardHtml(t,ti){
     const rows=base.map((li,i)=>{
       const L=src[i]||{st:"ontrack",result:"",reason:""};
       const opts=Object.keys(SUM_ST).map(k=>`<option value="${k}" ${L.st===k?"selected":""}>${pk(SUM_ST[k])}</option>`).join("");
+      const combo=[L.result,L.reason].filter(Boolean).join(" — ");
       return `<div class="sg-row"><div class="sg-plan">${li}</div>
         <select class="sumst">${opts}</select>
-        <input class="sumres" value="${esc2(L.result)}" placeholder="${pk(["สรุปงาน","ສະຫຼຸບ","result"])}">
-        <input class="sumrsn" value="${esc2(L.reason)}" placeholder="${pk(["เหตุผล","ເຫດຜົນ","reason"])}"></div>`;
+        <input class="sumres" value="${esc2(combo)}" placeholder="${pk(["สรุปผล / เหตุผล","ສະຫຼຸບ / ເຫດຜົນ","result / reason"])}"></div>`;
     }).join("");
-    const right=`<div class="sg-head"><span>${pk(["แผนงาน","ແຜນ","plan"])}</span><span>${pk(["สถานะ","ສະຖານະ","status"])}</span><span>${pk(["สรุปงาน","ສະຫຼຸບ","result"])}</span><span>${pk(["เหตุผล","ເຫດຜົນ","reason"])}</span></div>
+    const right=`<div class="sg-head"><span>${pk(["แผนงาน","ແຜນ","plan"])}</span><span>${pk(["สถานะ","ສະຖານະ","status"])}</span><span>${pk(["สรุปงาน / เหตุผล","ສະຫຼຸບ / ເຫດຜົນ","result / reason"])}</span></div>
       <div class="sg-rows">${rows}</div>
       <div class="tc-pctrow"><label class="tc-lb">${pk(["คิดเป็น %","ຄິດເປັນ %","Progress %"])}</label>
         <input id="sp_${ti}" class="sp-in" type="number" min="0" max="100" step="0.5" value="${fmt1(startPct).replace(",","")}">
@@ -2243,14 +2243,15 @@ function dpClearSummary(ti){ const c=document.getElementById("sum_"+ti); if(!c) 
 function dpConfirmSummary(ti,tid){
   const x=TASK_INDEX[tid]; if(!x) return;
   const c=document.getElementById("sum_"+ti); if(!c) return;
-  const sts=[...c.querySelectorAll(".sumst")], res=[...c.querySelectorAll(".sumres")], rsn=[...c.querySelectorAll(".sumrsn")];
+  const sts=[...c.querySelectorAll(".sumst")], res=[...c.querySelectorAll(".sumres")];
   const items=planItemsOf(tid), base=items.length?items:["(งานนี้)"];
-  const lines=base.map((li,i)=>({st:(sts[i]?sts[i].value:"ontrack"), result:(res[i]?res[i].value.trim():""), reason:(rsn[i]?rsn[i].value.trim():"")}));
-  for(const L of lines){ if(L.st!=="ontrack" && !L.reason){ alert(pk(["งานที่ไม่ตามแผน/ไม่ได้ทำ ต้องใส่เหตุผล","ຕ້ອງໃສ່ເຫດຜົນ","Reason required for off-plan / not-done"])); return; } }
+  const lines=base.map((li,i)=>({st:(sts[i]?sts[i].value:"ontrack"), result:(res[i]?res[i].value.trim():""), reason:""}));
+  for(const L of lines){ if(L.st!=="ontrack" && !L.result){ alert(pk(["งานที่ไม่ตามแผน/ไม่ได้ทำ ต้องใส่สรุป/เหตุผล","ຕ້ອງໃສ່ສະຫຼຸບ/ເຫດຜົນ","Result / reason required for off-plan / not-done"])); return; } }
   const allUndone=lines.every(L=>L.st==="undone");
   const v=parseFloat(document.getElementById("sp_"+ti).value);
   if(isNaN(v)||v<0||v>100){ alert(pk(["กรอก % ระหว่าง 0–100","ປ້ອນ 0–100","Enter 0–100"])); return; }
   const cur=x.t.act*100;
+  if(lines.some(L=>L.st==="ontrack") && !(v>cur+0.01)){ alert(pk(["งานที่ทำ \"ตามแผน\" ต้องมีความคืบหน้าเพิ่มขึ้น — ใส่ % ให้มากกว่า "+fmt1(cur)+"%","ວຽກ \"ຕາມແຜນ\" ຕ້ອງ % ເພີ່ມຂຶ້ນ ຫຼາຍກວ່າ "+fmt1(cur)+"%","On-plan work must increase % above "+fmt1(cur)+"%"])); return; }
   if(!allUndone && v<cur-0.01 && !confirm(pk(["⚠️ กำลังปรับลดจาก "+fmt1(cur)+"% → "+fmt1(v)+"% ยืนยัน?","⚠️ ຫຼຸດ ຢືนຢัน?","⚠️ Decrease "+fmt1(cur)+"% → "+fmt1(v)+"%?"]))) return;
   const composed=base.map((li,i)=>{ const L=lines[i]; return li+" ["+pk(SUM_ST[L.st])+"]"+(L.result?" — "+L.result:"")+(L.reason?" ("+L.reason+")":""); }).join(" | ");
   const prefix=allUndone?"[ไม่ได้ทำ]":"[ผล]";
