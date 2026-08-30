@@ -446,6 +446,8 @@ svg text{font-family:inherit}
 .tc-actions{display:flex;gap:10px;justify-content:flex-end;align-items:center;margin-top:12px;flex-wrap:wrap}
 .tc-tmr{font-size:11px;font-weight:800;opacity:.85;margin-left:2px}
 .tc-lock{font-size:12px;color:var(--mut);font-weight:700;background:var(--tint2);border-radius:8px;padding:6px 11px}
+.tc-del{color:var(--crit) !important;border-color:var(--crit) !important;margin-right:auto}
+.tc-del:hover{background:var(--crit-bg) !important}
 .sg-head,.sg-row{display:grid;grid-template-columns:1.4fr 1fr 1.6fr 1.4fr;gap:8px;align-items:center}
 .sg-head{font-size:11px;font-weight:800;color:var(--mut);letter-spacing:.3px;margin-bottom:6px;padding:0 2px}
 .sg-rows{display:flex;flex-direction:column;gap:8px}
@@ -605,7 +607,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r120";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r121";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2150,10 +2152,12 @@ function taskCardHtml(t,ti){
   else if(DAILY_SUM===tid) state="summary";
   else if(pe && DAILY_EDIT!==tid) state="planned";
   else state="plan";
-  const accent = state==="plan"?"var(--blue)":state==="planned"?"var(--warn)":state==="summary"?"#7C3AED":(re&&/^\[ผล\]/.test(re.note)?"var(--good)":"var(--crit)");
+  const okC=re&&/^\[ผล\]/.test(re.note);
+  const accent = state==="plan"?"var(--blue)":state==="planned"?"var(--warn)":state==="summary"?"#7C3AED":(okC?"var(--good)":"var(--crit)");
+  const tint = state==="plan"?"#EFF5FF":state==="planned"?"#FEF6E3":state==="summary"?"#F3EEFF":(okC?"#E9FBF0":"#FDECEC");
   const left=`<div class="tc-left">
-    <div class="tc-llabel">Task</div>
-    <div class="tc-namebox" style="border-bottom-color:${accent}">${tr(t.name)}</div>
+    <div class="tc-llabel">${pk(["งาน","ວຽກ","Task"])}</div>
+    <div class="tc-namebox" style="background:${tint};border-color:${accent};border-bottom-color:${accent}">${tr(t.name)}</div>
     <div class="tc-curpill">${pk(["ตอนนี้","ຕອນນີ້","now"])} <b>${fmt1(cur)}%</b></div></div>`;
   const wrap=(cls,rightHtml,actionsHtml,attr="")=>`<div class="tcard ${cls}"${attr}><div class="tc-accent" style="background:${accent}"></div>
     <div class="tc-grid">${left}<div class="tc-right">${rightHtml}</div></div>
@@ -2169,7 +2173,8 @@ function taskCardHtml(t,ti){
   }
   if(state==="planned"){
     const ce=canEditTs(m.planTs);
-    const editBtn=ce?`<button class="btn btn-o btnsm" onclick="dpEditPlan(${ti},'${tid}')">✎ ${pk(["แก้ไข","ແກ້ໄຂ","Edit"])}<span class="tc-tmr">⏳${editLeftMin(m.planTs)}′</span></button>`
+    const editBtn=ce?`<button class="btn btn-o btnsm tc-del" onclick="dpDeletePlan(${ti},'${tid}')">🗑 ${pk(["ลบแผน","ລຶບແຜນ","Delete"])}</button>
+      <button class="btn btn-o btnsm" onclick="dpEditPlan(${ti},'${tid}')">✎ ${pk(["แก้ไข","ແກ້ໄຂ","Edit"])}<span class="tc-tmr">⏳${editLeftMin(m.planTs)}′</span></button>`
       :`<span class="tc-lock">🔒 ${pk(["เลยเวลาแก้ไข","ໝົດເວລາແກ້ໄຂ","edit closed"])}</span>`;
     const right=`<div class="tc-lb">☀️ ${pk(["แผนงานวันนี้","ແຜນມື້ນີ້","Plan today"])}${pe.by?` · <span class="tc-by">${esc2(pe.by)}</span>`:""}</div>
       <ol class="tc-ol">${items.map(li=>`<li>${li}</li>`).join("")||`<li>—</li>`}</ol>`;
@@ -2223,6 +2228,15 @@ function dpConfirmPlan(ti,tid){
   DAILY_EDIT=""; entryDailyPage(); dpToast("☀️ "+pk(["บันทึกแผนแล้ว","ບັນທຶກແຜນແລ້ວ","Plan saved"]));
 }
 function dpEditPlan(ti,tid){ const m=tmeta(tid); if(!canEditTs(m.planTs)){ entryDailyPage(); return; } DAILY_EDIT=tid; DAILY_SUM=""; entryDailyPage(); }
+function dpDeletePlan(ti,tid){
+  const m=tmeta(tid); if(!canEditTs(m.planTs)){ entryDailyPage(); return; }
+  if(!confirm(pk(["ลบแผนงานวันนี้ของ Task นี้? แล้วกรอกใหม่ได้เลย","ລຶບແຜນມື້ນີ້? ແລ້ວປ້ອນໃໝ່","Delete today's plan and re-enter?"]))) return;
+  const d=DAILY_DATE, keep=[];
+  ENTRIES.forEach(e=>{ if(e.date===d && e.taskId===tid && isPlanNote(e)){ DEL_LOCAL[entKey(e)]=1; } else keep.push(e); });
+  ENTRIES=keep; saveEntries(ENTRIES); saveDel(); applyEntries();
+  const k=tmetaKey(tid); if(TMETA[k]){ delete TMETA[k].planTs; delete TMETA[k].plan; saveTMeta(); }
+  DAILY_EDIT=""; DAILY_SUM=""; entryDailyPage(); dpToast("🗑 "+pk(["ลบแผนแล้ว — กรอกใหม่ได้เลย","ລຶບແຜນແລ້ວ","Plan deleted"]));
+}
 function dpStartSummary(tid){ DAILY_SUM=tid; DAILY_EDIT=""; entryDailyPage(); }
 function dpEditSummary(tid){ const m=tmeta(tid); if(!canEditTs(m.sumTs)){ entryDailyPage(); return; } DAILY_SUM=tid; entryDailyPage(); }
 function dpClearSummary(ti){ const c=document.getElementById("sum_"+ti); if(!c) return; c.querySelectorAll(".sumst").forEach(s=>s.value="ontrack"); c.querySelectorAll(".sumres,.sumrsn").forEach(i=>i.value=""); }
