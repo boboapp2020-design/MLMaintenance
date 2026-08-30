@@ -316,17 +316,18 @@ svg text{font-family:inherit}
 .deptcolhd2{display:flex;align-items:center;gap:11px;font-weight:800;font-size:19px;padding:0 2px 12px;border-bottom:3px solid var(--line);margin-bottom:18px}
 .deptcolhd2 .dot{width:15px;height:15px;border-radius:50%;flex:0 0 auto}
 .dc2-list{display:flex;flex-direction:column;gap:18px;flex:1}
-.deptcard2{display:flex;align-items:center;gap:18px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px 22px;cursor:pointer;box-shadow:0 4px 14px rgba(30,42,58,.08),0 10px 26px rgba(30,42,58,.06);transition:transform .16s,box-shadow .16s}
+.deptcard2{display:flex;flex-direction:column;justify-content:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px 20px;cursor:pointer;box-shadow:0 4px 14px rgba(30,42,58,.08),0 10px 26px rgba(30,42,58,.06);transition:transform .16s,box-shadow .16s;min-height:112px}
 .deptcard2:hover{transform:translateY(-3px);box-shadow:0 16px 38px rgba(30,42,58,.18)}
-.deptcard2 .dc2-ic{width:64px;height:64px;border-radius:18px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
-.deptcard2 .dc2-ic svg{width:32px;height:32px}
-.deptcard2 .dc2-nm{flex:1;font-weight:800;font-size:20px;color:var(--ink);line-height:1.25}
-.deptcard2 .dc2-nm span{display:block;font-weight:500;font-size:14px;color:var(--mut);margin-top:4px}
-.deptcard2 .dc2-bar{height:6px;background:var(--tint2);border-radius:99px;margin-top:8px;overflow:hidden}
+.deptcard2 .dc2-top{display:flex;align-items:center;gap:16px}
+.deptcard2 .dc2-ic{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.deptcard2 .dc2-ic svg{width:30px;height:30px}
+.deptcard2 .dc2-nm{flex:1;min-width:0;font-weight:800;font-size:18px;color:var(--ink);line-height:1.25}
+.deptcard2 .dc2-nm span{display:block;font-weight:500;font-size:13px;color:var(--mut);margin-top:3px}
+.deptcard2 .dc2-bar{height:7px;background:var(--tint2);border-radius:99px;overflow:hidden}
 .deptcard2 .dc2-bar>div{height:100%;border-radius:99px}
-.deptcard2 .dc2-pct{flex:0 0 auto;text-align:right;font-size:20px;font-weight:800;line-height:1}
-.deptcard2 .dc2-pct span{display:block;font-size:11px;font-weight:500;color:var(--mut);margin-top:2px}
-.deptcard2 .dc2-st{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;flex:0 0 auto}
+.deptcard2 .dc2-pct{flex:0 0 auto;text-align:right;font-size:19px;font-weight:800;line-height:1;white-space:nowrap}
+.deptcard2 .dc2-pct span{display:block;font-size:10.5px;font-weight:500;color:var(--mut);margin-top:2px}
+.deptcard2 .dc2-st{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;flex:0 0 auto}
 .st-full{background:#DCFCE7;color:#16A34A}.st-partial{background:#FEF3C7;color:#D97706}.st-crit{background:#FEE2E2;color:#DC2626}.st-blank{background:var(--tint);color:var(--mut)}
 .dc2-prog{height:9px;background:var(--tint2);border-radius:99px;margin-top:20px;overflow:hidden}
 .dc2-prog>div{height:100%;border-radius:99px}
@@ -547,7 +548,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r116";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r117";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2278,12 +2279,11 @@ function entryPickerPage(){
       const st = u.blank ? "blank" : sun ? "off" : (deptRecordedToday(u.code)>0 ? "full" : "crit");
       const ic=st==="full"?"✓":st==="off"?"–":st==="blank"?"·":"✗";
       const upct = u.blank ? null : +(agg(unitTasks(u),REPORT_WK).act).toFixed(1);
-      return `<div class="deptcard2" tabindex="0" onclick="setDept('${u.code}')">
+      return `<div class="deptcard2" tabindex="0" onclick="setDept('${u.code}')"><div class="dc2-top">
         <div class="dc2-ic" style="background:${s.color}1f;color:${s.color}">${unitBub(u.name,26)}</div>
-        <div class="dc2-nm">${un(u.name)}<span>${u.owner}</span>
-          ${upct==null?"":`<div class="dc2-bar"><div style="width:${Math.min(100,upct)}%;background:${s.color}"></div></div>`}</div>
+        <div class="dc2-nm">${un(u.name)}<span>${u.owner}</span></div>
         ${upct==null?"":`<div class="dc2-pct" style="color:${s.color}">${fmt1(upct)}%<span>${pk(["คืบหน้า","ຄืบໜ້າ","done"])}</span></div>`}
-        <div class="dc2-st st-${st==="off"?"blank":st}" title="${st==="full"?pk(["บันทึกวันนี้แล้ว","ບັນທຶກມື້ນີ້ແລ້ວ","recorded today"]):st==="off"?pk(["วันหยุด ไม่ต้องบันทึก","ວັນພັກ","day off"]):st==="blank"?pk(["รอนำเข้าแผนงานจริง","ລໍຖ້ານຳເຂົ້າ","awaiting data"]):pk(["ยังไม่บันทึกวันนี้","ຍັງບໍ່ບັນທຶກມື້ນີ້","not recorded today"])}">${ic}</div></div>`;}).join("");
+        <div class="dc2-st st-${st==="off"?"blank":st}" title="${st==="full"?pk(["บันทึกวันนี้แล้ว","ບັນທຶກມື້ນີ້ແລ້ວ","recorded today"]):st==="off"?pk(["วันหยุด ไม่ต้องบันทึก","ວັນພັກ","day off"]):st==="blank"?pk(["รอนำเข้าแผนงานจริง","ລໍຖ້ານຳເຂົ້າ","awaiting data"]):pk(["ยังไม่บันทึกวันนี้","ຍັງບໍ່ບັນທຶກມື້ນີ້","not recorded today"])}">${ic}</div></div><div class="dc2-bar">${upct==null?"":`<div style="width:${Math.min(100,upct)}%;background:${s.color}"></div>`}</div></div>`;}).join("");
     const sp=+(agg(secTasks(s),REPORT_WK).act).toFixed(1);
     return `<div class="deptcol2"><div class="deptcolhd2" style="color:${s.color}"><span class="dot" style="background:${s.color}"></span>${un(s.name)}</div>
       <div class="dc2-list">${items}</div>
