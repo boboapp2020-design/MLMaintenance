@@ -471,6 +471,30 @@ svg text{font-family:inherit}
 .cl-st.st-undone{background:var(--crit-bg);color:var(--crit)}
 .cl-rsn{color:var(--mut)}
 @media(max-width:640px){.sg-head{display:none}.sg-row{grid-template-columns:1fr;gap:5px;border:1px solid var(--line);border-radius:10px;padding:9px}}
+/* ===== หน้างานซ่อม: ติดตามแผน/ผลรายวัน ===== */
+.trk-datebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 4px 14px}
+.trk-datebar input{border:1.5px solid var(--line);border-radius:9px;padding:6px 10px;font:inherit;font-weight:700;background:var(--card);color:var(--ink)}
+.trk-navbtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--blue);font-size:14px;cursor:pointer;font-weight:800}
+.trk-navbtn:disabled{opacity:.4;cursor:default}
+.trk-sum{display:flex;gap:10px;flex-wrap:wrap;margin:0 4px 16px}
+.trk-pill{display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:8px 14px;font-weight:800;font-size:13px;box-shadow:0 2px 8px rgba(30,42,58,.06)}
+.trk-pill b{font-size:16px}
+.trk-pill.good{color:var(--good)}.trk-pill.warn{color:var(--warn)}.trk-pill.crit{color:var(--crit)}.trk-pill.mut{color:var(--mut)}
+.trk-deptcard{margin-bottom:14px}
+.trk-depthd{display:flex;align-items:center;gap:9px;font-weight:800;font-size:15px;margin-bottom:10px}
+.trk-depthd .dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto}
+.trk-item{display:flex;gap:12px;align-items:flex-start;padding:11px 13px;border-radius:11px;border:1px solid var(--line);border-left-width:4px;background:var(--card);margin-bottom:8px;cursor:pointer;transition:box-shadow .15s,transform .15s}
+.trk-item:last-child{margin-bottom:0}
+.trk-item:hover{box-shadow:0 6px 18px rgba(30,42,58,.12);transform:translateY(-1px)}
+.trk-item.trk-good{border-left-color:var(--good)}.trk-item.trk-warn{border-left-color:var(--warn)}.trk-item.trk-crit{border-left-color:var(--crit)}
+.trk-ic{font-size:18px;line-height:1.35;flex:0 0 auto}
+.trk-main{flex:1;min-width:0}
+.trk-nm{font-weight:800;font-size:14px;color:var(--ink)}
+.trk-job{font-weight:500;font-size:12px;color:var(--mut)}
+.trk-plan{font-size:12.5px;color:var(--ink);margin-top:3px;word-break:break-word}
+.trk-res{font-size:12.5px;color:var(--mut);margin-top:2px;word-break:break-word}
+.trk-right{flex:0 0 auto;text-align:right;display:flex;flex-direction:column;gap:5px;align-items:flex-end}
+.trk-pct{font-weight:800;font-size:13px;color:var(--ink)}
 .jconfirm{margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .entrysplit{display:grid;grid-template-columns:310px 1fr;gap:16px;align-items:start}
 @media(max-width:820px){.entrysplit{grid-template-columns:1fr}}
@@ -607,7 +631,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r122";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r123";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1896,22 +1920,69 @@ function unitsPage(){
 }
 
 /* ============ งานซ่อม ============ */
+let JOBS_DATE=todayISO();
+function setJobsDate(v){ const t=todayISO(); JOBS_DATE=(v&&v<=t)?v:t; jobsPage(); }
+function jobsShiftDay(delta){ const p=JOBS_DATE.split("-").map(Number); const dt=new Date(p[0],p[1]-1,p[2]+delta);
+  const iso=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0"); setJobsDate(iso); }
+function jobsOpenRecord(code,jid){ go("entry"); setDept(code); dailySelectJob(jid); }
+function trackStatus(res){
+  if(!res) return {k:"pending",rank:2,lb:pk(["ยังไม่ปิดงาน","ຍັງບໍ່ປິດ","pending"]),cls:"warn",ic:"⏳"};
+  if(/^\[ไม่ได้ทำ\]/.test(res.note)) return {k:"undone",rank:0,lb:pk(["ไม่ได้ทำ","ບໍ່ໄດ້ເຮັດ","not done"]),cls:"crit",ic:"❌"};
+  const dev=/\[ไม่ตามแผน\]|\[ไม่ได้ทำ\]/.test(res.note);
+  return dev?{k:"off",rank:1,lb:pk(["ไม่ตามแผน","ບໍ່ຕາມແຜນ","off-plan"]),cls:"warn",ic:"⚠️"}
+            :{k:"ontrack",rank:3,lb:pk(["ตามแผน","ຕາມແຜນ","on plan"]),cls:"good",ic:"✅"};
+}
+/* หน้า "งานซ่อม" = ติดตามแผน/ผลรายวัน (ทิศทางเดียวกับหน้าบันทึก) — ไล่ทุก Task ที่มีแผนในวันนั้น ครบทุกแผนก */
 function jobsPage(){
-  const SCc={good:"#16A34A",warn:"#D97706",crit:"#EF4444"};
-  const jobs=DATA.flatMap(s=>s.units.flatMap(u=>visJobs(u).map(j=>({s,u,j,a:agg(j.tasks,WNOW)}))))
-    .map(x=>({...x,varc:x.a.act-x.a.plan,st:statusOf(x.a.act-x.a.plan)})).sort((a,b)=>a.varc-b.varc);
-  app.innerHTML = pagehead(pk(["งานซ่อมทั้งหมด","ວຽກສ້ອມແປງທັງໝົດ","All Jobs"])+" · "+jobs.length+" Job",
-    pk(["เรียงจากล่าช้าที่สุด · คลิกแถวเพื่อไปหน้าหน่วยงาน","ຮຽງຈາກຊັກຊ້າທີ່ສຸດ · ຄລິກແຖວເພື່ອໄປໜ້າໜ່ວຍງານ","Sorted worst-first · click a row to drill down"])) + `
-  <div class="card"><div class="scrollx"><table>
-    <tr><th>Job</th><th>${pk(["หน่วยงาน","ໜ່ວຍງານ","Unit"])}</th><th class="r">${pk(["แผน","ແຜນ","Plan"])}</th><th class="r">${pk(["ผลจริง","ຜົນຕົວຈິງ","Actual"])}</th><th class="r">${pk(["ผลต่าง","ຜົນຕ່າງ","Var"])}</th><th style="width:170px">${pk(["ความคืบหน้า","ຄວາມຄືບໜ້າ","Progress"])}</th><th class="r">${pk(["แรง","ແຮງ","man-days"])}</th><th>${pk(["สถานะ","ສະຖານະ","Status"])}</th></tr>
-    ${jobs.map(x=>`<tr class="clickable" onclick='unitView("${x.s.id}","${x.u.name}")'>
-      <td><b>${tr(x.j.name)}</b></td><td class="small">${un(x.u.name)}</td>
-      <td class="r num small">${fmt1(x.a.plan)}%</td><td class="r num"><b>${fmt1(x.a.act)}%</b></td>
-      <td class="r num" style="color:${SCc[x.st[1]]};font-weight:700">${x.varc>=0?"+":"−"}${fmt1(Math.abs(x.varc))}</td>
-      <td class="progcell"><div class="tbar"><div class="fill" style="width:${x.a.act}%;background:${SCc[x.st[1]]}"></div><div class="mark" style="left:${x.a.plan}%"></div></div></td>
-      <td class="r num small">${fmt0(x.a.mh)}</td>
-      <td><span class="chip c-${x.st[1]}">${x.st[0]}</span></td></tr>`).join("")}
-  </table></div></div>`;
+  const d=JOBS_DATE, isToday=d===todayISO();
+  const dnames=["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัส","ศุกร์","เสาร์"];
+  const selD=new Date(d);
+  const byTask={}; ENTRIES.forEach(e=>{ if(e.date===d && isPlanNote(e)) byTask[e.taskId]=e; });
+  const resOf=tid=>{ let last=null; ENTRIES.forEach(e=>{ if(e.date===d&&e.taskId===tid&&isResultNote(e)) last=e; }); return last; };
+  const rows=Object.keys(byTask).map(tid=>{ const x=TASK_INDEX[tid]; if(!x) return null; const res=resOf(tid); return {tid,x,plan:byTask[tid],res,stt:trackStatus(res)}; }).filter(Boolean);
+  const cnt={ontrack:0,off:0,undone:0,pending:0}; rows.forEach(r=>cnt[r.stt.k]++);
+  const groups={}; rows.forEach(r=>{ const key=r.x.u.code; if(!groups[key]) groups[key]={u:r.x.u,sec:DATA.find(s=>s.id===r.x.secId),items:[]}; groups[key].items.push(r); });
+  const dateBar=`<div class="trk-datebar">
+    <button class="trk-navbtn" onclick="jobsShiftDay(-1)" title="${pk(["วันก่อน","ວັນກ່ອນ","prev"])}">◀</button>
+    <input type="date" value="${d}" max="${todayISO()}" onchange="setJobsDate(this.value)">
+    <button class="trk-navbtn" onclick="jobsShiftDay(1)" ${isToday?"disabled":""} title="${pk(["วันถัดไป","ວັນຖັດໄປ","next"])}">▶</button>
+    <span class="small" style="color:var(--mut);font-weight:700">${dnames[selD.getDay()]}${isToday?" · "+pk(["วันนี้","ມື້ນີ້","today"]):""}</span></div>`;
+  const summary=`<div class="trk-sum">
+    <div class="trk-pill mut">📋 ${pk(["มีแผน","ມີແຜນ","planned"])} <b>${rows.length}</b></div>
+    <div class="trk-pill good">✅ ${pk(["ตามแผน","ຕາມແຜນ","on plan"])} <b>${cnt.ontrack}</b></div>
+    <div class="trk-pill warn">⚠️ ${pk(["ไม่ตามแผน","ບໍ່ຕາມແຜນ","off"])} <b>${cnt.off}</b></div>
+    <div class="trk-pill crit">❌ ${pk(["ไม่ได้ทำ","ບໍ່ໄດ້ເຮັດ","not done"])} <b>${cnt.undone}</b></div>
+    <div class="trk-pill warn">⏳ ${pk(["ยังไม่ปิด","ຍັງບໍ່ປິດ","pending"])} <b>${cnt.pending}</b></div></div>`;
+  let body;
+  if(!rows.length){
+    body=`<div class="card" style="text-align:center;padding:34px;color:var(--mut)">📭 ${pk(["ยังไม่มี Task ที่วางแผนไว้ในวันนี้ — ไปวางแผนได้ที่หน้าบันทึกข้อมูล","ຍັງບໍ່ມີ Task ວາງແຜນ","No planned tasks for this day"])}</div>`;
+  } else {
+    body=Object.values(groups).map(g=>{
+      const items=g.items.slice().sort((a,b)=>a.stt.rank-b.stt.rank);
+      const col=g.sec?g.sec.color:"#2563EB";
+      return `<div class="card trk-deptcard">
+        <div class="trk-depthd"><span class="dot" style="background:${col}"></span>${un(g.u.name)} <span class="small" style="color:var(--mut);font-weight:500">· ${g.u.owner}</span></div>
+        ${items.map(r=>{
+          const t=r.x.t, j=r.x.j;
+          const planItems=String(r.plan.note).replace(/^\[แผน\]\s*/,"").split(" | ").filter(Boolean);
+          const resTxt=r.res?esc2(String(r.res.note).replace(/^\[(ผล|ไม่ได้ทำ)\]\s*/,"")):"";
+          const pct=(r.res&&/^\[ผล\]/.test(r.res.note))?(+r.res.pct||0)/(t.wt||1)*100:null;
+          return `<div class="trk-item trk-${r.stt.cls}" tabindex="0" onclick="jobsOpenRecord('${r.x.u.code}','${j.id}')">
+            <span class="trk-ic">${r.stt.ic}</span>
+            <div class="trk-main">
+              <div class="trk-nm">${tr(t.name)} <span class="trk-job">· ${tr(j.name)}</span></div>
+              <div class="trk-plan">☀️ ${planItems.map(esc2).join(" · ")||"—"}</div>
+              ${resTxt?`<div class="trk-res">🌙 ${resTxt}</div>`:""}
+            </div>
+            <div class="trk-right"><span class="chip c-${r.stt.cls}">${r.stt.lb}</span>${pct!=null?`<span class="trk-pct">${fmt1(pct)}%</span>`:""}</div>
+          </div>`;
+        }).join("")}
+      </div>`;
+    }).join("");
+  }
+  app.innerHTML = pagehead(pk(["งานซ่อม — ติดตามแผน/ผลรายวัน","ວຽກສ້ອມແປງ — ຕິດຕາມແຜນ/ຜົນລາຍວັນ","Maintenance — daily plan vs actual"]),
+    pk(["ไล่ดูทุก Task ที่วางแผนไว้ · ทำ/ไม่ทำ · ตามแผน/ไม่ตามแผน ครบทุกแผนก · คลิกเพื่อไปบันทึก","ເບິ່ງທຸກ Task ທີ່ວາງແຜນ · ຄົບທຸກໜ່ວຍ · ຄລິກໄປບັນທຶກ","Every planned task · done/not · on/off plan · all units · click to record"]))
+    + dateBar + summary + body;
 }
 
 /* ============ เจาะรายหน่วย ============ */
