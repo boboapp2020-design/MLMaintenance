@@ -412,6 +412,55 @@ svg text{font-family:inherit}
 .taskrow .tk-pctline{font-size:11.5px;color:var(--mut);margin-top:4px}
 .taskrow .tk-ctl{flex:0 0 auto;text-align:right;white-space:nowrap}
 .btnsm{padding:6px 14px !important;font-size:13px !important;border-radius:9px !important}
+/* ===== การ์ด Task รายวัน (วางแผน → ยืนยัน → สรุปงาน) ===== */
+.tcard{position:relative;background:var(--cardgrad);border:1px solid var(--line);border-radius:14px;padding:15px 18px 15px 22px;margin-bottom:12px;box-shadow:0 2px 10px rgba(30,42,58,.06);overflow:hidden;animation:slideRL .3s cubic-bezier(.22,.61,.36,1) both}
+.tcard .tc-accent{position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--mut)}
+.tcard.s-plan .tc-accent{background:var(--blue)}
+.tcard.s-planned .tc-accent{background:var(--warn)}
+.tcard.s-summary .tc-accent{background:#7C3AED}
+.tcard.s-closed.ok .tc-accent{background:var(--good)}
+.tcard.s-closed.no .tc-accent{background:var(--crit)}
+.tc-hd{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:11px}
+.tc-tt{font-size:15px;font-weight:800;color:var(--ink)}
+.tc-cur{margin-left:auto;font-size:12px;color:var(--mut)}
+.tc-cur b{color:var(--ink);font-size:13.5px}
+.tc-lb{font-size:12px;font-weight:800;color:var(--mut);letter-spacing:.3px;margin-bottom:6px}
+.tc-by{color:var(--blue);font-weight:700}
+.tc-lines{display:flex;flex-direction:column;gap:7px;margin-bottom:8px}
+.pl-row{display:flex;gap:8px;align-items:center}
+.pl-row .plln{flex:1;min-width:0;padding:9px 12px;border:1.5px solid #AEBED4;border-radius:10px;background:var(--card);color:var(--ink);font:inherit}
+.pl-row .plln:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+.pl-del{flex:0 0 auto;width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--crit);font-size:19px;line-height:1;cursor:pointer;font-weight:700}
+.pl-del:hover{background:var(--crit-bg);border-color:var(--crit)}
+.tc-add{display:inline-flex;align-items:center;gap:6px;background:var(--tint);color:var(--blue);border:1px dashed #9DBBF5;border-radius:9px;padding:7px 14px;font:inherit;font-size:13px;font-weight:800;cursor:pointer}
+.tc-add:hover{background:var(--blue-soft)}
+.tc-ol{margin:0 0 4px;padding-left:22px;font-size:13.5px;line-height:1.75;color:var(--ink)}
+.tc-actions{display:flex;gap:10px;justify-content:flex-end;align-items:center;margin-top:12px;flex-wrap:wrap}
+.tc-tmr{font-size:11px;font-weight:800;opacity:.85;margin-left:2px}
+.tc-lock{font-size:12px;color:var(--mut);font-weight:700;background:var(--tint2);border-radius:8px;padding:6px 11px}
+.sg-head,.sg-row{display:grid;grid-template-columns:1.4fr 1fr 1.6fr 1.4fr;gap:8px;align-items:center}
+.sg-head{font-size:11px;font-weight:800;color:var(--mut);letter-spacing:.3px;margin-bottom:6px;padding:0 2px}
+.sg-rows{display:flex;flex-direction:column;gap:8px}
+.sg-row .sg-plan{font-size:13px;font-weight:700;color:var(--ink);background:var(--tint);border-radius:9px;padding:8px 10px;min-width:0;word-break:break-word}
+.sg-row select,.sg-row input{padding:8px 10px;border:1.5px solid #AEBED4;border-radius:9px;background:var(--card);color:var(--ink);font:inherit;font-size:13px;min-width:0}
+.sg-row select{cursor:pointer}
+.sg-row select:focus,.sg-row input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.14)}
+.tc-pctrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;background:var(--tint);border-radius:11px;padding:10px 14px}
+.tc-pctrow .tc-lb{margin:0}
+.sp-in{width:110px;padding:9px 12px;border:1.5px solid var(--blue);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;font-size:18px;font-weight:800;text-align:center}
+.sp-in:focus{outline:none;box-shadow:0 0 0 3px rgba(37,99,235,.18)}
+.tc-hint{color:var(--mut)}
+.cl-tag{display:inline-block;font-size:13px;font-weight:800;border-radius:9px;padding:5px 12px;margin-bottom:8px}
+.s-closed.ok .cl-tag{background:var(--good-bg);color:var(--good)}
+.s-closed.no .cl-tag{background:var(--crit-bg);color:var(--crit)}
+.cl-body{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--ink);line-height:1.5}
+.cl-li{padding:2px 0}
+.cl-st{display:inline-block;font-size:11px;font-weight:800;border-radius:6px;padding:1px 8px;margin-right:5px}
+.cl-st.st-ontrack{background:var(--good-bg);color:var(--good)}
+.cl-st.st-off{background:var(--warn-bg);color:var(--warn)}
+.cl-st.st-undone{background:var(--crit-bg);color:var(--crit)}
+.cl-rsn{color:var(--mut)}
+@media(max-width:640px){.sg-head{display:none}.sg-row{grid-template-columns:1fr;gap:5px;border:1px solid var(--line);border-radius:10px;padding:9px}}
 .jconfirm{margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .entrysplit{display:grid;grid-template-columns:310px 1fr;gap:16px;align-items:start}
 @media(max-width:820px){.entrysplit{grid-template-columns:1fr}}
@@ -548,7 +597,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r118";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r119";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2066,10 +2115,130 @@ function dpTaskOptions(j){ return j.tasks.map(t=>`<option value="${t.id}">${tr(t
 let DAILY_JOB="";   /* Job ที่เลือกอยู่ในหน้าบันทึกรายวัน — "" = หน้าเลือก Job */
 let DAILY_VIEW="card", DAILY_FILTER="all";
 let DAILY_DATE=todayISO();   /* วันที่ที่กำลังบันทึก (default = วันนี้ · เลือกย้อนหลังได้ ห้ามอนาคต) */
-function setDailyDate(v){ const t=todayISO(); DAILY_DATE=(v&&v<=t)?v:t; entryDailyPage(); }
-function dailySelectJob(jid){ DAILY_JOB=jid||""; entryDailyPage(); saveNav(); }
+function setDailyDate(v){ const t=todayISO(); DAILY_DATE=(v&&v<=t)?v:t; DAILY_SUM=""; DAILY_EDIT=""; entryDailyPage(); }
+function dailySelectJob(jid){ DAILY_JOB=jid||""; DAILY_SUM=""; DAILY_EDIT=""; entryDailyPage(); saveNav(); }
 function dailySetView(v){ DAILY_VIEW=v; entryDailyPage(); saveNav(); }
 function dailySetFilter(f){ DAILY_FILTER=f; entryDailyPage(); saveNav(); }
+
+/* ===== การ์ด Task รายวัน: วางแผน → ยืนยัน (แก้ได้ภายใน 1 ชม.) → สรุปงาน → ปิด ===== */
+let DAILY_EDIT="", DAILY_SUM="";   /* Task ที่กำลังแก้ไขแผน / กำลังสรุปงาน */
+const EDIT_WIN_MS=60*60*1000;      /* หน้าต่างแก้ไข 1 ชม. นับจากกดยืนยัน */
+let TMETA={}; try{ TMETA=JSON.parse(localStorage.getItem("idash_tmeta")||"{}")||{}; }catch(e){ TMETA={}; }
+function saveTMeta(){ try{ localStorage.setItem("idash_tmeta",JSON.stringify(TMETA)); }catch(e){} }
+function tmetaKey(tid){ return DAILY_DATE+"|"+tid; }
+function tmeta(tid){ return TMETA[tmetaKey(tid)]||{}; }
+function canEditTs(ts){ return !!ts && (Date.now()-ts) < EDIT_WIN_MS; }
+function editLeftMin(ts){ return Math.max(0, Math.ceil((EDIT_WIN_MS-(Date.now()-ts))/60000)); }
+const SUM_ST={ ontrack:["ตามแผน","ຕາມແຜນ","On plan"], off:["ไม่ตามแผน","ບໍ່ຕາມແຜນ","Off plan"], undone:["ไม่ได้ทำ","ບໍ່ໄດ້ເຮັດ","Not done"] };
+function dpToast(msg){ const t=document.getElementById("entryToast"); if(t){ t.innerHTML=`<div class="toast">${msg}</div>`; setTimeout(()=>t.innerHTML="",2600); } }
+function planItemsOf(tid){ const pe=planForToday(tid); return pe?String(pe.note).replace(/^\[แผน\]\s*/,"").split(" | ").filter(Boolean):[]; }
+function esc2(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function plLineRow(v){ return `<div class="pl-row"><input class="plln" value="${esc2(v)}" placeholder="${pk(["พิมพ์แผนงาน 1 ข้อ","ພິມແຜນ 1 ຂໍ້","one plan item"])}"><button class="pl-del" title="${pk(["ลบ","ລຶບ","remove"])}" onclick="dpDelPlanLine(this)">×</button></div>`; }
+function taskCardHtml(t,ti){
+  const tid=t.id, m=tmeta(tid), pe=planForToday(tid), re=todayResult(tid);
+  const cur=t.act*100, items=planItemsOf(tid);
+  const hd=`<div class="tc-hd"><span class="tc-tt">${tr(t.name)}</span><span class="tc-cur num">${pk(["ตอนนี้","ຕອນນີ້","now"])} <b>${fmt1(cur)}%</b></span></div>`;
+  let state;
+  if(re && DAILY_SUM!==tid) state="closed";
+  else if(DAILY_SUM===tid) state="summary";
+  else if(pe && DAILY_EDIT!==tid) state="planned";
+  else state="plan";
+  if(state==="plan"){
+    const lines=(items.length?items:[""]).map(plLineRow).join("");
+    return `<div class="tcard s-plan"><div class="tc-accent"></div>${hd}
+      <div class="tc-lb">${pk(["แผนงาน","ແຜນງານ","Work plan"])}</div>
+      <div id="pl_${ti}" class="tc-lines">${lines}</div>
+      <button class="tc-add" onclick="dpAddPlanLine(${ti})">＋ ${pk(["เพิ่มแผนงาน","ເພີ່ມ","add item"])}</button>
+      <div class="tc-actions">
+        <button class="btn btn-o btnsm" onclick="dpClearPlan(${ti})">${pk(["ล้าง","ລ້າງ","Clear"])}</button>
+        <button class="btn btn-p btnsm" onclick="dpConfirmPlan(${ti},'${tid}')">${pk(["ยืนยัน","ຢືນຢັນ","Confirm"])}</button>
+      </div></div>`;
+  }
+  if(state==="planned"){
+    const ce=canEditTs(m.planTs);
+    const editBtn=ce?`<button class="btn btn-o btnsm" onclick="dpEditPlan(${ti},'${tid}')">✎ ${pk(["แก้ไข","ແກ້ໄຂ","Edit"])}<span class="tc-tmr">⏳${editLeftMin(m.planTs)}′</span></button>`
+      :`<span class="tc-lock">🔒 ${pk(["เลยเวลาแก้ไข","ໝົດເວລາແກ້ໄຂ","edit closed"])}</span>`;
+    return `<div class="tcard s-planned"><div class="tc-accent"></div>${hd}
+      <div class="tc-lb">☀️ ${pk(["แผนงานวันนี้","ແຜນມື້ນີ້","Plan today"])}${pe.by?` · <span class="tc-by">${esc2(pe.by)}</span>`:""}</div>
+      <ol class="tc-ol">${items.map(li=>`<li>${li}</li>`).join("")||`<li>—</li>`}</ol>
+      <div class="tc-actions">${editBtn}
+        <button class="btn btn-p btnsm" onclick="dpStartSummary('${tid}')">🌙 ${pk(["สรุปงาน","ສະຫຼຸບງານ","Summarize"])}</button>
+      </div></div>`;
+  }
+  if(state==="summary"){
+    const base=items.length?items:["(งานนี้)"];
+    const src=(m.lines&&m.lines.length===base.length)?m.lines:base.map(()=>({st:"ontrack",result:"",reason:""}));
+    const startPct=(m.pct!=null?m.pct:cur);
+    const rows=base.map((li,i)=>{
+      const L=src[i]||{st:"ontrack",result:"",reason:""};
+      const opts=Object.keys(SUM_ST).map(k=>`<option value="${k}" ${L.st===k?"selected":""}>${pk(SUM_ST[k])}</option>`).join("");
+      return `<div class="sg-row"><div class="sg-plan">${li}</div>
+        <select class="sumst">${opts}</select>
+        <input class="sumres" value="${esc2(L.result)}" placeholder="${pk(["สรุปงาน","ສະຫຼຸບ","result"])}">
+        <input class="sumrsn" value="${esc2(L.reason)}" placeholder="${pk(["เหตุผล","ເຫດຜົນ","reason"])}"></div>`;
+    }).join("");
+    return `<div class="tcard s-summary" id="sum_${ti}"><div class="tc-accent"></div>${hd}
+      <div class="sg-head"><span>${pk(["แผนงาน","ແຜນ","plan"])}</span><span>${pk(["สถานะ","ສະຖານະ","status"])}</span><span>${pk(["สรุปงาน","ສະຫຼຸບ","result"])}</span><span>${pk(["เหตุผล","ເຫດຜົນ","reason"])}</span></div>
+      <div class="sg-rows">${rows}</div>
+      <div class="tc-pctrow"><label class="tc-lb">${pk(["คิดเป็น %","ຄິດເປັນ %","Progress %"])}</label>
+        <input id="sp_${ti}" class="sp-in" type="number" min="0" max="100" step="0.5" value="${fmt1(startPct).replace(",","")}">
+        <span class="small tc-hint">${pk(["ล้อจาก % ตอนเริ่ม","ອ້າງອີງ % ເລີ່ມ","from start %"])} ${fmt1(cur)}%</span></div>
+      <div class="tc-actions">
+        <button class="btn btn-o btnsm" onclick="dpClearSummary(${ti})">${pk(["ล้าง","ລ້າງ","Clear"])}</button>
+        <button class="btn btn-p btnsm" onclick="dpConfirmSummary(${ti},'${tid}')">${pk(["ยืนยัน","ຢືนຢัน","Confirm"])}</button>
+      </div></div>`;
+  }
+  /* closed */
+  const ok=re && /^\[ผล\]/.test(re.note);
+  const donePct=re?(+re.pct||0)/(t.wt||1)*100:cur;
+  const ce=canEditTs(m.sumTs);
+  const body=(m.lines&&m.lines.length)?m.lines.map((L,i)=>`<div class="cl-li"><span class="cl-st st-${L.st}">${pk(SUM_ST[L.st]||SUM_ST.ontrack)}</span><b>${esc2(items[i]||"")}</b>${L.result?` — ${esc2(L.result)}`:""}${L.reason?` <span class="cl-rsn">(${esc2(L.reason)})</span>`:""}</div>`).join("")
+    :`<div class="cl-li">${esc2(String(re.note).replace(/^\[(ผล|ไม่ได้ทำ)\]\s*/,""))}</div>`;
+  const editBtn=ce?`<button class="btn btn-o btnsm" onclick="dpEditSummary('${tid}')">✎ ${pk(["แก้ไข","ແກ້ໄຂ","Edit"])}<span class="tc-tmr">⏳${editLeftMin(m.sumTs)}′</span></button>`
+    :`<span class="tc-lock">🔒 ${pk(["เลยเวลาแก้ไข","ໝົດເວລາແກ້ໄຂ","edit closed"])}</span>`;
+  return `<div class="tcard s-closed ${ok?"ok":"no"}"><div class="tc-accent"></div>${hd}
+    <div class="cl-tag">${ok?`✅ ${pk(["ปิดงานแล้ว","ປິດແລ້ວ","Closed"])} ${fmt1(donePct)}%`:`❌ ${pk(["ไม่ได้ทำ","ບໍ່ໄດ້ເຮັດ","Not done"])}`}</div>
+    <div class="cl-body">${body}</div>
+    <div class="tc-actions">${editBtn}</div></div>`;
+}
+function dpAddPlanLine(ti){ const box=document.getElementById("pl_"+ti); if(!box) return; box.insertAdjacentHTML("beforeend",plLineRow("")); const ins=box.querySelectorAll(".plln"); ins[ins.length-1].focus(); }
+function dpDelPlanLine(btn){ const box=btn.closest(".tc-lines"), row=btn.closest(".pl-row"); if(box&&box.querySelectorAll(".pl-row").length>1) row.remove(); else { const i=row.querySelector(".plln"); if(i) i.value=""; } }
+function dpClearPlan(ti){ const box=document.getElementById("pl_"+ti); if(box) box.innerHTML=plLineRow(""); }
+function dpConfirmPlan(ti,tid){
+  const box=document.getElementById("pl_"+ti); if(!box) return;
+  const items=[...box.querySelectorAll(".plln")].map(i=>i.value.trim()).filter(Boolean);
+  if(!items.length){ alert(pk(["พิมพ์แผนอย่างน้อย 1 ข้อ","ພິມແຜນ 1 ຂໍ້","Type at least one item"])); return; }
+  const by=(document.getElementById("dpBy")?document.getElementById("dpBy").value:"").trim();
+  const entry=sanEntry({date:DAILY_DATE,taskId:tid,pct:taskCurPts(tid),mh:0,by,note:"[แผน] "+items.join(" | ")});
+  ENTRIES.push(entry); saveEntries(ENTRIES); applyEntries(); pushToSheet(entry);
+  const k=tmetaKey(tid); TMETA[k]=Object.assign({},TMETA[k],{plan:items}); if(!TMETA[k].planTs) TMETA[k].planTs=Date.now(); saveTMeta();
+  DAILY_EDIT=""; entryDailyPage(); dpToast("☀️ "+pk(["บันทึกแผนแล้ว","ບັນທຶກແຜນແລ້ວ","Plan saved"]));
+}
+function dpEditPlan(ti,tid){ const m=tmeta(tid); if(!canEditTs(m.planTs)){ entryDailyPage(); return; } DAILY_EDIT=tid; DAILY_SUM=""; entryDailyPage(); }
+function dpStartSummary(tid){ DAILY_SUM=tid; DAILY_EDIT=""; entryDailyPage(); }
+function dpEditSummary(tid){ const m=tmeta(tid); if(!canEditTs(m.sumTs)){ entryDailyPage(); return; } DAILY_SUM=tid; entryDailyPage(); }
+function dpClearSummary(ti){ const c=document.getElementById("sum_"+ti); if(!c) return; c.querySelectorAll(".sumst").forEach(s=>s.value="ontrack"); c.querySelectorAll(".sumres,.sumrsn").forEach(i=>i.value=""); }
+function dpConfirmSummary(ti,tid){
+  const x=TASK_INDEX[tid]; if(!x) return;
+  const c=document.getElementById("sum_"+ti); if(!c) return;
+  const sts=[...c.querySelectorAll(".sumst")], res=[...c.querySelectorAll(".sumres")], rsn=[...c.querySelectorAll(".sumrsn")];
+  const items=planItemsOf(tid), base=items.length?items:["(งานนี้)"];
+  const lines=base.map((li,i)=>({st:(sts[i]?sts[i].value:"ontrack"), result:(res[i]?res[i].value.trim():""), reason:(rsn[i]?rsn[i].value.trim():"")}));
+  for(const L of lines){ if(L.st!=="ontrack" && !L.reason){ alert(pk(["งานที่ไม่ตามแผน/ไม่ได้ทำ ต้องใส่เหตุผล","ຕ້ອງໃສ່ເຫດຜົນ","Reason required for off-plan / not-done"])); return; } }
+  const allUndone=lines.every(L=>L.st==="undone");
+  const v=parseFloat(document.getElementById("sp_"+ti).value);
+  if(isNaN(v)||v<0||v>100){ alert(pk(["กรอก % ระหว่าง 0–100","ປ້ອນ 0–100","Enter 0–100"])); return; }
+  const cur=x.t.act*100;
+  if(!allUndone && v<cur-0.01 && !confirm(pk(["⚠️ กำลังปรับลดจาก "+fmt1(cur)+"% → "+fmt1(v)+"% ยืนยัน?","⚠️ ຫຼຸດ ຢືนຢัน?","⚠️ Decrease "+fmt1(cur)+"% → "+fmt1(v)+"%?"]))) return;
+  const composed=base.map((li,i)=>{ const L=lines[i]; return li+" ["+pk(SUM_ST[L.st])+"]"+(L.result?" — "+L.result:"")+(L.reason?" ("+L.reason+")":""); }).join(" | ");
+  const prefix=allUndone?"[ไม่ได้ทำ]":"[ผล]";
+  const pts=allUndone?taskCurPts(tid):Math.round(v*x.t.wt)/100;
+  const by=(document.getElementById("dpBy")?document.getElementById("dpBy").value:"").trim();
+  const entry=sanEntry({date:DAILY_DATE,taskId:tid,pct:pts,mh:0,by,note:prefix+" "+composed});
+  ENTRIES.push(entry); saveEntries(ENTRIES); applyEntries(); pushToSheet(entry);
+  const k=tmetaKey(tid); TMETA[k]=Object.assign({},TMETA[k],{lines, pct:allUndone?cur:v}); if(!TMETA[k].sumTs) TMETA[k].sumTs=Date.now(); saveTMeta();
+  DAILY_SUM=""; entryDailyPage(); dpToast((allUndone?"❌ ":"✅ ")+pk(["สรุปงานแล้ว","ສະຫຼຸບແລ້ວ","Summarized"]));
+}
 function ja1(x){ return Math.round(x*10)/10; }
 /* วงแหวน donut แสดง % ความคืบหน้า (ตรงกลางมีตัวเลข) */
 function jobDonut(pct,color){
@@ -2160,115 +2329,23 @@ function entryDailyPage(){
   /* ---- หน้าที่ 2: ราย Job — แตกทุก Task เป็นการ์ด (วางแผนเช้า + ปิดงานเย็นในตัวเอง) ---- */
   const j=jl.find(x=>x.id===DAILY_JOB);
   const jaSel=agg(j.tasks,REPORT_WK);
-  /* เรียง: ล่าช้าสุด (ผลจริง−แผน ติดลบมากสุด) อยู่บน · เสร็จ 100% ลงล่างสุด */
-  const rows = j.tasks.map(t=>({t, done:actAt(t,REPORT_WK)>=1, varc:actAt(t,REPORT_WK)-t.plan(REPORT_WK)}))
-    .sort((a,b)=> a.done!==b.done ? (a.done?1:-1) : (a.varc-b.varc))
-    .map((o,ti)=>{
-    const t=o.t;
-    const plan=planForToday(t.id), res=todayResult(t.id);
-    const curPct=fmt1(t.act*100);
-    /* Task ที่เสร็จ 100% แล้ว → ล็อก วางแผน/ปิดงานไม่ได้ */
-    if(actAt(t,REPORT_WK)>=1){
-      return `<div class="card" style="border-left:4px solid var(--good);margin-bottom:8px;padding:11px 14px;opacity:.85">
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <b style="font-size:14.5px">${tr(t.name)}</b>
-          <span class="chip c-good" style="margin-left:auto">✓ ${pk(["เสร็จ 100% แล้ว","ສຳເລັດ 100%","done 100%"])}</span></div>
-        <div class="small" style="color:var(--mut);margin-top:4px">🔒 ${pk(["งานนี้เสร็จแล้ว ไม่ต้องวางแผน/บันทึกอีก","ວຽກນີ້ສຳເລັດແລ້ວ","completed — no more planning"])}</div></div>`;
-    }
-    const items=plan?String(plan.note).replace(/^\[แผน\]\s*/,"").split(" | ").filter(Boolean):[];
-    const border = res?(/^\[ผล\]/.test(res.note)?"var(--good)":"var(--crit)") : (plan?"var(--warn)":"var(--line)");
-    const planBlock = items.length?`<ol style="margin:2px 0 8px 20px;padding:0;font-size:13px;line-height:1.6;color:var(--ink)">${items.map(it=>`<li>${it}</li>`).join("")}</ol>`
-      :`<div style="display:flex;gap:8px;align-items:center;margin:2px 0 8px">
-        <input id="dpPlan${ti}" placeholder="☀️ ${pk(["จะทำอะไรกับงานนี้วันนี้","ຈະເຮັດຫຍັງ","plan for today"])}" style="flex:1;min-width:160px;padding:7px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit">
-        <button class="btn btn-o btnsm" onclick="dpPlanTask(${ti},'${t.id}')">${pk(["วางแผน","ວາງແຜນ","plan"])}</button></div>`;
-    let closeBlock;
-    if(res && /^\[ผล\]/.test(res.note)){
-      closeBlock=`<div class="small" style="background:#DCFCE7;color:#16A34A;border-radius:9px;padding:7px 12px;font-weight:700">✅ ${pk(["ปิดงานแล้ว","ປິດແລ້ວ","closed"])} ${fmt1((+res.pct||0)/(t.wt||1)*100)}% — <span style="font-weight:500">${String(res.note).replace(/^\[ผล\]\s*/,"")}</span></div>`;
-    } else if(res){
-      closeBlock=`<div class="small" style="background:#FEE2E2;color:#DC2626;border-radius:9px;padding:7px 12px;font-weight:700">❌ ${pk(["ไม่ได้ทำ","ບໍ່ໄດ້ເຮັດ","not done"])} — <span style="font-weight:500">${String(res.note).replace(/^\[ไม่ได้ทำ\]\s*/,"")}</span></div>`;
-    } else {
-      closeBlock=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <button class="btn btn-p btnsm" onclick="dpShow(${ti},'done')">✅ ${pk(["ทำแล้ว — ใส่ %","ເຮັດແລ້ວ","done — %"])}</button>
-        <button class="btn btn-o btnsm" onclick="dpShow(${ti},'skip')">❌ ${pk(["ไม่ได้ทำ","ບໍ່ໄດ້ເຮັດ","not done"])}</button></div>
-      <div id="dpDone${ti}" style="display:none;margin-top:8px;background:var(--tint);border-radius:10px;padding:10px 12px">
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <label class="small">${pk(["% ตอนนี้","% ຕອນນີ້","% now"])}</label>
-          <input id="dpPct${ti}" type="number" min="0" max="100" step="0.5" value="${fmt1(t.act*100).replace(",","")}" style="width:90px;padding:8px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit;text-align:center;font-size:16px;font-weight:700">
-          <span class="small num" style="color:var(--mut)">(${pk(["เดิม","ເດີມ","was"])} ${curPct}%)</span>
-          <input id="dpTxt${ti}" placeholder="${pk(["ทำอะไรไปแล้ว (สั้นๆ)","ເຮັດຫຍັງແລ້ວ","what was done"])}" style="flex:1;min-width:160px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit">
-          <button class="btn btn-p btnsm" onclick="dpDone(${ti},'${t.id}')">${pk(["บันทึก","ບັນທຶກ","save"])}</button></div></div>
-      <div id="dpSkip${ti}" style="display:none;margin-top:8px;background:#FEF3C7;border-radius:10px;padding:10px 12px">
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <label class="small" style="font-weight:700">${pk(["เหตุผล (จำเป็น)","ເຫດຜົນ","reason"])}</label>
-          <input id="dpRsn${ti}" placeholder="${pk(["เช่น รออะไหล่ / ฝนตก","ເຊັ່ນ ລໍຖ້າອາໄຫຼ່","e.g. waiting parts"])}" style="flex:1;min-width:180px;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit">
-          <button class="btn btn-o btnsm" onclick="dpSkip(${ti},'${t.id}')">${pk(["บันทึก","ບັນທຶກ","save"])}</button></div></div>`;
-    }
-    return `<div class="card" style="border-left:4px solid ${border};margin-bottom:8px;padding:11px 14px">
-      <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin-bottom:2px">
-        <b style="font-size:14.5px">${tr(t.name)}</b>
-        <span class="small num" style="color:var(--mut)">${pk(["ตอนนี้","ຕອນນີ້","now"])} ${curPct}%${plan&&plan.by?" · ☀️ "+plan.by:""}</span></div>
-      ${planBlock}${closeBlock}</div>`;
-  }).join("");
+  /* เอาเฉพาะ Task ที่ยังไม่เต็ม 100% · เรียง: ยังไม่สรุปวันนี้ + ล่าช้าสุดอยู่บน · ที่สรุปแล้วลงล่าง */
+  const rows = j.tasks.filter(t=> actAt(t,REPORT_WK) < 1 )
+    .map(t=>({t, rec:!!todayResult(t.id), varc:actAt(t,REPORT_WK)-t.plan(REPORT_WK)}))
+    .sort((a,b)=> a.rec!==b.rec ? (a.rec?1:-1) : (a.varc-b.varc))
+    .map((o,ti)=> taskCardHtml(o.t,ti)).join("")
+    || `<div class="card" style="text-align:center;padding:26px;color:var(--good);font-weight:800">🎉 ${pk(["ทุก Task ของ Job นี้เสร็จ 100% แล้ว","ທຸກ Task ສຳເລັດ 100%","All tasks 100% done"])}</div>`;
   app.innerHTML = head + bar("dailySelectJob('')"," · "+tr(j.name)) + `
   <div class="card" style="border-left:4px solid var(--blue);display:flex;gap:12px;align-items:center;flex-wrap:wrap">
     <b style="font-size:15px">${tr(j.name)}</b><span class="num" style="color:var(--mut)">${pk(["รวม","ລວມ","total"])} ${fmt1(jaSel.act)}% · ${j.tasks.length} task</span>
     <div class="fld" style="margin-left:auto;min-width:200px"><label class="small">${pk(["ผู้บันทึก (ใช้ทุก Task)","ຜູ້ບັນທຶກ","By (all tasks)"])}</label>
       <input id="dpBy" style="width:100%;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit"></div></div>
-  <div class="small" style="margin:4px 4px 10px;color:var(--mut)">☀️ ${pk(["เช้า: พิมพ์แผนของแต่ละ Task แล้วกดวางแผน · 🌙 เย็น: กด ✅ ใส่ % หรือ ❌ บอกเหตุผล","ເຊົ້າວາງແຜນ · ແລງປິດງານ","morning plan · evening close"])}</div>
+  <div class="small" style="margin:4px 4px 10px;color:var(--mut)">☀️ ${pk(["เช้า: พิมพ์แผนงาน (กด ＋ เพิ่มได้) แล้วกดยืนยัน · แก้ไขได้ภายใน 1 ชม. · 🌙 เย็น: กดสรุปงาน ระบุสถานะ/ผล/เหตุผล และ % ความคืบหน้า","ເຊົ້າວາງແຜນ ຢືนຢัน (ແກ້ໄດ້ 1 ຊມ) · ແລງສະຫຼຸບ","morning: plan then confirm (editable 1h) · evening: summarize"])}</div>
   ${rows}
   <div id="entryToast"></div>`;
 }
 function planForToday(tid){ const d=DAILY_DATE; let last=null;
   ENTRIES.forEach(e=>{ if(e.date===d && e.taskId===tid && isPlanNote(e) && (!last||e.date>=last.date)) last=e; }); return last; }
-function dpPlanTask(ti,tid){
-  const raw=(document.getElementById("dpPlan"+ti).value||"").trim();
-  if(!raw){ alert(pk(["พิมพ์แผนก่อน","ພິມແຜນກ່ອນ","Type a plan first"])); return; }
-  const items=raw.split(/\n|\s\/\s/).map(s=>s.trim().replace(/^\d+[\).\s]*/,"")).filter(Boolean);
-  const entry=sanEntry({date:DAILY_DATE, taskId:tid, pct:taskCurPts(tid), mh:0,
-    by:(document.getElementById("dpBy")?document.getElementById("dpBy").value:"").trim(), note:"[แผน] "+items.join(" | ")});
-  ENTRIES.push(entry); saveEntries(ENTRIES); applyEntries(); pushToSheet(entry);
-  entryDailyPage();
-  const t=document.getElementById("entryToast"); if(t){ t.innerHTML=`<div class="toast">☀️ ${pk(["บันทึกแผนแล้ว","ບັນທຶກແຜນແລ້ວ","Plan saved"])}</div>`; setTimeout(()=>t.innerHTML="",2500); }
-}
-function dpShow(pi,which){
-  const d=document.getElementById("dpDone"+pi), s=document.getElementById("dpSkip"+pi);
-  if(d) d.style.display = which==='done'?"block":"none";
-  if(s) s.style.display = which==='skip'?"block":"none";
-}
-function dpPlanOne(){
-  const tid=document.getElementById("dpTask").value;
-  const raw=(document.getElementById("dpItems").value||"").trim();
-  if(!tid || !raw){ alert(pk(["เลือกงานและพิมพ์แผนอย่างน้อย 1 ข้อก่อน","ເລືອກວຽກ+ພິມແຜນກ່ອນ","Pick a task and type at least one item"])); return; }
-  const items=raw.split("\n").map(s=>s.trim().replace(/^\d+[\).\s]*/,"")).filter(Boolean);
-  const entry=sanEntry({date:DAILY_DATE, taskId:tid, pct:taskCurPts(tid), mh:0,
-    by:(document.getElementById("dpBy").value||"").trim(), note:"[แผน] "+items.join(" | ")});
-  ENTRIES.push(entry); saveEntries(ENTRIES); applyEntries(); pushToSheet(entry);
-  entryDailyPage();
-  const t=document.getElementById("entryToast"); if(t){ t.innerHTML=`<div class="toast">☀️ ${pk(["บันทึกแผนวันนี้แล้ว","ບັນທຶກແຜນແລ້ວ","Plan saved"])}</div>`; setTimeout(()=>t.innerHTML="",2500); }
-}
-function dpDone(pi,tid){
-  const x=TASK_INDEX[tid]; if(!x) return;
-  const v=parseFloat(document.getElementById("dpPct"+pi).value);
-  if(isNaN(v)||v<0||v>100){ alert(pk(["กรอก % ระหว่าง 0–100","ປ້ອນ 0–100","Enter 0–100"])); return; }
-  const cur=x.t.act*100;
-  if(v<cur-0.01 && !confirm(pk(["⚠️ กำลังปรับลดจาก "+fmt1(cur)+"% → "+fmt1(v)+"% ยืนยัน?","⚠️ ຫຼຸດ ຢືນຢັນ?","⚠️ Decreasing "+fmt1(cur)+"% → "+fmt1(v)+"%. Confirm?"]))) return;
-  const pts=Math.round(v*x.t.wt)/100;
-  const txt=(document.getElementById("dpTxt"+pi).value||"").trim();
-  const entry=sanEntry({date:DAILY_DATE, taskId:tid, pct:pts, mh:0,
-    by:(document.getElementById("dpBy")?document.getElementById("dpBy").value:"").trim(), note:"[ผล] "+(txt||"ตามแผน")});
-  ENTRIES.push(entry); saveEntries(ENTRIES); applyEntries(); pushToSheet(entry);
-  entryDailyPage();
-  const t=document.getElementById("entryToast"); if(t){ t.innerHTML=`<div class="toast">✅ ${pk(["ปิดงานแล้ว","ປິດວຽກແລ້ວ","Closed"])} ${fmt1(v)}%</div>`; setTimeout(()=>t.innerHTML="",2500); }
-}
-function dpSkip(pi,tid){
-  const rsn=(document.getElementById("dpRsn"+pi).value||"").trim();
-  if(!rsn){ alert(pk(["ต้องบอกเหตุผลที่ไม่ได้ทำ","ຕ້ອງບອກເຫດຜົນ","Reason is required"])); return; }
-  const entry=sanEntry({date:DAILY_DATE, taskId:tid, pct:taskCurPts(tid), mh:0,
-    by:(document.getElementById("dpBy")?document.getElementById("dpBy").value:"").trim(), note:"[ไม่ได้ทำ] "+rsn});
-  ENTRIES.push(entry); saveEntries(ENTRIES); applyEntries(); pushToSheet(entry);
-  entryDailyPage();
-  const t=document.getElementById("entryToast"); if(t){ t.innerHTML=`<div class="toast">❌ ${pk(["บันทึกเหตุผลแล้ว","ບັນທຶກແລ້ວ","Reason saved"])}</div>`; setTimeout(()=>t.innerHTML="",2500); }
-}
 
 /* หน้าเลือกแผนก */
 function entryPickerPage(){
