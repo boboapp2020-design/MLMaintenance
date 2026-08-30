@@ -548,7 +548,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r117";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r118";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1691,7 +1691,7 @@ function restoreNav(){
   if(typeof ENTRY_MODE!=="undefined") ENTRY_MODE=s.em||"daily";
   if(typeof DAILY_VIEW!=="undefined") DAILY_VIEW=s.dv||"card";
   if(typeof DAILY_FILTER!=="undefined") DAILY_FILTER=s.df||"all";
-  if(s.wnow>=1 && s.wnow<=WEEKS) WNOW=s.wnow;
+  if(s.wnow>=REPORT_WK && s.wnow<=WEEKS) WNOW=s.wnow;  // อย่า restore สัปดาห์เก่าที่ต่ำกว่าสัปดาห์รายงาน (จะทำให้ actAt สเกล % ลง)
   renderNav();
   try{
     if(PAGE==="entry"){ DEPT=s.dept||""; if(typeof DAILY_JOB!=="undefined") DAILY_JOB=s.dj||""; entryPage(); }
@@ -2108,10 +2108,10 @@ function entryDailyPage(){
       const jd=jp.filter(p=>{const r=resOf(p); return r&&/^\[ผล\]/.test(r.note);}).length;
       const js2=jp.filter(p=>{const r=resOf(p); return r&&/^\[ไม่ได้ทำ\]/.test(r.note);}).length;
       const open=jp.length-jd-js2;
-      const ja=agg(j.tasks,WNOW);
-      const tDone=j.tasks.filter(t=>actAt(t,WNOW)>=1).length;               // งานเสร็จแล้ว (สีเขียว)
-      const tDoing=j.tasks.filter(t=>{const a=actAt(t,WNOW);return a>0&&a<1;}).length;  // กำลังทำ (สีเหลือง)
-      const tNew=j.tasks.filter(t=>actAt(t,WNOW)<=0).length;                // ยังไม่เริ่ม (สีแดง)
+      const ja=agg(j.tasks,REPORT_WK);
+      const tDone=j.tasks.filter(t=>actAt(t,REPORT_WK)>=1).length;               // งานเสร็จแล้ว (สีเขียว)
+      const tDoing=j.tasks.filter(t=>{const a=actAt(t,REPORT_WK);return a>0&&a<1;}).length;  // กำลังทำ (สีเหลือง)
+      const tNew=j.tasks.filter(t=>actAt(t,REPORT_WK)<=0).length;                // ยังไม่เริ่ม (สีแดง)
       const acc = statusOf(ja.act-ja.plan);        // สีการ์ด = สถานะเทียบแผน (เขียว/เหลือง/แดง)
       const dstate = !jp.length ? "noplan" : (open>0 ? "open" : "done");  // สถานะวางแผน/ปิดงานวันนี้ (ป้าย)
       return {j, jp, jd, js2, open, ja, tDone, tDoing, tNew, acc, dstate};
@@ -2159,16 +2159,16 @@ function entryDailyPage(){
   }
   /* ---- หน้าที่ 2: ราย Job — แตกทุก Task เป็นการ์ด (วางแผนเช้า + ปิดงานเย็นในตัวเอง) ---- */
   const j=jl.find(x=>x.id===DAILY_JOB);
-  const jaSel=agg(j.tasks,WNOW);
+  const jaSel=agg(j.tasks,REPORT_WK);
   /* เรียง: ล่าช้าสุด (ผลจริง−แผน ติดลบมากสุด) อยู่บน · เสร็จ 100% ลงล่างสุด */
-  const rows = j.tasks.map(t=>({t, done:actAt(t,WNOW)>=1, varc:actAt(t,WNOW)-t.plan(WNOW)}))
+  const rows = j.tasks.map(t=>({t, done:actAt(t,REPORT_WK)>=1, varc:actAt(t,REPORT_WK)-t.plan(REPORT_WK)}))
     .sort((a,b)=> a.done!==b.done ? (a.done?1:-1) : (a.varc-b.varc))
     .map((o,ti)=>{
     const t=o.t;
     const plan=planForToday(t.id), res=todayResult(t.id);
     const curPct=fmt1(t.act*100);
     /* Task ที่เสร็จ 100% แล้ว → ล็อก วางแผน/ปิดงานไม่ได้ */
-    if(actAt(t,WNOW)>=1){
+    if(actAt(t,REPORT_WK)>=1){
       return `<div class="card" style="border-left:4px solid var(--good);margin-bottom:8px;padding:11px 14px;opacity:.85">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <b style="font-size:14.5px">${tr(t.name)}</b>
@@ -2304,15 +2304,15 @@ function jobDetailHtml(){
   if(j){
     const act=jobActiveTasks(j), doneToday=act.filter(t=>recordedToday(t.id)).length;
     const conf=isJobConfirmed(j.id), allDone=act.length>0 && doneToday>=act.length;
-    const ja=agg(j.tasks,WNOW);
+    const ja=agg(j.tasks,REPORT_WK);
     right=`<h3>${tr(j.name)}</h3>
       <div class="jd-sub num">${j.id} · ${pk(["สัปดาห์นี้บันทึก","ອາທິດນີ້ບັນທຶກ","this week"])} ${doneToday}/${act.length} task · ${pk(["รวม","ລວມ","total"])} ${fmt1(ja.act)}% / ${pk(["แผน","ແຜນ","plan"])} ${fmt1(ja.plan)}%</div>
       ${(function(){
         /* Job ที่ Task มีกลุ่ม ("1.1 กลุ่ม · งาน") → คงลำดับตามกลุ่ม + แทรกหัวกลุ่มคั่น · Job ปกติ → เรียงงานเสร็จไปท้ายเหมือนเดิม */
         const hasGrp=j.tasks.some(t=>/^\d+\.\d+[^·]*?·/.test(t.name));
-        const list=hasGrp? j.tasks : j.tasks.slice().sort((a,b)=>(actAt(a,WNOW)>=1?1:0)-(actAt(b,WNOW)>=1?1:0));
+        const list=hasGrp? j.tasks : j.tasks.slice().sort((a,b)=>(actAt(a,REPORT_WK)>=1?1:0)-(actAt(b,REPORT_WK)>=1?1:0));
         let lastG=null;
-        return list.map(t=>{ const rec=recordedToday(t.id), done=actAt(t,WNOW)>=1, ta=actAt(t,WNOW)*100, tp=t.plan(WNOW)*100, cur=fmt1(ta);
+        return list.map(t=>{ const rec=recordedToday(t.id), done=actAt(t,REPORT_WK)>=1, ta=actAt(t,REPORT_WK)*100, tp=t.plan(REPORT_WK)*100, cur=fmt1(ta);
         const cc=done?"#16A34A":(statusOf(ta-tp)[1]==="good"?"#16A34A":statusOf(ta-tp)[1]==="warn"?"#D97706":"#EF4444");
         const gm=/^(\d+\.\d+[^·]*?)\s*·\s*(.+)$/.exec(t.name);
         const grp=gm?gm[1].trim():null, nm=gm?gm[2]:t.name;
@@ -2346,7 +2346,7 @@ function entryDeptPage(){
   const totalActive=activeTasksOf(u).length;
   const left=jl.length? jl.map(j=>{
     const act=jobActiveTasks(j), dn=act.filter(t=>recordedToday(t.id)).length, conf=isJobConfirmed(j.id);
-    const jpct=agg(j.tasks,WNOW).act, jdone=jpct>=99.5;   // Job เสร็จ 100% แล้วหรือยัง
+    const jpct=agg(j.tasks,REPORT_WK).act, jdone=jpct>=99.5;   // Job เสร็จ 100% แล้วหรือยัง
     const st = jdone?`<span style="color:var(--good)">✔</span>` : conf?`<span style="color:var(--good)">✓</span>` : (act.length&&dn>=act.length?`<span style="color:var(--warn);font-weight:800">●</span>` : dn>0?`<span style="color:var(--warn);font-weight:800">◐</span>` : `<span style="color:var(--crit);font-weight:900;font-size:16px">✗</span>`);
     return `<div class="joblistitem ${j.id===SELJOB?'active':''} ${jdone?'jdone':''}" tabindex="0" onclick="selectJob('${j.id}')">
       <span class="jl-nm">${tr(j.name)}<span class="num">${jdone?pk(["ทั้ง Job เสร็จแล้ว","ທັງ Job ສຳເລັດ","job complete"]):(pk(["สัปดาห์นี้","ອາທິດນີ້","this wk"])+" "+dn+"/"+act.length+" task")} · ${fmt1(jpct)}%</span></span>
