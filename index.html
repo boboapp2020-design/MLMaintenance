@@ -495,6 +495,35 @@ svg text{font-family:inherit}
 .trk-res{font-size:12.5px;color:var(--mut);margin-top:2px;word-break:break-word}
 .trk-right{flex:0 0 auto;text-align:right;display:flex;flex-direction:column;gap:5px;align-items:flex-end}
 .trk-pct{font-weight:800;font-size:13px;color:var(--ink)}
+/* ปฏิทิน */
+.cal-nav{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:12px}
+.cal-title{font-weight:800;font-size:17px;color:var(--ink);min-width:130px;text-align:center}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-head{margin-bottom:6px}
+.cal-wd{text-align:center;font-size:12px;font-weight:800;color:var(--mut);padding:4px 0}
+.cal-cell{min-height:74px;border:1px solid var(--line);border-radius:10px;padding:6px 7px;background:var(--card);display:flex;flex-direction:column;gap:4px;transition:box-shadow .14s,transform .14s}
+.cal-cell[onclick]{cursor:pointer}
+.cal-cell[onclick]:hover{box-shadow:0 5px 15px rgba(30,42,58,.14);transform:translateY(-1px)}
+.cal-empty{border:none;background:none;min-height:0}
+.cal-dnum{font-size:13px;font-weight:800;color:var(--ink)}
+.cal-fut{opacity:.5}
+.cal-hol{background:var(--tint2)}
+.cal-hol .cal-dnum{color:var(--mut)}
+.cal-today{outline:2px solid var(--blue);outline-offset:-2px}
+.cal-good{background:var(--good-bg);border-color:#A7E9BE}
+.cal-warn{background:var(--warn-bg);border-color:#F5D488}
+.cal-crit{background:var(--crit-bg);border-color:#F3B0B0}
+.cal-badges{display:flex;flex-direction:column;gap:2px}
+.cal-badges .cb{font-size:10.5px;font-weight:800;border-radius:5px;padding:0 4px;white-space:nowrap}
+.cb-g{color:var(--good)}.cb-y{color:var(--warn)}.cb-r{color:var(--crit)}.cb-w{color:var(--mut)}
+.cal-off{font-size:10px;color:var(--mut);font-weight:700}
+.cal-legend{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:12px;font-size:12px;color:var(--mut);font-weight:600}
+.cal-legend span{display:inline-flex;align-items:center;gap:6px}
+.cal-legend .lg{width:12px;height:12px;border-radius:4px;display:inline-block}
+.cal-legend .lg.g{background:var(--good-bg);border:1px solid #A7E9BE}
+.cal-legend .lg.y{background:var(--warn-bg);border:1px solid #F5D488}
+.cal-legend .lg.r{background:var(--crit-bg);border:1px solid #F3B0B0}
+@media(max-width:640px){.cal-cell{min-height:58px;padding:4px}.cal-badges .cb{font-size:9.5px}.cal-title{font-size:15px;min-width:100px}}
 .jconfirm{margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .entrysplit{display:grid;grid-template-columns:310px 1fr;gap:16px;align-items:start}
 @media(max-width:820px){.entrysplit{grid-template-columns:1fr}}
@@ -631,7 +660,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r123";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r124";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1932,6 +1961,43 @@ function trackStatus(res){
   return dev?{k:"off",rank:1,lb:pk(["ไม่ตามแผน","ບໍ່ຕາມແຜນ","off-plan"]),cls:"warn",ic:"⚠️"}
             :{k:"ontrack",rank:3,lb:pk(["ตามแผน","ຕາມແຜນ","on plan"]),cls:"good",ic:"✅"};
 }
+let JOBS_VIEW="day";   /* day = รายวัน · cal = ปฏิทินรายเดือน */
+function jobsSetView(v){ JOBS_VIEW=v; jobsPage(); }
+function jobsPickDay(ds){ JOBS_DATE=ds; JOBS_VIEW="day"; jobsPage(); }
+function jobsShiftMonth(delta){ const p=JOBS_DATE.split("-").map(Number); const dt=new Date(p[0],p[1]-1+delta,1);
+  JOBS_DATE=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-01"; jobsPage(); }
+/* ปฏิทินรายเดือน: แต่ละวันสรุปว่า Task ที่วางแผนไว้ ทำ/ไม่ทำ (✅⚠️❌⏳) · คลิกวันเพื่อดูรายละเอียด */
+function jobsCalendarHtml(){
+  const p=JOBS_DATE.split("-").map(Number), Y=p[0], M=p[1], mp=Y+"-"+String(M).padStart(2,"0");
+  const plansByDate={}, resByDate={};
+  ENTRIES.forEach(e=>{ if(String(e.date).slice(0,7)!==mp) return;
+    if(isPlanNote(e)){ (plansByDate[e.date]=plansByDate[e.date]||{})[e.taskId]=e; }
+    else if(isResultNote(e)){ (resByDate[e.date]=resByDate[e.date]||{})[e.taskId]=e; } });
+  const daysIn=new Date(Y,M,0).getDate(), startDow=new Date(Y,M-1,1).getDay();
+  const monthNames=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  const wd=["อา","จ","อ","พ","พฤ","ศ","ส"], today=todayISO(), yLabel=LANG==="th"?(Y+543):Y;
+  let cells="";
+  for(let i=0;i<startDow;i++) cells+=`<div class="cal-cell cal-empty"></div>`;
+  for(let day=1;day<=daysIn;day++){
+    const ds=Y+"-"+String(M).padStart(2,"0")+"-"+String(day).padStart(2,"0");
+    const tids=Object.keys(plansByDate[ds]||{});
+    let done=0,off=0,undone=0,pending=0;
+    tids.forEach(tid=>{ const s=trackStatus((resByDate[ds]||{})[tid]); if(s.k==="ontrack")done++;else if(s.k==="off")off++;else if(s.k==="undone")undone++;else pending++; });
+    const hol=isHolidayDate(new Date(Y,M-1,day)), future=ds>today, isTd=ds===today;
+    let cls="cal-cell"; if(hol) cls+=" cal-hol"; if(future) cls+=" cal-fut"; if(isTd) cls+=" cal-today";
+    if(tids.length){ if(undone>0) cls+=" cal-crit"; else if(off>0||pending>0) cls+=" cal-warn"; else cls+=" cal-good"; }
+    const badges = tids.length? `<div class="cal-badges">${done?`<span class="cb cb-g">✅${done}</span>`:""}${off?`<span class="cb cb-y">⚠️${off}</span>`:""}${undone?`<span class="cb cb-r">❌${undone}</span>`:""}${pending?`<span class="cb cb-w">⏳${pending}</span>`:""}</div>`
+      : (hol?`<div class="cal-off">${pk(["หยุด","ພັກ","off"])}</div>`:"");
+    const clickable = tids.length>0 || !future;
+    cells+=`<div class="${cls}" ${clickable?`onclick="jobsPickDay('${ds}')" tabindex="0"`:""}><div class="cal-dnum">${day}</div>${badges}</div>`;
+  }
+  return `<div class="cal-nav"><button class="trk-navbtn" onclick="jobsShiftMonth(-1)">◀</button>
+    <div class="cal-title">${monthNames[M-1]} ${yLabel}</div>
+    <button class="trk-navbtn" onclick="jobsShiftMonth(1)">▶</button></div>
+    <div class="cal-grid cal-head">${wd.map(w=>`<div class="cal-wd">${w}</div>`).join("")}</div>
+    <div class="cal-grid">${cells}</div>
+    <div class="cal-legend"><span><i class="lg g"></i>${pk(["ตามแผนครบ","ຕາມແຜນຄົບ","all on-plan"])}</span><span><i class="lg y"></i>${pk(["ไม่ตามแผน/ยังไม่ปิด","ບໍ່ຕາມ/ຍັງບໍ່ປິດ","off / pending"])}</span><span><i class="lg r"></i>${pk(["มีไม่ได้ทำ","ມີບໍ່ໄດ້ເຮັດ","has not-done"])}</span></div>`;
+}
 /* หน้า "งานซ่อม" = ติดตามแผน/ผลรายวัน (ทิศทางเดียวกับหน้าบันทึก) — ไล่ทุก Task ที่มีแผนในวันนั้น ครบทุกแผนก */
 function jobsPage(){
   const d=JOBS_DATE, isToday=d===todayISO();
@@ -1980,9 +2046,12 @@ function jobsPage(){
       </div>`;
     }).join("");
   }
+  const toggle=`<div class="jpviewtog" style="margin:0 4px 14px">
+    <button class="${JOBS_VIEW==='day'?'on':''}" onclick="jobsSetView('day')">☰ ${pk(["รายวัน","ລາຍວັນ","Daily"])}</button>
+    <button class="${JOBS_VIEW==='cal'?'on':''}" onclick="jobsSetView('cal')">📅 ${pk(["ปฏิทิน","ປະຕິທິນ","Calendar"])}</button></div>`;
   app.innerHTML = pagehead(pk(["งานซ่อม — ติดตามแผน/ผลรายวัน","ວຽກສ້ອມແປງ — ຕິດຕາມແຜນ/ຜົນລາຍວັນ","Maintenance — daily plan vs actual"]),
     pk(["ไล่ดูทุก Task ที่วางแผนไว้ · ทำ/ไม่ทำ · ตามแผน/ไม่ตามแผน ครบทุกแผนก · คลิกเพื่อไปบันทึก","ເບິ່ງທຸກ Task ທີ່ວາງແຜນ · ຄົບທຸກໜ່ວຍ · ຄລິກໄປບັນທຶກ","Every planned task · done/not · on/off plan · all units · click to record"]))
-    + dateBar + summary + body;
+    + toggle + (JOBS_VIEW==="cal" ? `<div class="card">${jobsCalendarHtml()}</div>` : (dateBar + summary + body));
 }
 
 /* ============ เจาะรายหน่วย ============ */
