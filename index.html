@@ -424,6 +424,14 @@ svg text{font-family:inherit}
 .tc-tt{font-size:15px;font-weight:800;color:var(--ink)}
 .tc-cur{margin-left:auto;font-size:12px;color:var(--mut)}
 .tc-cur b{color:var(--ink);font-size:13.5px}
+.tc-grid{display:grid;grid-template-columns:minmax(180px,250px) 1fr;gap:24px;align-items:start}
+.tc-left{display:flex;flex-direction:column}
+.tc-llabel{font-size:15px;font-weight:800;color:var(--ink);margin-bottom:9px}
+.tc-namebox{background:var(--card);border:1.5px solid var(--line);border-bottom-width:3px;border-radius:12px;padding:16px 14px;text-align:center;font-weight:800;font-size:15px;color:var(--ink);box-shadow:0 2px 9px rgba(30,42,58,.07);word-break:break-word;line-height:1.45}
+.tc-curpill{margin-top:11px;text-align:center;font-size:12px;color:var(--mut)}
+.tc-curpill b{color:var(--ink);font-size:16px;font-weight:800}
+.tc-right{min-width:0}
+@media(max-width:640px){.tc-grid{grid-template-columns:1fr;gap:14px}.tc-namebox{text-align:left}}
 .tc-lb{font-size:12px;font-weight:800;color:var(--mut);letter-spacing:.3px;margin-bottom:6px}
 .tc-by{color:var(--blue);font-weight:700}
 .tc-lines{display:flex;flex-direction:column;gap:7px;margin-bottom:8px}
@@ -597,7 +605,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r119";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r120";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2137,33 +2145,36 @@ function plLineRow(v){ return `<div class="pl-row"><input class="plln" value="${
 function taskCardHtml(t,ti){
   const tid=t.id, m=tmeta(tid), pe=planForToday(tid), re=todayResult(tid);
   const cur=t.act*100, items=planItemsOf(tid);
-  const hd=`<div class="tc-hd"><span class="tc-tt">${tr(t.name)}</span><span class="tc-cur num">${pk(["ตอนนี้","ຕອນນີ້","now"])} <b>${fmt1(cur)}%</b></span></div>`;
   let state;
   if(re && DAILY_SUM!==tid) state="closed";
   else if(DAILY_SUM===tid) state="summary";
   else if(pe && DAILY_EDIT!==tid) state="planned";
   else state="plan";
+  const accent = state==="plan"?"var(--blue)":state==="planned"?"var(--warn)":state==="summary"?"#7C3AED":(re&&/^\[ผล\]/.test(re.note)?"var(--good)":"var(--crit)");
+  const left=`<div class="tc-left">
+    <div class="tc-llabel">Task</div>
+    <div class="tc-namebox" style="border-bottom-color:${accent}">${tr(t.name)}</div>
+    <div class="tc-curpill">${pk(["ตอนนี้","ຕອນນີ້","now"])} <b>${fmt1(cur)}%</b></div></div>`;
+  const wrap=(cls,rightHtml,actionsHtml,attr="")=>`<div class="tcard ${cls}"${attr}><div class="tc-accent" style="background:${accent}"></div>
+    <div class="tc-grid">${left}<div class="tc-right">${rightHtml}</div></div>
+    <div class="tc-actions">${actionsHtml}</div></div>`;
   if(state==="plan"){
     const lines=(items.length?items:[""]).map(plLineRow).join("");
-    return `<div class="tcard s-plan"><div class="tc-accent"></div>${hd}
-      <div class="tc-lb">${pk(["แผนงาน","ແຜນງານ","Work plan"])}</div>
+    const right=`<div class="tc-lb">${pk(["แผนงาน","ແຜນງານ","Work plan"])}</div>
       <div id="pl_${ti}" class="tc-lines">${lines}</div>
-      <button class="tc-add" onclick="dpAddPlanLine(${ti})">＋ ${pk(["เพิ่มแผนงาน","ເພີ່ມ","add item"])}</button>
-      <div class="tc-actions">
-        <button class="btn btn-o btnsm" onclick="dpClearPlan(${ti})">${pk(["ล้าง","ລ້າງ","Clear"])}</button>
-        <button class="btn btn-p btnsm" onclick="dpConfirmPlan(${ti},'${tid}')">${pk(["ยืนยัน","ຢືນຢັນ","Confirm"])}</button>
-      </div></div>`;
+      <button class="tc-add" onclick="dpAddPlanLine(${ti})">＋ ${pk(["เพิ่มแผนงาน","ເພີ່ມ","add item"])}</button>`;
+    const acts=`<button class="btn btn-o btnsm" onclick="dpClearPlan(${ti})">${pk(["ล้าง","ລ້າງ","Clear"])}</button>
+      <button class="btn btn-p btnsm" onclick="dpConfirmPlan(${ti},'${tid}')">${pk(["ยืนยัน","ຢືນຢັນ","Confirm"])}</button>`;
+    return wrap("s-plan",right,acts);
   }
   if(state==="planned"){
     const ce=canEditTs(m.planTs);
     const editBtn=ce?`<button class="btn btn-o btnsm" onclick="dpEditPlan(${ti},'${tid}')">✎ ${pk(["แก้ไข","ແກ້ໄຂ","Edit"])}<span class="tc-tmr">⏳${editLeftMin(m.planTs)}′</span></button>`
       :`<span class="tc-lock">🔒 ${pk(["เลยเวลาแก้ไข","ໝົດເວລາແກ້ໄຂ","edit closed"])}</span>`;
-    return `<div class="tcard s-planned"><div class="tc-accent"></div>${hd}
-      <div class="tc-lb">☀️ ${pk(["แผนงานวันนี้","ແຜນມື້ນີ້","Plan today"])}${pe.by?` · <span class="tc-by">${esc2(pe.by)}</span>`:""}</div>
-      <ol class="tc-ol">${items.map(li=>`<li>${li}</li>`).join("")||`<li>—</li>`}</ol>
-      <div class="tc-actions">${editBtn}
-        <button class="btn btn-p btnsm" onclick="dpStartSummary('${tid}')">🌙 ${pk(["สรุปงาน","ສະຫຼຸບງານ","Summarize"])}</button>
-      </div></div>`;
+    const right=`<div class="tc-lb">☀️ ${pk(["แผนงานวันนี้","ແຜນມື້ນີ້","Plan today"])}${pe.by?` · <span class="tc-by">${esc2(pe.by)}</span>`:""}</div>
+      <ol class="tc-ol">${items.map(li=>`<li>${li}</li>`).join("")||`<li>—</li>`}</ol>`;
+    const acts=`${editBtn}<button class="btn btn-p btnsm" onclick="dpStartSummary('${tid}')">🌙 ${pk(["สรุปงาน","ສະຫຼຸບງານ","Summarize"])}</button>`;
+    return wrap("s-planned",right,acts);
   }
   if(state==="summary"){
     const base=items.length?items:["(งานนี้)"];
@@ -2177,16 +2188,14 @@ function taskCardHtml(t,ti){
         <input class="sumres" value="${esc2(L.result)}" placeholder="${pk(["สรุปงาน","ສະຫຼຸບ","result"])}">
         <input class="sumrsn" value="${esc2(L.reason)}" placeholder="${pk(["เหตุผล","ເຫດຜົນ","reason"])}"></div>`;
     }).join("");
-    return `<div class="tcard s-summary" id="sum_${ti}"><div class="tc-accent"></div>${hd}
-      <div class="sg-head"><span>${pk(["แผนงาน","ແຜນ","plan"])}</span><span>${pk(["สถานะ","ສະຖານະ","status"])}</span><span>${pk(["สรุปงาน","ສະຫຼຸບ","result"])}</span><span>${pk(["เหตุผล","ເຫດຜົນ","reason"])}</span></div>
+    const right=`<div class="sg-head"><span>${pk(["แผนงาน","ແຜນ","plan"])}</span><span>${pk(["สถานะ","ສະຖານະ","status"])}</span><span>${pk(["สรุปงาน","ສະຫຼຸບ","result"])}</span><span>${pk(["เหตุผล","ເຫດຜົນ","reason"])}</span></div>
       <div class="sg-rows">${rows}</div>
       <div class="tc-pctrow"><label class="tc-lb">${pk(["คิดเป็น %","ຄິດເປັນ %","Progress %"])}</label>
         <input id="sp_${ti}" class="sp-in" type="number" min="0" max="100" step="0.5" value="${fmt1(startPct).replace(",","")}">
-        <span class="small tc-hint">${pk(["ล้อจาก % ตอนเริ่ม","ອ້າງອີງ % ເລີ່ມ","from start %"])} ${fmt1(cur)}%</span></div>
-      <div class="tc-actions">
-        <button class="btn btn-o btnsm" onclick="dpClearSummary(${ti})">${pk(["ล้าง","ລ້າງ","Clear"])}</button>
-        <button class="btn btn-p btnsm" onclick="dpConfirmSummary(${ti},'${tid}')">${pk(["ยืนยัน","ຢືนຢัน","Confirm"])}</button>
-      </div></div>`;
+        <span class="small tc-hint">${pk(["ล้อจาก % ตอนเริ่ม","ອ້າງອີງ % ເລີ່ມ","from start %"])} ${fmt1(cur)}%</span></div>`;
+    const acts=`<button class="btn btn-o btnsm" onclick="dpClearSummary(${ti})">${pk(["ล้าง","ລ້າງ","Clear"])}</button>
+      <button class="btn btn-p btnsm" onclick="dpConfirmSummary(${ti},'${tid}')">${pk(["ยืนยัน","ຢືนຢัน","Confirm"])}</button>`;
+    return wrap("s-summary",right,acts,` id="sum_${ti}"`);
   }
   /* closed */
   const ok=re && /^\[ผล\]/.test(re.note);
@@ -2196,10 +2205,9 @@ function taskCardHtml(t,ti){
     :`<div class="cl-li">${esc2(String(re.note).replace(/^\[(ผล|ไม่ได้ทำ)\]\s*/,""))}</div>`;
   const editBtn=ce?`<button class="btn btn-o btnsm" onclick="dpEditSummary('${tid}')">✎ ${pk(["แก้ไข","ແກ້ໄຂ","Edit"])}<span class="tc-tmr">⏳${editLeftMin(m.sumTs)}′</span></button>`
     :`<span class="tc-lock">🔒 ${pk(["เลยเวลาแก้ไข","ໝົດເວລາແກ້ໄຂ","edit closed"])}</span>`;
-  return `<div class="tcard s-closed ${ok?"ok":"no"}"><div class="tc-accent"></div>${hd}
-    <div class="cl-tag">${ok?`✅ ${pk(["ปิดงานแล้ว","ປິດແລ້ວ","Closed"])} ${fmt1(donePct)}%`:`❌ ${pk(["ไม่ได้ทำ","ບໍ່ໄດ້ເຮັດ","Not done"])}`}</div>
-    <div class="cl-body">${body}</div>
-    <div class="tc-actions">${editBtn}</div></div>`;
+  const right=`<div class="cl-tag">${ok?`✅ ${pk(["ปิดงานแล้ว","ປິດແລ້ວ","Closed"])} ${fmt1(donePct)}%`:`❌ ${pk(["ไม่ได้ทำ","ບໍ່ໄດ້ເຮັດ","Not done"])}`}</div>
+    <div class="cl-body">${body}</div>`;
+  return wrap("s-closed "+(ok?"ok":"no"),right,editBtn);
 }
 function dpAddPlanLine(ti){ const box=document.getElementById("pl_"+ti); if(!box) return; box.insertAdjacentHTML("beforeend",plLineRow("")); const ins=box.querySelectorAll(".plln"); ins[ins.length-1].focus(); }
 function dpDelPlanLine(btn){ const box=btn.closest(".tc-lines"), row=btn.closest(".pl-row"); if(box&&box.querySelectorAll(".pl-row").length>1) row.remove(); else { const i=row.querySelector(".plln"); if(i) i.value=""; } }
