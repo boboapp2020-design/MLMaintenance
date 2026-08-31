@@ -154,6 +154,7 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .c-good{background:var(--good-bg);color:var(--good)}
 .c-warn{background:var(--warn-bg);color:var(--warn)}
 .c-crit{background:var(--crit-bg);color:var(--crit)}
+.c-mut{background:var(--tint2);color:var(--mut)}
 
 /* ---------- cards ---------- */
 .card{background:var(--cardgrad);border:var(--hair);border-radius:12px;padding:18px 22px;box-shadow:var(--shadow);margin-bottom:16px;position:relative}
@@ -495,13 +496,14 @@ svg text{font-family:inherit}
 .trk-pill{display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:8px 14px;font-weight:800;font-size:13px;box-shadow:0 2px 8px rgba(30,42,58,.06)}
 .trk-pill b{font-size:16px}
 .trk-pill.good{color:var(--good)}.trk-pill.warn{color:var(--warn)}.trk-pill.crit{color:var(--crit)}.trk-pill.mut{color:var(--mut)}
+.trk-pill .tp-dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:0 0 auto}
 .trk-deptcard{margin-bottom:14px}
 .trk-depthd{display:flex;align-items:center;gap:9px;font-weight:800;font-size:15px;margin-bottom:10px}
 .trk-depthd .dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto}
 .trk-item{display:flex;gap:12px;align-items:flex-start;padding:11px 13px;border-radius:11px;border:1px solid var(--line);border-left-width:4px;background:var(--card);margin-bottom:8px;cursor:pointer;transition:box-shadow .15s,transform .15s}
 .trk-item:last-child{margin-bottom:0}
 .trk-item:hover{box-shadow:0 6px 18px rgba(30,42,58,.12);transform:translateY(-1px)}
-.trk-item.trk-good{border-left-color:var(--good)}.trk-item.trk-warn{border-left-color:var(--warn)}.trk-item.trk-crit{border-left-color:var(--crit)}
+.trk-item.trk-good{border-left-color:var(--good)}.trk-item.trk-warn{border-left-color:var(--warn)}.trk-item.trk-crit{border-left-color:var(--crit)}.trk-item.trk-mut{border-left-color:#94A3B8}
 .trk-ic{font-size:18px;line-height:1.35;flex:0 0 auto}
 .trk-main{flex:1;min-width:0}
 .trk-nm{font-weight:800;font-size:14px;color:var(--ink)}
@@ -718,7 +720,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r141";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r142";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2027,11 +2029,11 @@ function jobsShiftDay(delta){ const p=JOBS_DATE.split("-").map(Number); const dt
   const iso=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0"); setJobsDate(iso); }
 function jobsOpenRecord(code,jid){ go("entry"); setDept(code); dailySelectJob(jid); }
 function trackStatus(res){
-  if(!res) return {k:"pending",rank:2,lb:pk(["ยังไม่ปิดงาน","ຍັງບໍ່ປິດ","pending"]),cls:"warn",ic:"⏳"};
-  if(/^\[ไม่ได้ทำ\]/.test(res.note)) return {k:"undone",rank:0,lb:pk(["ไม่ได้ทำ","ບໍ່ໄດ້ເຮັດ","not done"]),cls:"crit",ic:"❌"};
+  if(!res) return {k:"pending",rank:2,lb:pk(["ยังไม่มีการสรุปผล","ຍັງບໍ່ສະຫຼຸບ","not summarized"]),cls:"mut",ic:"⏳"};
+  if(/^\[ไม่ได้ทำ\]/.test(res.note)) return {k:"undone",rank:0,lb:pk(["ไม่ได้ทำตามแผน","ບໍ່ໄດ້ເຮັດຕາມແຜນ","not done"]),cls:"crit",ic:"❌"};
   const dev=/\[ไม่ตามแผน\]|\[ไม่ได้ทำ\]/.test(res.note);
-  return dev?{k:"off",rank:1,lb:pk(["ไม่ตามแผน","ບໍ່ຕາມແຜນ","off-plan"]),cls:"warn",ic:"⚠️"}
-            :{k:"ontrack",rank:3,lb:pk(["ตามแผน","ຕາມແຜນ","on plan"]),cls:"good",ic:"✅"};
+  return dev?{k:"off",rank:1,lb:pk(["ทำไม่ได้ตามแผน","ເຮັດບໍ່ໄດ້ຕາມແຜນ","off-plan"]),cls:"warn",ic:"⚠️"}
+            :{k:"ontrack",rank:3,lb:pk(["ทำได้ตามแผน","ເຮັດໄດ້ຕາມແຜນ","done as planned"]),cls:"good",ic:"✅"};
 }
 let JOBS_VIEW="day";   /* day = รายวัน · cal = ปฏิทินรายเดือน */
 let JOBS_DEPT="";      /* "" = ทุกแผนก · code = กรองเฉพาะแผนก */
@@ -2105,11 +2107,10 @@ function jobsPage(){
     <button class="trk-navbtn" onclick="jobsShiftDay(1)" ${isToday?"disabled":""} title="${pk(["วันถัดไป","ວັນຖັດໄປ","next"])}">▶</button>
     <span class="small" style="color:var(--mut);font-weight:700">${dnames[selD.getDay()]}${isToday?" · "+pk(["วันนี้","ມື້ນີ້","today"]):""}</span></div>`;
   const summary=`<div class="trk-sum">
-    <div class="trk-pill mut">📋 ${pk(["มีแผน","ມີແຜນ","planned"])} <b>${rows.length}</b></div>
-    <div class="trk-pill good">✅ ${pk(["ตามแผน","ຕາມແຜນ","on plan"])} <b>${cnt.ontrack}</b></div>
-    <div class="trk-pill warn">⚠️ ${pk(["ไม่ตามแผน","ບໍ່ຕາມແຜນ","off"])} <b>${cnt.off}</b></div>
-    <div class="trk-pill crit">❌ ${pk(["ไม่ได้ทำ","ບໍ່ໄດ້ເຮັດ","not done"])} <b>${cnt.undone}</b></div>
-    <div class="trk-pill warn">⏳ ${pk(["ยังไม่ปิด","ຍັງບໍ່ປິດ","pending"])} <b>${cnt.pending}</b></div></div>`;
+    <div class="trk-pill good"><span class="tp-dot" style="background:var(--good)"></span>${pk(["ทำได้ตามแผน","ເຮັດໄດ້ຕາມແຜນ","done as planned"])} <b>${cnt.ontrack}</b></div>
+    <div class="trk-pill warn"><span class="tp-dot" style="background:var(--warn)"></span>${pk(["ทำไม่ได้ตามแผน","ເຮັດບໍ່ໄດ້ຕາມແຜນ","off plan"])} <b>${cnt.off}</b></div>
+    <div class="trk-pill crit"><span class="tp-dot" style="background:var(--crit)"></span>${pk(["ไม่ได้ทำตามแผน","ບໍ່ໄດ້ເຮັດຕາມແຜນ","not done"])} <b>${cnt.undone}</b></div>
+    <div class="trk-pill mut"><span class="tp-dot" style="background:#94A3B8"></span>${pk(["ยังไม่มีการสรุปผล","ຍັງບໍ່ສະຫຼຸບ","not summarized"])} <b>${cnt.pending}</b></div></div>`;
   /* ---- แผงผู้บริหาร: หน่วยที่ยังไม่กรอก + สาเหตุงานไม่คืบหน้า ---- */
   const holD=isHolidayDate(selD);
   const allUnits=[]; DATA.forEach(s=>s.units.forEach(u=>{ if(!u.blank && (!JOBS_DEPT||u.code===JOBS_DEPT)) allUnits.push({u,sec:s}); }));
