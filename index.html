@@ -718,7 +718,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r139";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r140";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2706,7 +2706,7 @@ function entryPickerPage(){
       <div class="dc2-prog"><div style="width:${Math.min(100,sp)}%;background:${s.color}"></div></div></div>`;}).join("");
   app.innerHTML = pagehead(pk(["บันทึกงานซ่อมรายวัน","ບັນທຶກວຽກສ້ອມແປງລາຍວັນ","Daily Progress Entry"]),
     pk(["เลือกแผนกของคุณเพื่อบันทึกงาน · บันทึกทุกวัน (ยกเว้นวันอาทิตย์)","ເລືອກໜ່ວຍງານ · ບັນທຶກທຸກວັນ (ຍົກເວັ້ນວັນອາທິດ)","Choose your unit · record daily (except Sunday)"])) + `
-  <div class="card"><h2>👇 ${pk(["เลือกแผนกของคุณ","ເລືອກໜ່ວຍງານຂອງທ່ານ","Select your unit"])}</h2>
+  <div class="card"><h2>${pk(["เลือกแผนกของคุณ","ເລືອກໜ່ວຍງານຂອງທ່ານ","Select your unit"])}</h2>
     <div class="sub">${sun?pk(["📅 วันนี้เป็นวันหยุด — ไม่ต้องบันทึก (หยุด: อาทิตย์ทุกสัปดาห์ + เสาร์เว้นเสาร์)","📅 ວັນພັກ ບໍ່ຕ້ອງບັນທຶກ","📅 Day off — no entry needed"]):pk(["กดแผนกของคุณเพื่อบันทึกวันนี้ · ✓ บันทึกแล้ว · ✗ ยังไม่บันทึกวันนี้","ກົດພະແນກ · ✓ ບັນທຶກແລ້ວ · ✗ ຍັງ","Tap your unit · ✓ recorded · ✗ not yet today"])}</div>
     <div class="deptsections">${cols}</div>
   </div>`;
@@ -3375,7 +3375,7 @@ function planEditor(){
       <span class="small num" style="margin-left:auto">${pk(["แรงรวมทั้งฤดู","ແຮງລວມ","total force"])} <b id="plFT" style="font-size:16px;color:var(--blue)">${forceTot.toLocaleString()}</b> ${pk(["แรง","ແຮງ","man-days"])}</span></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">${crewCells}</div>
   </div>
-  <div class="card"><h2>📈 ${pk(["เส้นเป้าหมายสะสม (คำนวณอัตโนมัติจากกำลังพล)","ເສັ້ນເປົ້າ","Cumulative target curve (auto)"])}</h2>
+  <div class="card"><h2>${pk(["เส้นเป้าหมายสะสม (คำนวณอัตโนมัติจากกำลังพล)","ເສັ້ນເປົ້າ","Cumulative target curve (auto)"])}</h2>
     <div id="plCurve">${planCurveSvg(P.crew,days)}</div></div>
   <div style="display:flex;gap:10px;align-items:center;margin:16px 2px 8px">
     <h2 style="margin:0;font-size:16px">Job / Task</h2>
