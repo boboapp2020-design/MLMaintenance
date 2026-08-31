@@ -729,7 +729,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r144";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r145";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1839,8 +1839,8 @@ let SUBVIEW=false;   // อยู่ในหน้าย่อย (เจาะ
 let LAST_SIG=null;   // ลายเซ็นข้อมูลล่าสุด — sync แล้ว re-render เฉพาะเมื่อข้อมูลเปลี่ยนจริง
 function entriesSig(){ return ENTRIES.length+"|"+ENTRIES.reduce((s,e)=>s+(+e.pct||0),0).toFixed(1); }
 const NAV=[["over",["ภาพรวม","ພາບລວມ","Overview"],"grid"],["units",["หน่วยงาน","ໜ່ວຍງານ","Units"],"units"],
- ["jobs",["งานซ่อม","ວຽກສ້ອມແປງ","Jobs"],"wrench"],["ana",["การวิเคราะห์","ການວິເຄາະ","Analytics"],"chart"],
- ["rep",["รายงาน","ລາຍງານ","Report"],"report"],["entry",["บันทึกข้อมูล","ບັນທຶກຂໍ້ມູນ","Data Entry"],"edit"],
+ ["jobs",["รายงาน","ລາຍງານ","Report"],"report"],["ana",["การวิเคราะห์","ການວິເຄາະ","Analytics"],"chart"],
+ ["entry",["บันทึกข้อมูล","ບັນທຶກຂໍ້ມູນ","Data Entry"],"edit"],
  ["summary",["สรุปงานรายวัน","ສະຫຼຸບງານລາຍວັນ","Daily summary"],"check"],
  ["plan",["ตั้งแผนปีหน้า","ຕັ້ງແຜນປີໜ້າ","Next Plan"],"gear"]];
 function renderNav(){
@@ -2199,7 +2199,7 @@ function jobsPage(){
       <button class="${JOBS_VIEW==='day'?'on':''}" onclick="jobsSetView('day')">☰ ${pk(["รายวัน","ລາຍວັນ","Daily"])}</button>
       <button class="${JOBS_VIEW==='cal'?'on':''}" onclick="jobsSetView('cal')">📅 ${pk(["ปฏิทิน","ປະຕິທິນ","Calendar"])}</button></div>
     ${deptSel}</div>`;
-  app.innerHTML = pagehead(pk(["งานซ่อม — ติดตามแผน/ผลรายวัน","ວຽກສ້ອມແປງ — ຕິດຕາມແຜນ/ຜົນລາຍວັນ","Maintenance — daily plan vs actual"]),
+  app.innerHTML = pagehead(pk(["รายงาน — ติดตามแผน/ผลรายวัน","ລາຍງານ — ຕິດຕາມແຜນ/ຜົນລາຍວັນ","Report — daily plan vs actual"]),
     pk(["ไล่ดูทุก Task ที่วางแผนไว้ · ทำ/ไม่ทำ · ตามแผน/ไม่ตามแผน ครบทุกแผนก · คลิกเพื่อไปบันทึก","ເບິ່ງທຸກ Task ທີ່ວາງແຜນ · ຄົບທຸກໜ່ວຍ · ຄລິກໄປບັນທຶກ","Every planned task · done/not · on/off plan · all units · click to record"]))
     + toggle + (JOBS_VIEW==="cal" ? `<div class="card">${jobsCalendarHtml()}</div>` : (dateBar + summary + execBtn + body));
 }
