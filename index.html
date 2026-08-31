@@ -511,10 +511,19 @@ svg text{font-family:inherit}
 .exec-chips{display:flex;flex-wrap:wrap;gap:7px}
 .exec-chip{background:var(--crit-bg);color:var(--crit);border:1px solid #F3B0B0;border-radius:8px;padding:5px 11px;font-size:12.5px;font-weight:800;cursor:pointer}
 .exec-chip:hover{background:var(--crit);color:#fff}
+.exec-chip b{font-size:14px}
+.exec-chip-hot{background:var(--crit);color:#fff;border-color:var(--crit);box-shadow:0 2px 8px rgba(239,68,68,.35)}
+.exec-chip-hot:hover{background:#B91C1C}
 .exec-reasons{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
 .exec-reasons .er{border-radius:8px;padding:5px 11px;font-size:12.5px;font-weight:800;background:var(--card);border:1px solid var(--line)}
 .er.crit{color:var(--crit)}.er.warn{color:var(--warn)}.er.mut{color:var(--mut)}
 .exec-rlist{margin:6px 0 0;padding-left:20px;font-size:12.5px;line-height:1.7;color:var(--ink)}
+/* กล่องวันที่บันทึก (เด่น) */
+.dp-group{display:inline-flex;align-items:center;gap:9px;background:var(--blue-soft);border:2px solid var(--blue);border-radius:12px;padding:6px 12px;box-shadow:0 3px 10px rgba(37,99,235,.18)}
+.dp-lb{font-size:13.5px;font-weight:800;color:var(--blue-dark)}
+.dp-input{border:1.5px solid var(--blue);border-radius:9px;padding:6px 12px;font:inherit;font-size:17px;font-weight:800;background:var(--card);color:var(--blue-dark);cursor:pointer;font-variant-numeric:tabular-nums}
+.dp-input:focus{outline:none;box-shadow:0 0 0 3px rgba(37,99,235,.22)}
+.dp-dow{font-size:14px;font-weight:800;color:var(--ink);background:var(--card);border-radius:8px;padding:3px 10px}
 /* ปฏิทิน */
 .cal-nav{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:12px}
 .cal-title{font-weight:800;font-size:17px;color:var(--ink);min-width:130px;text-align:center}
@@ -680,7 +689,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r126";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r127";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1992,6 +2001,17 @@ function jobsSetView(v){ JOBS_VIEW=v; jobsPage(); }
 function jobsPickDay(ds){ JOBS_DATE=ds; JOBS_VIEW="day"; jobsPage(); }
 function jobsShiftMonth(delta){ const p=JOBS_DATE.split("-").map(Number); const dt=new Date(p[0],p[1]-1+delta,1);
   JOBS_DATE=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-01"; jobsPage(); }
+/* จำนวนวันทำงานติดกัน (ข้ามวันหยุด) ที่หน่วยยังไม่กรอก นับย้อนจากวันที่เลือก · cap 30+ */
+function missStreak(recSet, uptoISO){
+  let miss=0; const p=uptoISO.split("-").map(Number); let dt=new Date(p[0],p[1]-1,p[2]);
+  for(let i=0;i<240 && miss<30;i++){
+    const iso=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
+    if(iso<"2026-04-20") break;
+    if(!isHolidayDate(dt)){ if(recSet[iso]) break; miss++; }
+    dt.setDate(dt.getDate()-1);
+  }
+  return miss;
+}
 /* ปฏิทินรายเดือน: แต่ละวันสรุปว่า Task ที่วางแผนไว้ ทำ/ไม่ทำ (✅⚠️❌⏳) · คลิกวันเพื่อดูรายละเอียด */
 function jobsCalendarHtml(){
   const p=JOBS_DATE.split("-").map(Number), Y=p[0], M=p[1], mp=Y+"-"+String(M).padStart(2,"0");
@@ -2048,8 +2068,8 @@ function jobsPage(){
   /* ---- แผงผู้บริหาร: หน่วยที่ยังไม่กรอก + สาเหตุงานไม่คืบหน้า ---- */
   const holD=isHolidayDate(selD);
   const allUnits=[]; DATA.forEach(s=>s.units.forEach(u=>{ if(!u.blank) allUnits.push({u,sec:s}); }));
-  const recSet={}; ENTRIES.forEach(e=>{ if(e.date===d && (isPlanNote(e)||isResultNote(e))){ recSet[String(e.taskId).split("-")[0]]=1; } });
-  const notRec=allUnits.filter(o=>!recSet[o.u.code]);
+  const recSet={}, unitRec={}; ENTRIES.forEach(e=>{ if(isPlanNote(e)||isResultNote(e)){ const c=String(e.taskId).split("-")[0]; (unitRec[c]=unitRec[c]||{})[e.date]=1; if(e.date===d) recSet[c]=1; } });
+  const notRec=allUnits.map(o=>({...o,miss:missStreak(unitRec[o.u.code]||{}, d)})).filter(o=>!recSet[o.u.code]).sort((a,b)=>b.miss-a.miss);
   const undoneReasons=[]; rows.forEach(r=>{ if(r.stt.k==="undone"){ undoneReasons.push({u:r.x.u,name:tr(r.x.t.name),txt:String(r.res.note).replace(/^\[ไม่ได้ทำ\]\s*/,"")}); } });
   const lateN=rows.filter(r=>r.res&&recOnTime(r.res)===false).length;
   const execPanel=`<div class="card exec-card">
@@ -2058,7 +2078,7 @@ function jobsPage(){
       <div class="exec-box">
         <div class="exec-t crit">🚨 ${pk(["หน่วยงานที่ยังไม่กรอก","ໜ່ວຍທີ່ຍັງບໍ່ປ້ອນ","Units not recorded"])} <b>${holD?"—":notRec.length}</b></div>
         ${holD?`<div class="small" style="color:var(--mut)">${pk(["วันหยุด — ไม่บังคับกรอก","ວັນພັກ","holiday — no entry required"])}</div>`
-          :(notRec.length?`<div class="exec-chips">${notRec.map(o=>`<span class="exec-chip" onclick="jobsOpenRecord('${o.u.code}','')" title="${pk(["ไปกรอก","ໄປປ້ອນ","go record"])}">${un(o.u.name)}</span>`).join("")}</div>`
+          :(notRec.length?`<div class="exec-chips">${notRec.map(o=>`<span class="exec-chip${o.miss>=5?" exec-chip-hot":""}" onclick="jobsOpenRecord('${o.u.code}','')" title="${pk(["ไม่กรอกติดต่อกัน","ບໍ່ປ້ອນຕິດຕໍ່","missed in a row"])} ${o.miss>=30?"30+":o.miss} ${pk(["วัน","ວັນ","days"])} — ${pk(["คลิกไปกรอก","ຄລິກໄປປ້ອນ","click to record"])}">${un(o.u.name)} <b>${o.miss>=30?"30+":o.miss}</b> ${pk(["วัน","ວັນ","d"])}</span>`).join("")}</div>`
             :`<div class="small" style="color:var(--good);font-weight:700">✓ ${pk(["กรอกครบทุกหน่วยแล้ว","ຄົບທຸກໜ່ວຍ","all units recorded"])}</div>`)}
       </div>
       <div class="exec-box">
@@ -2494,10 +2514,10 @@ function entryDailyPage(){
   const selD=new Date(DAILY_DATE), isBack=DAILY_DATE<todayISO();
   const bar = (backFn,label)=>`<div class="deptbar">
     <button class="btn btn-o btnsm" onclick="${backFn}">← ${pk(["กลับ","ກັບ","Back"])}</button>
-    <span class="deptname">📅 ${pk(["วันที่บันทึก","ວັນທີ","Date"])}
-      <input type="date" value="${DAILY_DATE}" max="${todayISO()}" onchange="setDailyDate(this.value)"
-        style="border:1.5px solid var(--line);border-radius:8px;padding:3px 8px;font:inherit;font-weight:700;background:var(--card);color:var(--ink);margin:0 4px">
-      ${dnames[selD.getDay()]}${isBack?` <span class="wkback" style="background:var(--warn-bg,#FEF3C7);color:#B45309;border-radius:6px;padding:1px 7px;font-size:11px;font-weight:800">${pk(["ย้อนหลัง","ຍ້ອນຫຼັງ","past"])}</span>`:""}${label||""}</span>
+    <span class="dp-group"><span class="dp-lb">📅 ${pk(["วันที่บันทึก","ວັນທີ","Date"])}</span>
+      <input type="date" value="${DAILY_DATE}" max="${todayISO()}" onchange="setDailyDate(this.value)" class="dp-input">
+      <span class="dp-dow">${dnames[selD.getDay()]}</span>${isBack?` <span class="wkback" style="background:var(--warn-bg,#FEF3C7);color:#B45309;border-radius:6px;padding:1px 7px;font-size:11px;font-weight:800">${pk(["ย้อนหลัง","ຍ້ອນຫຼັງ","past"])}</span>`:""}</span>
+    <span class="deptname" style="font-size:15px">${label?label.replace(/^ · /,""):""}</span>
     <span class="small" style="margin-left:auto">${pk(["วางแผน","ວາງແຜນ","planned"])} <b>${plans.length}</b> · ✅ <b style="color:var(--good)">${doneN}</b> · ❌ <b style="color:var(--crit)">${skipN}</b></span></div>`;
   /* ---- หน้าที่ 1: เลือก Job (การ์ดใหญ่: donut + จำนวน task + สรุปวันนี้) ---- */
   if(!DAILY_JOB){
