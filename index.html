@@ -689,7 +689,7 @@ img,svg,table{max-width:100%}
   </div>
 </div>
 <div class="modal-ov" id="execModal" onclick="if(event.target===this)closeExecModal()">
-  <div class="modal-box" style="max-width:900px">
+  <div class="modal-box" style="max-width:1200px">
     <button class="modal-close" onclick="closeExecModal()" aria-label="close">✕</button>
     <h3>📊 สรุปการติดตาม</h3>
     <div id="execModalBody"></div>
@@ -711,7 +711,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r136";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r137";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
