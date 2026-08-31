@@ -158,7 +158,8 @@ body{margin:0;background:var(--bg);color:var(--ink);
 /* ---------- cards ---------- */
 .card{background:var(--cardgrad);border:var(--hair);border-radius:12px;padding:18px 22px;box-shadow:var(--shadow);margin-bottom:16px;position:relative}
 .card::before{display:none}
-.card h2{font-size:14px;margin:0 0 4px;font-weight:800;letter-spacing:.6px;color:var(--ink)}
+.card h2{font-size:14.5px;margin:0 0 10px;font-weight:800;letter-spacing:.2px;color:var(--ink);display:flex;align-items:center;gap:9px}
+.card h2::before{content:"";width:3px;height:15px;border-radius:2px;background:var(--blue);flex:0 0 auto}
 .card h2 .thin{color:var(--mut);font-weight:600}
 .card .sub{font-size:12px;color:var(--mut);margin-bottom:10px}
 .grid2{display:grid;grid-template-columns:3fr 2fr;gap:16px}
@@ -334,7 +335,11 @@ svg text{font-family:inherit}
 .deptcard2 .dc2-bar>div{height:100%;border-radius:99px}
 .deptcard2 .dc2-pct{flex:0 0 auto;text-align:right;font-size:19px;font-weight:800;line-height:1;white-space:nowrap}
 .deptcard2 .dc2-pct span{display:block;font-size:10.5px;font-weight:500;color:var(--mut);margin-top:2px}
-.deptcard2 .dc2-st{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;flex:0 0 auto}
+.deptcard2 .dc2-st{width:15px;height:15px;border-radius:50%;flex:0 0 auto;font-size:0}
+.deptcard2 .dc2-st.st-full{background:var(--good);box-shadow:0 0 0 4px var(--good-bg)}
+.deptcard2 .dc2-st.st-crit{background:var(--crit);box-shadow:0 0 0 4px var(--crit-bg)}
+.deptcard2 .dc2-st.st-partial{background:var(--warn);box-shadow:0 0 0 4px var(--warn-bg)}
+.deptcard2 .dc2-st.st-blank{background:#B8C2D0;box-shadow:0 0 0 4px var(--tint2)}
 .st-full{background:#DCFCE7;color:#16A34A}.st-partial{background:#FEF3C7;color:#D97706}.st-crit{background:#FEE2E2;color:#DC2626}.st-blank{background:var(--tint);color:var(--mut)}
 .dc2-prog{height:9px;background:var(--tint2);border-radius:99px;margin-top:20px;overflow:hidden}
 .dc2-prog>div{height:100%;border-radius:99px}
@@ -521,7 +526,8 @@ svg text{font-family:inherit}
 .exec-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 @media(max-width:720px){.exec-grid{grid-template-columns:1fr}}
 .exec-box{background:var(--tint);border-radius:12px;padding:13px 15px}
-.exec-t{font-weight:800;font-size:13.5px;margin-bottom:9px}
+.exec-t{font-weight:800;font-size:13.5px;margin-bottom:9px;display:flex;align-items:center;gap:8px}
+.exec-t::before{content:"";width:3px;height:14px;border-radius:2px;background:currentColor;flex:0 0 auto}
 .exec-t.crit{color:var(--crit)}.exec-t.warn{color:var(--warn)}
 .exec-t b{font-size:16px}
 .exec-chips{display:flex;flex-wrap:wrap;gap:7px}
@@ -692,7 +698,7 @@ img,svg,table{max-width:100%}
 <div class="modal-ov" id="execModal" onclick="if(event.target===this)closeExecModal()">
   <div class="modal-box" style="max-width:1200px">
     <button class="modal-close" onclick="closeExecModal()" aria-label="close">✕</button>
-    <h3>📊 สรุปการติดตาม</h3>
+    <h3>สรุปการติดตาม</h3>
     <div id="execModalBody"></div>
   </div>
 </div>
@@ -712,7 +718,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r138";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r139";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1504,7 +1510,10 @@ const IGNORE_ENTRIES = { "EVP-J1-T14|2026-08-26": 1 };
 const IGNORE_NOTES = {
   "EVP-J2-T14|2026-08-30|[แผน] ปป": 1,
   "EVP-J1-T14|2026-08-30|[แผน] เทส": 1,
-  "EVP-J1-T14|2026-08-30|[ผล] เทส [ไม่ตามแผน] — ของไม่มา (ทำไม่ได้)": 1
+  "EVP-J1-T14|2026-08-30|[ผล] เทส [ไม่ตามแผน] — ของไม่มา (ทำไม่ได้)": 1,
+  "MEC-J1-T1|2026-08-31|[แผน] 70": 1,
+  "MEC-J1-T2|2026-08-31|[แผน] 1. เติมน้ำ | 2.เตินสารเคมี": 1,
+  "MEC-J1-T2|2026-08-31|[ผล] 1. เติมน้ำ [ไม่ได้ทำ] — ไม่ว่าง | 2.เตินสารเคมี [ตามแผน] — เสร็จแล้ว": 1
 };
 function ignoredEntry(e){ const k=String(e.taskId)+"|"+normDate(e.date); return !!IGNORE_ENTRIES[k] || !!IGNORE_NOTES[k+"|"+(e.note||"")]; }
 /* ---- ทำความสะอาดข้อมูล entry (กัน stored XSS: ใครก็ POST เข้า Apps Script ได้ ห้ามเชื่อ by/note/taskId แล้วเอาไป render ตรงๆ) ---- */
@@ -2110,13 +2119,13 @@ function jobsPage(){
   const lateN=rows.filter(r=>r.res&&recOnTime(r.res)===false).length;
   EXEC_INNER=`<div class="exec-grid">
       <div class="exec-box">
-        <div class="exec-t crit">🚨 ${pk(["หน่วยงานที่ยังไม่กรอก","ໜ່ວຍທີ່ຍັງບໍ່ປ້ອນ","Units not recorded"])} <b>${holD?"—":notRec.length}</b></div>
+        <div class="exec-t crit">${pk(["หน่วยงานที่ยังไม่กรอก","ໜ່ວຍທີ່ຍັງບໍ່ປ້ອນ","Units not recorded"])} <b>${holD?"—":notRec.length}</b></div>
         ${holD?`<div class="small" style="color:var(--mut)">${pk(["วันหยุด — ไม่บังคับกรอก","ວັນພັກ","holiday — no entry required"])}</div>`
           :(notRec.length?`<div class="exec-chips">${notRec.map(o=>`<span class="exec-chip${o.miss>=5?" exec-chip-hot":""}" onclick="jobsOpenRecord('${o.u.code}','')" title="${pk(["ไม่กรอกติดต่อกัน","ບໍ່ປ້ອນຕິດຕໍ່","missed in a row"])} ${o.miss>=30?"30+":o.miss} ${pk(["วัน","ວັນ","days"])} — ${pk(["คลิกไปกรอก","ຄລິກໄປປ້ອນ","click to record"])}">${un(o.u.name)} <b>${o.miss>=30?"30+":o.miss}</b> ${pk(["วัน","ວັນ","d"])}</span>`).join("")}</div>`
             :`<div class="small" style="color:var(--good);font-weight:700">✓ ${pk(["กรอกครบทุกหน่วยแล้ว","ຄົບທຸກໜ່ວຍ","all units recorded"])}</div>`)}
       </div>
       <div class="exec-box">
-        <div class="exec-t warn">🔍 ${pk(["สาเหตุงานไม่คืบหน้า","ສາເຫດງານບໍ່ຄืบໜ້າ","Why work stalled"])}</div>
+        <div class="exec-t warn">${pk(["สาเหตุงานไม่คืบหน้า","ສາເຫດງານບໍ່ຄืบໜ້າ","Why work stalled"])}</div>
         <div class="exec-reasons">
           <span class="er crit">❌ ${pk(["ไม่ได้ทำ","ບໍ່ໄດ້ເຮັດ","not done"])} ${cnt.undone}</span>
           <span class="er warn">⚠️ ${pk(["ไม่ตามแผน","ບໍ່ຕາມ","off"])} ${cnt.off}</span>
@@ -2553,7 +2562,7 @@ function summaryPage(){
       <span class="dp-dow">${dnames[selD.getDay()]}${isToday?" · "+pk(["วันนี้","ມື້ນີ້","today"]):""}</span></span>
     <span class="small" style="margin-left:auto">${pk(["วางแผน","ວາງແຜນ","planned"])} <b>${tids.length}</b> · ✅ <b style="color:var(--good)">${doneN}</b> · ⏳ <b style="color:var(--warn)">${pendN}</b></span></div>`;
   const byBox=`<div class="card" style="border-left:4px solid var(--blue);display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-    <b style="font-size:15px">🌙 ${pk(["สรุปผลงานที่ทำวันนี้","ສະຫຼຸບຜົນມື້ນີ້","Summarize today's work"])}</b>
+    <b style="font-size:15px">${pk(["สรุปผลงานที่ทำวันนี้","ສະຫຼຸບຜົນມື້ນີ້","Summarize today's work"])}</b>
     <div class="fld" style="margin-left:auto;min-width:200px"><label class="small">${pk(["ผู้บันทึก (ใช้ทุก Task)","ຜູ້ບັນທຶກ","By (all tasks)"])}</label>
       <input id="dpBy" style="width:100%;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit"></div></div>`;
   let ti=0, body;
@@ -2646,7 +2655,7 @@ function entryDailyPage(){
     </table></div></div>`;
     app.innerHTML = head + bar("setDept('')") + `
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 4px 14px">
-      <div><h2 style="margin:0;font-size:20px">🧩 ${pk(["เลือก Job เพื่อวางแผน / ปิดงานวันนี้","ເລືອກ Job","Pick a job — plan / close today"])}</h2>
+      <div><h2 style="margin:0;font-size:20px">${pk(["เลือก Job เพื่อวางแผน","ເລືອກ Job","Pick a job to plan"])}</h2>
         <div class="small" style="color:var(--mut);margin-top:2px">${pk(["ภาพรวมความคืบหน้างานของแต่ละ Job วันนี้","ພາບລວມ","Each job's progress today"])}</div></div>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
         <div class="jpviewtog"><button class="${DAILY_VIEW==='card'?'on':''}" onclick="dailySetView('card')">▦ ${pk(["การ์ด","ກາດ","cards"])}</button><button class="${DAILY_VIEW==='table'?'on':''}" onclick="dailySetView('table')">☰ ${pk(["ตาราง","ຕາຕະລາງ","table"])}</button></div>
@@ -2684,7 +2693,7 @@ function entryPickerPage(){
     const items=s.units.map(u=>{
       /* บันทึกรายวัน: อาทิตย์=วันหยุด(เทา) · blank=รอข้อมูล(เทา) · อื่นๆ บันทึกวันนี้แล้ว=เขียว ยัง=แดง */
       const st = u.blank ? "blank" : sun ? "off" : (deptRecordedToday(u.code)>0 ? "full" : "crit");
-      const ic=st==="full"?"✓":st==="off"?"–":st==="blank"?"·":"✗";
+      const ic="";   /* วงสถานะเป็นจุดสี ไม่ใช้อิโมจิ */
       const upct = u.blank ? null : +(agg(unitTasks(u),REPORT_WK).act).toFixed(1);
       return `<div class="deptcard2" tabindex="0" onclick="setDept('${u.code}')"><div class="dc2-top">
         <div class="dc2-ic" style="background:${s.color}1f;color:${s.color}">${unitBub(u.name,26)}</div>
@@ -2872,7 +2881,7 @@ function _unused_oldEntry(){
   </div>`;
   const compCard = followBox + `
   <div class="card">
-    <h2>📋 ${pk(["เช็คการบันทึกประจำวัน (บังคับทุกหน่วย ทุกวัน)","ກວດການບັນທຶກປະຈຳວັນ (ບັງຄັບທຸກໜ່ວຍ ທຸກວັນ)","Daily entry check (mandatory, all units)"])}
+    <h2>${pk(["เช็คการบันทึกประจำวัน (บังคับทุกหน่วย ทุกวัน)","ກວດການບັນທຶກປະຈຳວັນ (ບັງຄັບທຸກໜ່ວຍ ທຸກວັນ)","Daily entry check (mandatory, all units)"])}
       <span class="thin">· <b style="color:var(--good)">${pk(["ครบ","ຄົບ","full"])} ${fullN}</b> · <b style="color:var(--warn)">${pk(["ไม่ครบ","ບໍ່ຄົບ","partial"])} ${partN}</b> · <b style="color:var(--crit)">${pk(["ไม่บันทึก","ບໍ່ບັນທຶກ","none"])} ${noneN}</b> / 9 ${pk(["หน่วย","ໜ່ວຍ","units"])}</span></h2>
     <div class="sub">${pk(["\"ครบ\" = บันทึกครบทุก Job ที่ยังทำอยู่ของหน่วยนั้นในวันนี้ · \"ไม่ครบ\" = บันทึกบางงาน · \"ไม่บันทึก\" = ยังไม่ลงข้อมูลวันนี้","\"ຄົບ\" = ບັນທຶກຄົບທຸກ Job ທີ່ຍັງເຮັດ · \"ບໍ່ຄົບ\" = ບັນທຶກບາງງານ","\"Full\" = all active jobs logged today · \"Partial\" = some jobs · \"None\" = nothing today"])}</div>
     <div class="compgrid">
@@ -3369,7 +3378,7 @@ function planEditor(){
   <div class="card"><h2>📈 ${pk(["เส้นเป้าหมายสะสม (คำนวณอัตโนมัติจากกำลังพล)","ເສັ້ນເປົ້າ","Cumulative target curve (auto)"])}</h2>
     <div id="plCurve">${planCurveSvg(P.crew,days)}</div></div>
   <div style="display:flex;gap:10px;align-items:center;margin:16px 2px 8px">
-    <h2 style="margin:0;font-size:16px">🧩 Job / Task</h2>
+    <h2 style="margin:0;font-size:16px">Job / Task</h2>
     <span class="small num" id="plJS" style="color:${Math.abs(jobWSum-100)<0.05?'var(--good)':'var(--crit)'};font-weight:700">Σ น้ำหนัก Job = ${jobWSum.toFixed(2)} / 100</span>
     <button class="btn btn-o btnsm" style="margin-left:auto" onclick="planAddJob()">＋ ${pk(["เพิ่ม Job","ເພີ່ມ Job","add job"])}</button></div>
   ${jobsHtml}
@@ -3487,7 +3496,7 @@ function anaPage(){
     </div>`;
   })()}
   <div class="grid2">
-    <div class="card"><h2>📊 Pareto <span class="thin">· ${pk(["หน่วยงานเรียงตามผลต่างจากแผน","ໜ່ວຍງານຮຽງຕາມຜົນຕ່າງຈາກແຜນ","units by variance"])}</span></h2>
+    <div class="card"><h2>Pareto <span class="thin">· ${pk(["หน่วยงานเรียงตามผลต่างจากแผน","ໜ່ວຍງານຮຽງຕາມຜົນຕ່າງຈາກແຜນ","units by variance"])}</span></h2>
       ${rows.map(r=>{const w=Math.abs(r.varc)/maxAbs*100;
         return `<div class="prow"><span class="pl">${un(r.u.name)}</span>
         <span class="pb"><span class="pf" style="width:${w}%;background:${SCc[r.st[1]]}"></span></span>
@@ -3500,7 +3509,7 @@ function anaPage(){
         <b class="num" style="color:var(--crit)">−${fmt1(Math.abs(x.varc))}</b></div>`).join("")}
     </div>
   </div>
-  <div class="card"><h2>⚖️ ${pk(["ภาระงานที่เหลือ แยกตามส่วนงาน","ພາລະວຽກທີ່ເຫຼືອ ແຍກຕາມພາກ","Remaining workload by section"])}</h2>
+  <div class="card"><h2>${pk(["ภาระงานที่เหลือ แยกตามส่วนงาน","ພາລະວຽກທີ່ເຫຼືອ ແຍກຕາມພາກ","Remaining workload by section"])}</h2>
     ${DATA.map(s=>{const a=agg(secTasks(s),WNOW); const left=a.mh-a.actMh;
       const maxLeft=Math.max(...DATA.map(x=>{const b=agg(secTasks(x),WNOW);return b.mh-b.actMh;}),1);
       return `<div class="prow"><span class="pl">${un(s.name)}</span>
