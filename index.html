@@ -693,7 +693,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r130";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r131";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -3494,44 +3494,7 @@ function repPage(){
         :`<div class="small">${pk(["ไม่มี Task ใกล้ครบกำหนด","ບໍ່ມີ Task ໃກ້ຄົບກຳນົດ","None due soon"])}</div>`}
     </div>
   </div>
-  <div class="card"><h2>6. ${pk(["ตารางเช็คการบันทึก (บันทึกทุกวัน ยกเว้นอาทิตย์ · สรุปราย wk)","ຕາຕະລາງກວດການບັນທຶກລາຍອາທິດ","Weekly entry attendance (update every Saturday)"])}</h2>
-    <div class="sub">${pk(["✓ บันทึกแล้ว · ✗ ยังไม่บันทึก · คอลัมน์ฟ้า = วันนี้ · (ข้ามวันหยุด: อาทิตย์ + เสาร์เว้นเสาร์)","✓ ບັນທຶກ · ✗ ຍັງ · ຖັນສີຟ້າ = ມື້ນີ້ · (ຂ້າມວັນພັກ)","✓ recorded · ✗ not yet · blue col = today · (holidays skipped)"])}</div>
-    ${(function(){
-      const isDaily=e=>/^\[(แผน|ผล|ไม่ได้ทำ)\]/.test(e.note||"");
-      const tISO=todayISO(), sun=isHolidayDate(new Date());
-      /* คอลัมน์ = วันที่ที่มีการบันทึกรายวันจริง (+ วันนี้ถ้าไม่ใช่วันหยุด) · ข้ามวันหยุด (อาทิตย์+เสาร์เว้นเสาร์) · เอา 14 วันล่าสุด */
-      const dset=new Set();
-      ENTRIES.forEach(e=>{ if(isDaily(e) && !isImportEntry(e)) dset.add(normDate(e.date)); });
-      if(!sun) dset.add(tISO);
-      let days=[...dset].filter(d=>{ const dt=new Date(d); return !isNaN(dt)&&!isHolidayDate(dt); }).sort().slice(-14);
-      if(!days.length) return `<div class="small" style="color:var(--mut);padding:10px 0">${pk(["ยังไม่มีการบันทึกรายวัน — เริ่มบันทึกที่แท็บบันทึกข้อมูล","ຍັງບໍ່ມີການບັນທຶກລາຍວັນ","No daily entries yet"])}</div>`;
-      const recDay={};   // code -> Set(วันที่บันทึกจริง)
-      ENTRIES.forEach(e=>{ const t=String(e.taskId); if(/-PIN$/.test(t)||t.indexOf("-PLAN")>=0) return; const c=t.split("-")[0]; (recDay[c]=recDay[c]||new Set()).add(normDate(e.date)); });
-      const dn=["อา","จ","อ","พ","พฤ","ศ","ส"];
-      const units=DATA.flatMap(s=>s.units);
-      const th=days.map(d=>{const dt=new Date(d),cur=d===tISO; return `<th class="r ${cur?'wkcur':''}">${dn[dt.getDay()]}<br><span class="small num" style="font-weight:400">${dt.getDate()}/${dt.getMonth()+1}</span></th>`;}).join("");
-      const rows=units.map(u=>{
-        const set=recDay[u.code]||new Set(); let done=0,due=0;
-        const cells=days.map(d=>{const cur=d===tISO;
-          if(u.blank) return `<td class="r ${cur?'wkcur':''}" style="color:var(--mut)">—</td>`;
-          due++; const rec=set.has(d); if(rec)done++;
-          return `<td class="r ${cur?'wkcur':''}" style="color:${rec?'var(--good)':'var(--crit)'};font-weight:800">${rec?'✓':'✗'}</td>`;
-        }).join("");
-        const sum=u.blank?`<span style="color:var(--mut)">—</span>`:`${done}/${due}`;
-        return `<tr><td style="white-space:nowrap"><b>${un(u.name)}</b><div class="small">${u.owner}</div></td>${cells}<td class="r num">${sum}</td></tr>`;
-      }).join("");
-      const miss=sun?[]:units.filter(u=>!u.blank && !(recDay[u.code]&&recDay[u.code].has(tISO)));
-      const banner=sun
-        ? `<div class="repline" style="margin-top:12px"><span class="bullet">📅</span><span>${pk(["วันนี้วันอาทิตย์ — วันหยุด ไม่ต้องบันทึก","ວັນອາທິດ ພັກ","Sunday — day off"])}</span></div>`
-        : miss.length
-        ? `<div class="compbanner" style="margin:12px 0 0">⚠️ <b>${pk(["วันนี้ยังไม่บันทึก","ມື້ນີ້ຍັງບໍ່ບັນທຶກ","Not recorded today"])}:</b> <span class="cbunits">${miss.map(u=>un(u.name)).join(" · ")}</span></div>`
-        : `<div class="repline" style="margin-top:12px"><span class="bullet" style="color:var(--good)">✓</span><span>${pk(["วันนี้บันทึกครบทุกแผนกที่มีแผนแล้ว","ມື້ນີ້ຄົບແລ້ວ","all active units recorded today"])}</span></div>`;
-      return `<div class="scrollx"><table class="attend">
-        <tr><th style="text-align:left">${pk(["แผนก","ໜ່ວຍ","Unit"])}</th>${th}<th class="r">${pk(["รวม","ລວມ","Total"])}</th></tr>
-        ${rows}</table></div>${banner}`;
-    })()}
-  </div>
-  <div class="card"><h2>7. ${pk(["Audit ตรวจการกรอกผลงาน","Audit ກວດການປ້ອນຜົນງານ","Audit — entry verification"])} <span class="thin">· ${pk(["สัปดาห์ที่","ອາທິດທີ","Week"])} ${WNOW}</span></h2>
+  <div class="card"><h2>6. ${pk(["Audit ตรวจการกรอกผลงาน","Audit ກວດການປ້ອນຜົນງານ","Audit — entry verification"])} <span class="thin">· ${pk(["สัปดาห์ที่","ອາທິດທີ","Week"])} ${WNOW}</span></h2>
     <div class="sub">${pk(["ตรวจว่า % ที่แต่ละแผนกกรอกในสัปดาห์นี้ ถึงเป้าหมายของสัปดาห์ที่ "+WNOW+" หรือไม่ · แสดงเฉพาะ Task ที่มีการบันทึกในสัปดาห์นี้ (แยกส่วน → แผนก → Job)","ກວດ % ທີ່ປ້ອນທຽບເປົ້າອາທິດ "+WNOW,"Checks entered cumulative % against the week "+WNOW+" target · only tasks recorded this week"])}</div>
     ${(function(){
       if(WNOW<19) return `<div class="small" style="padding:10px 0;color:var(--mut)">${pk(["Audit เริ่มที่สัปดาห์ 19 (สัปดาห์ ≤18 เป็นข้อมูลนำเข้าย้อนหลัง)","Audit ເລີ່ມອາທິດ 19","Audit starts at week 19"])}</div>`;
