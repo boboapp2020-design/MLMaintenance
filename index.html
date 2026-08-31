@@ -693,7 +693,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r129";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r130";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2082,7 +2082,6 @@ function jobsPage(){
   const undoneReasons=[]; rows.forEach(r=>{ if(r.stt.k==="undone"){ undoneReasons.push({u:r.x.u,name:tr(r.x.t.name),txt:String(r.res.note).replace(/^\[ไม่ได้ทำ\]\s*/,"")}); } });
   const lateN=rows.filter(r=>r.res&&recOnTime(r.res)===false).length;
   const execPanel=`<div class="card exec-card">
-    <div class="exec-hd">📊 ${pk(["มุมมองผู้บริหาร","ມຸມມองຜູ້ບໍລິຫານ","Executive view"])}</div>
     <div class="exec-grid">
       <div class="exec-box">
         <div class="exec-t crit">🚨 ${pk(["หน่วยงานที่ยังไม่กรอก","ໜ່ວຍທີ່ຍັງບໍ່ປ້ອນ","Units not recorded"])} <b>${holD?"—":notRec.length}</b></div>
