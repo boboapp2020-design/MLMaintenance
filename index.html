@@ -470,6 +470,9 @@ svg text{font-family:inherit}
 .cl-st.st-off{background:var(--warn-bg);color:var(--warn)}
 .cl-st.st-undone{background:var(--crit-bg);color:var(--crit)}
 .cl-rsn{color:var(--mut)}
+.tc-time{font-size:12px;color:var(--mut);margin-top:8px;font-weight:600}
+.tc-late{background:var(--crit-bg);color:var(--crit);border-radius:6px;padding:1px 7px;font-size:11px;font-weight:800;margin-left:3px}
+.tc-ontime{background:var(--good-bg);color:var(--good);border-radius:6px;padding:1px 7px;font-size:11px;font-weight:800;margin-left:3px}
 @media(max-width:640px){.sg-head{display:none}.sg-row{grid-template-columns:1fr;gap:5px;border:1px solid var(--line);border-radius:10px;padding:9px}}
 /* ===== หน้างานซ่อม: ติดตามแผน/ผลรายวัน ===== */
 .trk-datebar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 4px 14px}
@@ -495,6 +498,23 @@ svg text{font-family:inherit}
 .trk-res{font-size:12.5px;color:var(--mut);margin-top:2px;word-break:break-word}
 .trk-right{flex:0 0 auto;text-align:right;display:flex;flex-direction:column;gap:5px;align-items:flex-end}
 .trk-pct{font-weight:800;font-size:13px;color:var(--ink)}
+.trk-time{font-size:11.5px;color:var(--mut);margin-top:3px;font-weight:600}
+/* แผงผู้บริหาร */
+.exec-card{border-left:4px solid var(--blue)}
+.exec-hd{font-weight:800;font-size:15px;color:var(--ink);margin-bottom:12px}
+.exec-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:720px){.exec-grid{grid-template-columns:1fr}}
+.exec-box{background:var(--tint);border-radius:12px;padding:13px 15px}
+.exec-t{font-weight:800;font-size:13.5px;margin-bottom:9px}
+.exec-t.crit{color:var(--crit)}.exec-t.warn{color:var(--warn)}
+.exec-t b{font-size:16px}
+.exec-chips{display:flex;flex-wrap:wrap;gap:7px}
+.exec-chip{background:var(--crit-bg);color:var(--crit);border:1px solid #F3B0B0;border-radius:8px;padding:5px 11px;font-size:12.5px;font-weight:800;cursor:pointer}
+.exec-chip:hover{background:var(--crit);color:#fff}
+.exec-reasons{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.exec-reasons .er{border-radius:8px;padding:5px 11px;font-size:12.5px;font-weight:800;background:var(--card);border:1px solid var(--line)}
+.er.crit{color:var(--crit)}.er.warn{color:var(--warn)}.er.mut{color:var(--mut)}
+.exec-rlist{margin:6px 0 0;padding-left:20px;font-size:12.5px;line-height:1.7;color:var(--ink)}
 /* ปฏิทิน */
 .cal-nav{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:12px}
 .cal-title{font-weight:800;font-size:17px;color:var(--ink);min-width:130px;text-align:center}
@@ -660,7 +680,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r125";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r126";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2025,6 +2045,33 @@ function jobsPage(){
     <div class="trk-pill warn">⚠️ ${pk(["ไม่ตามแผน","ບໍ່ຕາມແຜນ","off"])} <b>${cnt.off}</b></div>
     <div class="trk-pill crit">❌ ${pk(["ไม่ได้ทำ","ບໍ່ໄດ້ເຮັດ","not done"])} <b>${cnt.undone}</b></div>
     <div class="trk-pill warn">⏳ ${pk(["ยังไม่ปิด","ຍັງບໍ່ປິດ","pending"])} <b>${cnt.pending}</b></div></div>`;
+  /* ---- แผงผู้บริหาร: หน่วยที่ยังไม่กรอก + สาเหตุงานไม่คืบหน้า ---- */
+  const holD=isHolidayDate(selD);
+  const allUnits=[]; DATA.forEach(s=>s.units.forEach(u=>{ if(!u.blank) allUnits.push({u,sec:s}); }));
+  const recSet={}; ENTRIES.forEach(e=>{ if(e.date===d && (isPlanNote(e)||isResultNote(e))){ recSet[String(e.taskId).split("-")[0]]=1; } });
+  const notRec=allUnits.filter(o=>!recSet[o.u.code]);
+  const undoneReasons=[]; rows.forEach(r=>{ if(r.stt.k==="undone"){ undoneReasons.push({u:r.x.u,name:tr(r.x.t.name),txt:String(r.res.note).replace(/^\[ไม่ได้ทำ\]\s*/,"")}); } });
+  const lateN=rows.filter(r=>r.res&&recOnTime(r.res)===false).length;
+  const execPanel=`<div class="card exec-card">
+    <div class="exec-hd">📊 ${pk(["มุมมองผู้บริหาร","ມຸມມองຜູ້ບໍລິຫານ","Executive view"])}</div>
+    <div class="exec-grid">
+      <div class="exec-box">
+        <div class="exec-t crit">🚨 ${pk(["หน่วยงานที่ยังไม่กรอก","ໜ່ວຍທີ່ຍັງບໍ່ປ້ອນ","Units not recorded"])} <b>${holD?"—":notRec.length}</b></div>
+        ${holD?`<div class="small" style="color:var(--mut)">${pk(["วันหยุด — ไม่บังคับกรอก","ວັນພັກ","holiday — no entry required"])}</div>`
+          :(notRec.length?`<div class="exec-chips">${notRec.map(o=>`<span class="exec-chip" onclick="jobsOpenRecord('${o.u.code}','')" title="${pk(["ไปกรอก","ໄປປ້ອນ","go record"])}">${un(o.u.name)}</span>`).join("")}</div>`
+            :`<div class="small" style="color:var(--good);font-weight:700">✓ ${pk(["กรอกครบทุกหน่วยแล้ว","ຄົບທຸກໜ່ວຍ","all units recorded"])}</div>`)}
+      </div>
+      <div class="exec-box">
+        <div class="exec-t warn">🔍 ${pk(["สาเหตุงานไม่คืบหน้า","ສາເຫດງານບໍ່ຄืบໜ້າ","Why work stalled"])}</div>
+        <div class="exec-reasons">
+          <span class="er crit">❌ ${pk(["ไม่ได้ทำ","ບໍ່ໄດ້ເຮັດ","not done"])} ${cnt.undone}</span>
+          <span class="er warn">⚠️ ${pk(["ไม่ตามแผน","ບໍ່ຕາມ","off"])} ${cnt.off}</span>
+          <span class="er warn">⏳ ${pk(["ยังไม่ปิด","ຍັງບໍ່ປິດ","pending"])} ${cnt.pending}</span>
+          <span class="er mut">🕒 ${pk(["บันทึกย้อนหลัง","ຍ້ອນຫຼັງ","backfilled"])} ${lateN}</span>
+        </div>
+        ${undoneReasons.length?`<ul class="exec-rlist">${undoneReasons.slice(0,6).map(x=>`<li><b>${un(x.u.name)}</b> · ${x.name} — <span style="color:var(--crit)">${esc2(x.txt)}</span></li>`).join("")}${undoneReasons.length>6?`<li style="color:var(--mut)">… +${undoneReasons.length-6}</li>`:""}</ul>`:`<div class="small" style="color:var(--mut);margin-top:6px">${pk(["ไม่มีงานที่ระบุว่าไม่ได้ทำ","ບໍ່ມີ","no not-done items"])}</div>`}
+      </div>
+    </div></div>`;
   let body;
   if(!rows.length){
     body=`<div class="card" style="text-align:center;padding:34px;color:var(--mut)">📭 ${pk(["ยังไม่มี Task ที่วางแผนไว้ในวันนี้ — ไปวางแผนได้ที่หน้าบันทึกข้อมูล","ຍັງບໍ່ມີ Task ວາງແຜນ","No planned tasks for this day"])}</div>`;
@@ -2045,6 +2092,8 @@ function jobsPage(){
               <div class="trk-nm">${tr(t.name)} <span class="trk-job">· ${tr(j.name)}</span></div>
               <div class="trk-plan">☀️ ${planItems.map(esc2).join(" · ")||"—"}</div>
               ${resTxt?`<div class="trk-res">🌙 ${resTxt}</div>`:""}
+              ${(function(){const pT=entTime(r.plan),sT=r.res?entTime(r.res):0; if(!pT&&!sT) return ""; const late=r.res&&recOnTime(r.res)===false;
+                return `<div class="trk-time">🕒 ${pT?pk(["แผน","ແຜນ","plan"])+" "+fmtHM(pT):""}${sT?`${pT?" → ":""}${pk(["สรุป","ສະຫຼຸບ","done"])} ${fmtHM(sT)}`:""}${(pT&&sT&&sT>=pT)?` · ${fmtDur(sT-pT)}`:""}${late?` <span class="tc-late">${pk(["ย้อนหลัง","ຍ້ອນຫຼັງ","backfilled"])}</span>`:""}</div>`;})()}
             </div>
             <div class="trk-right"><span class="chip c-${r.stt.cls}">${r.stt.lb}</span>${pct!=null?`<span class="trk-pct">${fmt1(pct)}%</span>`:""}</div>
           </div>`;
@@ -2057,7 +2106,7 @@ function jobsPage(){
     <button class="${JOBS_VIEW==='cal'?'on':''}" onclick="jobsSetView('cal')">📅 ${pk(["ปฏิทิน","ປະຕິທິນ","Calendar"])}</button></div>`;
   app.innerHTML = pagehead(pk(["งานซ่อม — ติดตามแผน/ผลรายวัน","ວຽກສ້ອມແປງ — ຕິດຕາມແຜນ/ຜົນລາຍວັນ","Maintenance — daily plan vs actual"]),
     pk(["ไล่ดูทุก Task ที่วางแผนไว้ · ทำ/ไม่ทำ · ตามแผน/ไม่ตามแผน ครบทุกแผนก · คลิกเพื่อไปบันทึก","ເບິ່ງທຸກ Task ທີ່ວາງແຜນ · ຄົບທຸກໜ່ວຍ · ຄລິກໄປບັນທຶກ","Every planned task · done/not · on/off plan · all units · click to record"]))
-    + toggle + (JOBS_VIEW==="cal" ? `<div class="card">${jobsCalendarHtml()}</div>` : (dateBar + summary + body));
+    + toggle + (JOBS_VIEW==="cal" ? `<div class="card">${jobsCalendarHtml()}</div>` : (dateBar + summary + execPanel + body));
 }
 
 /* ============ เจาะรายหน่วย ============ */
@@ -2289,6 +2338,13 @@ const SUM_ST={ ontrack:["ตามแผน","ຕາມແຜນ","On plan"], of
 function dpToast(msg){ const t=document.getElementById("entryToast"); if(t){ t.innerHTML=`<div class="toast">${msg}</div>`; setTimeout(()=>t.innerHTML="",2600); } }
 function planItemsOf(tid){ const pe=planForToday(tid); return pe?String(pe.note).replace(/^\[แผน\]\s*/,"").split(" | ").filter(Boolean):[]; }
 function esc2(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+/* เวลายืนยัน (เก็บ epoch ไว้ใน mh · >1e12 = เป็น timestamp ไม่ใช่ค่าแรงเก่า) */
+function entTime(e){ const v=e&&+e.mh; return (v&&v>1e12)?v:0; }
+function fmtHM(ms){ const d=new Date(ms); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
+function fmtDur(ms){ let m=Math.max(0,Math.round(ms/60000)); const h=Math.floor(m/60); m=m%60; return (h?h+" "+pk(["ชม","ຊມ","h"])+" ":"")+m+" "+pk(["นาที","ນາທີ","m"]); }
+function recISO(ms){ const d=new Date(ms); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+/* กรอกภายในวันนั้นไหม: เวลาที่กดยืนยัน (mh) อยู่วันเดียวกับวันที่ของงาน (e.date) = ตรงเวลา · เกินวัน = ย้อนหลัง */
+function recOnTime(e){ const t=entTime(e); if(!t) return null; return recISO(t)===e.date; }
 function plLineRow(v){ return `<div class="pl-row"><input class="plln" value="${esc2(v)}" placeholder="${pk(["พิมพ์แผนงาน 1 ข้อ","ພິມແຜນ 1 ຂໍ້","one plan item"])}"><button class="pl-del" title="${pk(["ลบ","ລຶບ","remove"])}" onclick="dpDelPlanLine(this)">×</button></div>`; }
 function taskCardHtml(t,ti){
   const tid=t.id, m=tmeta(tid), pe=planForToday(tid), re=todayResult(tid);
@@ -2322,8 +2378,10 @@ function taskCardHtml(t,ti){
     const editBtn=ce?`<button class="btn btn-o btnsm tc-del" onclick="dpDeletePlan(${ti},'${tid}')">🗑 ${pk(["ลบแผน","ລຶບແຜນ","Delete"])}</button>
       <button class="btn btn-o btnsm" onclick="dpEditPlan(${ti},'${tid}')">✎ ${pk(["แก้ไข","ແກ້ໄຂ","Edit"])}<span class="tc-tmr">⏳${editLeftMin(m.planTs)}′</span></button>`
       :`<span class="tc-lock">🔒 ${pk(["เลยเวลาแก้ไข","ໝົດເວລາແກ້ໄຂ","edit closed"])}</span>`;
+    const pT=entTime(pe), pOn=recOnTime(pe);
+    const pTime=pT?`<div class="tc-time">🕒 ${pk(["ยืนยันแผน","ຢືนยันแผน","Plan confirmed"])} ${fmtHM(pT)}${pOn===false?` <span class="tc-late">${pk(["บันทึกย้อนหลัง","ຍ້ອນຫຼັງ","backfilled"])}</span>`:pOn===true?` <span class="tc-ontime">${pk(["ตรงวัน","ຕรงวัน","on day"])}</span>`:""}</div>`:"";
     const right=`<div class="tc-lb">☀️ ${pk(["แผนงานวันนี้","ແຜນມື້ນີ້","Plan today"])}${pe.by?` · <span class="tc-by">${esc2(pe.by)}</span>`:""}</div>
-      <ol class="tc-ol">${items.map(li=>`<li>${li}</li>`).join("")||`<li>—</li>`}</ol>`;
+      <ol class="tc-ol">${items.map(li=>`<li>${li}</li>`).join("")||`<li>—</li>`}</ol>${pTime}`;
     const acts=`${editBtn}<button class="btn btn-p btnsm" onclick="dpStartSummary('${tid}')">🌙 ${pk(["สรุปงาน","ສະຫຼຸບງານ","Summarize"])}</button>`;
     return wrap("s-planned",right,acts);
   }
@@ -2356,8 +2414,10 @@ function taskCardHtml(t,ti){
     :`<div class="cl-li">${esc2(String(re.note).replace(/^\[(ผล|ไม่ได้ทำ)\]\s*/,""))}</div>`;
   const editBtn=ce?`<button class="btn btn-o btnsm" onclick="dpEditSummary('${tid}')">✎ ${pk(["แก้ไข","ແກ້ໄຂ","Edit"])}<span class="tc-tmr">⏳${editLeftMin(m.sumTs)}′</span></button>`
     :`<span class="tc-lock">🔒 ${pk(["เลยเวลาแก้ไข","ໝົດເວລາແກ້ໄຂ","edit closed"])}</span>`;
+  const pT2=entTime(pe), sT=entTime(re), sOn=recOnTime(re);
+  const timeline = (pT2||sT)?`<div class="tc-time">${pT2?`🕒 ${pk(["แผน","ແຜນ","plan"])} ${fmtHM(pT2)}`:""}${sT?`${pT2?" → ":"🕒 "}${pk(["สรุป","ສະຫຼຸບ","done"])} ${fmtHM(sT)}`:""}${(pT2&&sT&&sT>=pT2)?` · ${pk(["ใช้เวลา","ໃຊ້ເວລາ","took"])} ${fmtDur(sT-pT2)}`:""}${sOn===false?` <span class="tc-late">${pk(["บันทึกย้อนหลัง","ຍ້ອນຫຼັງ","backfilled"])}</span>`:sOn===true?` <span class="tc-ontime">${pk(["กรอกตรงวัน","ຕรงวัน","on day"])}</span>`:""}</div>`:"";
   const right=`<div class="cl-tag">${ok?`✅ ${pk(["ปิดงานแล้ว","ປິດແລ້ວ","Closed"])} ${fmt1(donePct)}%`:`❌ ${pk(["ไม่ได้ทำ","ບໍ່ໄດ້ເຮັດ","Not done"])}`}</div>
-    <div class="cl-body">${body}</div>`;
+    <div class="cl-body">${body}</div>${timeline}`;
   return wrap("s-closed "+(ok?"ok":"no"),right,editBtn);
 }
 function dpAddPlanLine(ti){ const box=document.getElementById("pl_"+ti); if(!box) return; box.insertAdjacentHTML("beforeend",plLineRow("")); const ins=box.querySelectorAll(".plln"); ins[ins.length-1].focus(); }
@@ -2368,7 +2428,7 @@ function dpConfirmPlan(ti,tid){
   const items=[...box.querySelectorAll(".plln")].map(i=>i.value.trim()).filter(Boolean);
   if(!items.length){ alert(pk(["พิมพ์แผนอย่างน้อย 1 ข้อ","ພິມແຜນ 1 ຂໍ້","Type at least one item"])); return; }
   const by=(document.getElementById("dpBy")?document.getElementById("dpBy").value:"").trim();
-  const entry=sanEntry({date:DAILY_DATE,taskId:tid,pct:taskCurPts(tid),mh:0,by,note:"[แผน] "+items.join(" | ")});
+  const entry=sanEntry({date:DAILY_DATE,taskId:tid,pct:taskCurPts(tid),mh:Date.now(),by,note:"[แผน] "+items.join(" | ")});  /* mh = epoch เวลายืนยัน (sync ให้ผู้บริหารเห็นเวลา/ความตรงต่อเวลา) */
   ENTRIES.push(entry); saveEntries(ENTRIES); applyEntries(); pushToSheet(entry);
   const k=tmetaKey(tid); TMETA[k]=Object.assign({},TMETA[k],{plan:items}); if(!TMETA[k].planTs) TMETA[k].planTs=Date.now(); saveTMeta();
   DAILY_EDIT=""; entryDailyPage(); dpToast("☀️ "+pk(["บันทึกแผนแล้ว","ບັນທຶກແຜນແລ້ວ","Plan saved"]));
@@ -2403,7 +2463,7 @@ function dpConfirmSummary(ti,tid){
   const prefix=allUndone?"[ไม่ได้ทำ]":"[ผล]";
   const pts=allUndone?taskCurPts(tid):Math.round(v*x.t.wt)/100;
   const by=(document.getElementById("dpBy")?document.getElementById("dpBy").value:"").trim();
-  const entry=sanEntry({date:DAILY_DATE,taskId:tid,pct:pts,mh:0,by,note:prefix+" "+composed});
+  const entry=sanEntry({date:DAILY_DATE,taskId:tid,pct:pts,mh:Date.now(),by,note:prefix+" "+composed});  /* mh = epoch เวลาสรุปงาน */
   ENTRIES.push(entry); saveEntries(ENTRIES); applyEntries(); pushToSheet(entry);
   const k=tmetaKey(tid); TMETA[k]=Object.assign({},TMETA[k],{lines, pct:allUndone?cur:v}); if(!TMETA[k].sumTs) TMETA[k].sumTs=Date.now(); saveTMeta();
   DAILY_SUM=""; entryDailyPage(); dpToast((allUndone?"❌ ":"✅ ")+pk(["สรุปงานแล้ว","ສະຫຼຸບແລ້ວ","Summarized"]));
@@ -2771,11 +2831,11 @@ function _unused_oldEntry(){
     <h2>${pk(["รายการที่บันทึกไว้","ລາຍການທີ່ບັນທຶກໄວ້","Saved records"])} <span class="thin">· ${ENTRIES.length}</span></h2>
     ${ENTRIES.length===0 ? `<div class="small" style="padding:8px 0">${pk(["ยังไม่มีการบันทึก — dashboard แสดงข้อมูลจำลอง","ຍັງບໍ່ມີການບັນທຶກ — dashboard ສະແດງຂໍ້ມູນຈຳລອງ","No records yet — dashboard shows mock data"])}</div>` : `
     <div class="scrollx"><table>
-      <tr><th>${pk(["วันที่","ວັນທີ","Date"])}</th><th>Task ID</th><th>${pk(["หน่วยงาน / Task","ໜ່ວຍງານ / Task","Unit / Task"])}</th><th class="r">%</th><th class="r">man-hr</th><th>${pk(["ผู้บันทึก","ຜູ້ບັນທຶກ","By"])}</th><th></th></tr>
+      <tr><th>${pk(["วันที่","ວັນທີ","Date"])}</th><th>Task ID</th><th>${pk(["หน่วยงาน / Task","ໜ່ວຍງານ / Task","Unit / Task"])}</th><th class="r">%</th><th class="r">${pk(["แรง/เวลา","ແຮງ/ເວລາ","mh/time"])}</th><th>${pk(["ผู้บันทึก","ຜູ້ບັນທຶກ","By"])}</th><th></th></tr>
       ${ENTRIES.slice().reverse().map((e,ri)=>{const x=TASK_INDEX[e.taskId];
         return `<tr><td class="num small">${e.date}</td><td class="num"><b>${e.taskId}</b></td>
         <td class="small">${x?un(x.u.name)+" · "+tr(x.t.name):"?"}</td>
-        <td class="r num"><b>${e.pct}%</b></td><td class="r num">${e.mh||"-"}</td>
+        <td class="r num"><b>${e.pct}%</b></td><td class="r num">${entTime(e)?"🕒 "+fmtHM(entTime(e)):(e.mh||"-")}</td>
         <td class="small">${e.by||"-"}</td>
         <td><button class="btn-d" onclick="delEntry(${ENTRIES.length-1-ri})">${pk(["ลบ","ລຶບ","Del"])}</button></td></tr>`;}).join("")}
     </table></div>`}
