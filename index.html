@@ -525,6 +525,7 @@ svg text{font-family:inherit}
 .trk-res{font-size:12.5px;color:var(--mut);margin-top:2px;word-break:break-word}
 .trk-right{flex:0 0 auto;text-align:right;display:flex;flex-direction:column;gap:5px;align-items:flex-end}
 .trk-pct{font-weight:800;font-size:13px;color:var(--ink)}
+.trk-inc{font-weight:800;font-size:12px;color:var(--good);background:var(--good-bg);border-radius:6px;padding:1px 7px}
 .trk-time{font-size:11.5px;color:var(--mut);margin-top:3px;font-weight:600}
 .sum-deptcard .trk-depthd{margin-bottom:12px}
 .sum-deptcard .tcard:last-child{margin-bottom:0}
@@ -733,7 +734,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r148";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r149";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2116,10 +2117,13 @@ function jobsPage(){
   const resIdx={}; ENTRIES.forEach(e=>{ if(isResultNote(e) && (JOBS_SCOPE!=="day"||e.date===d)) resIdx[e.taskId+"|"+e.date]=e; });   /* ผลล่าสุดต่อ task+วัน */
   const planIdx={}, keySet={};   /* รวมทั้งงานที่มีแผน และงานที่กด "ไม่ทำ" (result-only) */
   ENTRIES.forEach(e=>{ if(JOBS_SCOPE==="day" && e.date!==d) return; if(isPlanNote(e)){ planIdx[e.taskId+"|"+e.date]=e; keySet[e.taskId+"|"+e.date]=1; } else if(isResultNote(e)){ keySet[e.taskId+"|"+e.date]=1; } });
-  let rows=Object.keys(keySet).map(key=>{ const i=key.lastIndexOf("|"); const tid=key.slice(0,i), dt=key.slice(i+1); const x=TASK_INDEX[tid]; if(!x) return null; return {tid,x,plan:planIdx[key]||null,res:resIdx[key]||null,date:dt,stt:trackStatus(resIdx[key]||null)}; }).filter(Boolean).filter(r=>!JOBS_DEPT || r.x.u.code===JOBS_DEPT);
+  let rows=Object.keys(keySet).map(key=>{ const i=key.lastIndexOf("|"); const tid=key.slice(0,i), dt=key.slice(i+1); const x=TASK_INDEX[tid]; if(!x) return null;
+    const res=resIdx[key]||null, plan=planIdx[key]||null, wt=x.t.wt||1;
+    const inc=(res&&plan)?(((+res.pct||0)-(+plan.pct||0))/wt*100):0;   /* % ที่เพิ่มขึ้น = ผลจริง − ณ ตอนวางแผน */
+    return {tid,x,plan,res,date:dt,inc,stt:trackStatus(res)}; }).filter(Boolean).filter(r=>!JOBS_DEPT || r.x.u.code===JOBS_DEPT);
   const cnt={ontrack:0,off:0,undone:0,pending:0}; rows.forEach(r=>cnt[r.stt.k]++);
   const listRows = JOBS_STAT? rows.filter(r=>r.stt.k===JOBS_STAT) : rows;
-  const groups={}; listRows.slice().sort((a,b)=> a.date!==b.date ? (a.date<b.date?1:-1) : a.stt.rank-b.stt.rank).forEach(r=>{ const key=r.x.u.code; if(!groups[key]) groups[key]={u:r.x.u,sec:DATA.find(s=>s.id===r.x.secId),items:[]}; groups[key].items.push(r); });
+  const groups={}; listRows.slice().sort((a,b)=> (b.inc-a.inc) || (a.date<b.date?1:-1) || (a.stt.rank-b.stt.rank)).forEach(r=>{ const key=r.x.u.code; if(!groups[key]) groups[key]={u:r.x.u,sec:DATA.find(s=>s.id===r.x.secId),items:[]}; groups[key].items.push(r); });
   const scopeTog=`<div class="jpviewtog">
     <button class="${JOBS_SCOPE==='all'?'on':''}" onclick="jobsSetScope('all')">${pk(["ทุกวัน","ທຸກວັນ","All days"])}</button>
     <button class="${JOBS_SCOPE==='day'?'on':''}" onclick="jobsSetScope('day')">${pk(["ระบุวัน","ລະບຸວັນ","By date"])}</button></div>`;
@@ -2189,7 +2193,7 @@ function jobsPage(){
               ${(function(){const pT=entTime(r.plan),sT=r.res?entTime(r.res):0; if(!pT&&!sT) return ""; const late=r.res&&recOnTime(r.res)===false;
                 return `<div class="trk-time">🕒 ${pT?pk(["แผน","ແຜນ","plan"])+" "+fmtHM(pT):""}${sT?`${pT?" → ":""}${pk(["สรุป","ສະຫຼຸບ","done"])} ${fmtHM(sT)}`:""}${(pT&&sT&&sT>=pT)?` · ${fmtDur(sT-pT)}`:""}${late?` <span class="tc-late">${pk(["ย้อนหลัง","ຍ້ອນຫຼັງ","backfilled"])}</span>`:""}</div>`;})()}
             </div>
-            <div class="trk-right"><span class="chip c-${r.stt.cls}">${r.stt.lb}</span>${pct!=null?`<span class="trk-pct">${fmt1(pct)}%</span>`:""}</div>
+            <div class="trk-right"><span class="chip c-${r.stt.cls}">${r.stt.lb}</span>${r.inc>0.01?`<span class="trk-inc">▲ ${fmt1(r.inc)}%</span>`:""}${pct!=null?`<span class="trk-pct">${fmt1(pct)}%</span>`:""}</div>
           </div>`;
         }).join("")}
       </div>`;
