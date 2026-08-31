@@ -9,16 +9,17 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#F3F7FC; --card:#FFFFFF; --line:#E4EAF2; --tint:#EFF5FF; --tint2:#E3EDFC;
-  --ink:#1E2A3A; --mut:#64748B;
-  --blue:#2563EB; --blue-dark:#1D4ED8; --blue-soft:#DBEAFE;
-  --good:#16A34A; --good-bg:#DCFCE7;
-  --warn:#D97706; --warn-bg:#FEF3C7;
-  --crit:#EF4444; --crit-bg:#FEE2E2;
-  --shadow:0 1px 2px rgba(30,42,58,.05), 0 6px 18px rgba(30,42,58,.07);
-  --shadow-lg:0 2px 6px rgba(30,42,58,.08), 0 16px 38px rgba(37,99,235,.16);
-  --cardgrad:linear-gradient(180deg,#FFFFFF 0%,#FBFCFF 100%);
-  --hair:1px solid rgba(210,220,236,.85);
+  /* Industrial Ops Console — พื้นเทาสตีลกลาง, accent น้ำเงินสตีล, พื้นผิวแบน-คม */
+  --bg:#ECEFF3; --card:#FFFFFF; --line:#D7DDE6; --tint:#EFF2F6; --tint2:#E1E6EE;
+  --ink:#1A2432; --mut:#5B6A7D;
+  --blue:#1E4FA3; --blue-dark:#173E82; --blue-soft:#E1E9F4;
+  --good:#15803D; --good-bg:#E6F4EA;
+  --warn:#B45309; --warn-bg:#FBF0DA;
+  --crit:#DC2626; --crit-bg:#FBE7E7;
+  --shadow:0 1px 2px rgba(20,30,45,.07), 0 1px 3px rgba(20,30,45,.05);
+  --shadow-lg:0 4px 14px rgba(20,30,45,.13);
+  --cardgrad:#FFFFFF;
+  --hair:1px solid #DBE1EA;
 }
 *{box-sizing:border-box}
 html{background:var(--bg)}
@@ -123,10 +124,10 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .followitem .fdays.w{background:var(--warn)}
 .followok{color:var(--good);font-weight:700;font-size:13px}
 /* ปุ่มบันทึกเด่น */
-.btn-save{background:linear-gradient(135deg,#2563EB,#1D4ED8);color:#fff;font-size:16px;font-weight:800;
-  padding:14px 34px;border-radius:12px;border:none;cursor:pointer;font-family:inherit;
-  box-shadow:0 6px 18px rgba(37,99,235,.38);transition:all .15s;display:inline-flex;align-items:center;gap:9px}
-.btn-save:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(37,99,235,.5)}
+.btn-save{background:var(--blue);color:#fff;font-size:16px;font-weight:800;
+  padding:13px 32px;border-radius:10px;border:none;cursor:pointer;font-family:inherit;
+  box-shadow:0 2px 6px rgba(20,30,45,.14);transition:all .15s;display:inline-flex;align-items:center;gap:9px}
+.btn-save:hover{background:var(--blue-dark);box-shadow:0 4px 12px rgba(20,30,45,.2)}
 .btn-save:active{transform:translateY(0)}
 .saverow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--tint);border-radius:12px;padding:12px 16px;margin-top:4px}
 
@@ -138,8 +139,8 @@ body{margin:0;background:var(--bg);color:var(--ink);
 /* ---------- KPI cards ---------- */
 .kpis{display:grid;grid-template-columns:1.35fr 1fr 1fr 1fr 1fr;gap:14px;margin-bottom:16px}
 @media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}}
-.kpi{background:var(--cardgrad);border:var(--hair);border-radius:16px;padding:16px 18px 14px;box-shadow:var(--shadow);position:relative;transition:box-shadow .2s,transform .2s}
-.kpi::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;border-radius:16px 16px 0 0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.9),transparent);pointer-events:none}
+.kpi{background:var(--cardgrad);border:var(--hair);border-radius:12px;padding:16px 18px 14px;box-shadow:var(--shadow);position:relative;transition:box-shadow .2s,transform .2s}
+.kpi::before{display:none}
 .kpi:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px)}
 .kpi .label{font-size:12.5px;color:var(--mut);font-weight:600}
 .kpi .value{font-size:34px;font-weight:800;line-height:1.1;margin:6px 0 4px;letter-spacing:-.5px}
@@ -155,8 +156,8 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .c-crit{background:var(--crit-bg);color:var(--crit)}
 
 /* ---------- cards ---------- */
-.card{background:var(--cardgrad);border:var(--hair);border-radius:16px;padding:18px 22px;box-shadow:var(--shadow);margin-bottom:16px;position:relative}
-.card::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;border-radius:16px 16px 0 0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.9),transparent);pointer-events:none}
+.card{background:var(--cardgrad);border:var(--hair);border-radius:12px;padding:18px 22px;box-shadow:var(--shadow);margin-bottom:16px;position:relative}
+.card::before{display:none}
 .card h2{font-size:14px;margin:0 0 4px;font-weight:800;letter-spacing:.6px;color:var(--ink)}
 .card h2 .thin{color:var(--mut);font-weight:600}
 .card .sub{font-size:12px;color:var(--mut);margin-bottom:10px}
@@ -322,8 +323,8 @@ svg text{font-family:inherit}
 .deptcolhd2{display:flex;align-items:center;gap:11px;font-weight:800;font-size:19px;padding:0 2px 12px;border-bottom:3px solid var(--line);margin-bottom:18px}
 .deptcolhd2 .dot{width:15px;height:15px;border-radius:50%;flex:0 0 auto}
 .dc2-list{display:flex;flex-direction:column;gap:18px;flex:1}
-.deptcard2{display:flex;flex-direction:column;justify-content:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px 20px;cursor:pointer;box-shadow:0 4px 14px rgba(30,42,58,.08),0 10px 26px rgba(30,42,58,.06);transition:transform .16s,box-shadow .16s;min-height:112px}
-.deptcard2:hover{transform:translateY(-3px);box-shadow:0 16px 38px rgba(30,42,58,.18)}
+.deptcard2{display:flex;flex-direction:column;justify-content:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;cursor:pointer;box-shadow:var(--shadow);transition:transform .16s,box-shadow .16s,border-color .16s;min-height:112px}
+.deptcard2:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);border-color:#B9C4D4}
 .deptcard2 .dc2-top{display:flex;align-items:center;gap:16px}
 .deptcard2 .dc2-ic{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
 .deptcard2 .dc2-ic svg{width:30px;height:30px}
@@ -380,7 +381,7 @@ svg text{font-family:inherit}
 .jpviewtog button{border:none;background:var(--card);color:var(--mut);font:inherit;font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer}
 .jpviewtog button.on{background:var(--blue);color:#fff}
 .jobpickgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px}
-.jobpick{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:18px 20px 16px;cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s;box-shadow:0 4px 14px rgba(30,42,58,.08);position:relative;overflow:hidden}
+.jobpick{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px 16px;cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s;box-shadow:var(--shadow);position:relative;overflow:hidden}
 .jobpick::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px}
 .jobpick.jp-crit::before{background:var(--crit)} .jobpick.jp-warn::before{background:var(--warn)} .jobpick.jp-good::before{background:var(--good)}
 .jobpick:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(30,42,58,.20)}
@@ -419,7 +420,7 @@ svg text{font-family:inherit}
 .taskrow .tk-ctl{flex:0 0 auto;text-align:right;white-space:nowrap}
 .btnsm{padding:6px 14px !important;font-size:13px !important;border-radius:9px !important}
 /* ===== การ์ด Task รายวัน (วางแผน → ยืนยัน → สรุปงาน) ===== */
-.tcard{position:relative;background:var(--cardgrad);border:1px solid var(--line);border-radius:14px;padding:15px 18px 15px 22px;margin-bottom:12px;box-shadow:0 2px 10px rgba(30,42,58,.06);overflow:hidden;animation:slideRL .3s cubic-bezier(.22,.61,.36,1) both}
+.tcard{position:relative;background:var(--cardgrad);border:1px solid var(--line);border-radius:12px;padding:15px 18px 15px 22px;margin-bottom:12px;box-shadow:var(--shadow);overflow:hidden;animation:slideRL .3s cubic-bezier(.22,.61,.36,1) both}
 .tcard .tc-accent{position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--mut)}
 .tcard.s-plan .tc-accent{background:var(--blue)}
 .tcard.s-planned .tc-accent{background:var(--warn)}
@@ -711,7 +712,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r137";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r138";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
