@@ -731,7 +731,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r146";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r147";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2437,6 +2437,8 @@ const SUM_ST={ ontrack:["ตามแผน","ຕາມແຜນ","On plan"], of
 function dpToast(msg){ const t=document.getElementById("entryToast"); if(t){ t.innerHTML=`<div class="toast">${msg}</div>`; setTimeout(()=>t.innerHTML="",2600); } }
 function planItemsOf(tid){ const pe=planForToday(tid); return pe?String(pe.note).replace(/^\[แผน\]\s*/,"").split(" | ").filter(Boolean):[]; }
 function esc2(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+/* สี % ไล่จากแดง(0) → เหลือง(50) → เขียว(100) */
+function pctColor(p){ const v=Math.max(0,Math.min(100,+p||0)); return `hsl(${Math.round(v*1.2)},72%,40%)`; }
 /* เวลายืนยัน (เก็บ epoch ไว้ใน mh · >1e12 = เป็น timestamp ไม่ใช่ค่าแรงเก่า) */
 function entTime(e){ const v=e&&+e.mh; return (v&&v>1e12)?v:0; }
 function fmtHM(ms){ const d=new Date(ms); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
@@ -2463,7 +2465,7 @@ function taskCardHtml(t,ti){
   const left=`<div class="tc-left">
     <div class="tc-llabel">${pk(["งาน","ວຽກ","Task"])}</div>
     <div class="tc-namebox" style="background:${tint};border-color:${accent};border-bottom-color:${accent}">${tr(t.name)}</div>
-    <div class="tc-curpill">${pk(["ตอนนี้","ຕອນນີ້","now"])} <b>${fmt1(cur)}%</b></div></div>`;
+    <div class="tc-curpill">${pk(["ตอนนี้","ຕອນນີ້","now"])} <b style="color:${pctColor(cur)}">${fmt1(cur)}%</b></div></div>`;
   const wrap=(cls,rightHtml,actionsHtml,attr="")=>`<div class="tcard ${cls}"${attr}><div class="tc-accent" style="background:${accent}"></div>
     <div class="tc-grid">${left}<div class="tc-right">${rightHtml}</div></div>
     <div class="tc-actions">${actionsHtml}</div></div>`;
