@@ -510,6 +510,9 @@ svg text{font-family:inherit}
 @media(max-width:560px){.jobs-deptsel{margin-left:0;width:100%}}
 /* แผงผู้บริหาร */
 .exec-card{border-left:4px solid var(--blue)}
+.exec-open{display:inline-flex;align-items:center;gap:10px;margin:0 4px 16px;background:var(--blue);color:#fff;border:none;border-radius:12px;padding:11px 20px;font:inherit;font-size:14.5px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(37,99,235,.32)}
+.exec-open:hover{background:var(--blue-dark)}
+.exec-openbadge{background:rgba(255,255,255,.25);border-radius:8px;padding:2px 10px;font-size:12.5px;font-weight:800}
 .exec-hd{font-weight:800;font-size:15px;color:var(--ink);margin-bottom:12px}
 .exec-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 @media(max-width:720px){.exec-grid{grid-template-columns:1fr}}
@@ -682,6 +685,13 @@ img,svg,table{max-width:100%}
     <div id="modalBody"></div>
   </div>
 </div>
+<div class="modal-ov" id="execModal" onclick="if(event.target===this)closeExecModal()">
+  <div class="modal-box" style="max-width:900px">
+    <button class="modal-close" onclick="closeExecModal()" aria-label="close">✕</button>
+    <h3>📊 มุมมองผู้บริหาร</h3>
+    <div id="execModalBody"></div>
+  </div>
+</div>
 <div class="modal-ov" id="pinModal" onclick="if(event.target===this)closePinModal()">
   <div class="modal-box" style="max-width:370px">
     <button class="modal-close" onclick="closePinModal()" aria-label="close">✕</button>
@@ -698,7 +708,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r133";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r134";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1771,7 +1781,7 @@ function openChartModal(svg){
   document.getElementById("chartModal").classList.add("open");
 }
 function closeChartModal(){ document.getElementById("chartModal").classList.remove("open"); }
-document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeChartModal(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ closeChartModal(); closeExecModal(); } });
 
 /* ============ บันทึกกราฟเป็นรูป PNG ============ */
 function saveChart(btn){
@@ -2011,6 +2021,9 @@ let JOBS_VIEW="day";   /* day = รายวัน · cal = ปฏิทิน�
 let JOBS_DEPT="";      /* "" = ทุกแผนก · code = กรองเฉพาะแผนก */
 function jobsSetView(v){ JOBS_VIEW=v; jobsPage(); }
 function jobsSetDept(c){ JOBS_DEPT=c||""; jobsPage(); }
+let EXEC_INNER="";
+function openExecModal(){ const b=document.getElementById("execModalBody"); if(b) b.innerHTML=EXEC_INNER; const m=document.getElementById("execModal"); if(m) m.classList.add("open"); }
+function closeExecModal(){ const m=document.getElementById("execModal"); if(m) m.classList.remove("open"); }
 function jobsPickDay(ds){ JOBS_DATE=ds; JOBS_VIEW="day"; jobsPage(); }
 function jobsShiftMonth(delta){ const p=JOBS_DATE.split("-").map(Number); const dt=new Date(p[0],p[1]-1+delta,1);
   JOBS_DATE=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-01"; jobsPage(); }
@@ -2088,8 +2101,7 @@ function jobsPage(){
   const notRec=allUnits.map(o=>({...o,miss:missStreak(unitRec[o.u.code]||{}, d)})).filter(o=>!recSet[o.u.code]).sort((a,b)=>b.miss-a.miss);
   const undoneReasons=[]; rows.forEach(r=>{ if(r.stt.k==="undone"){ undoneReasons.push({u:r.x.u,name:tr(r.x.t.name),txt:String(r.res.note).replace(/^\[ไม่ได้ทำ\]\s*/,"")}); } });
   const lateN=rows.filter(r=>r.res&&recOnTime(r.res)===false).length;
-  const execPanel=`<div class="card exec-card">
-    <div class="exec-grid">
+  EXEC_INNER=`<div class="exec-grid">
       <div class="exec-box">
         <div class="exec-t crit">🚨 ${pk(["หน่วยงานที่ยังไม่กรอก","ໜ່ວຍທີ່ຍັງບໍ່ປ້ອນ","Units not recorded"])} <b>${holD?"—":notRec.length}</b></div>
         ${holD?`<div class="small" style="color:var(--mut)">${pk(["วันหยุด — ไม่บังคับกรอก","ວັນພັກ","holiday — no entry required"])}</div>`
@@ -2106,7 +2118,8 @@ function jobsPage(){
         </div>
         ${undoneReasons.length?`<ul class="exec-rlist">${undoneReasons.slice(0,6).map(x=>`<li><b>${un(x.u.name)}</b> · ${x.name} — <span style="color:var(--crit)">${esc2(x.txt)}</span></li>`).join("")}${undoneReasons.length>6?`<li style="color:var(--mut)">… +${undoneReasons.length-6}</li>`:""}</ul>`:`<div class="small" style="color:var(--mut);margin-top:6px">${pk(["ไม่มีงานที่ระบุว่าไม่ได้ทำ","ບໍ່ມີ","no not-done items"])}</div>`}
       </div>
-    </div></div>`;
+    </div>`;
+  const execBtn=`<button class="exec-open" onclick="openExecModal()">📊 ${pk(["มุมมองผู้บริหาร","ມຸມມองຜູ້ບໍລິຫານ","Executive view"])}${(!holD&&notRec.length)?` <span class="exec-openbadge">${notRec.length} ${pk(["ยังไม่กรอก","ຍັງບໍ່ປ້ອນ","not recorded"])}</span>`:""}</button>`;
   let body;
   if(!rows.length){
     body=`<div class="card" style="text-align:center;padding:34px;color:var(--mut)">📭 ${pk(["ยังไม่มี Task ที่วางแผนไว้ในวันนี้ — ไปวางแผนได้ที่หน้าบันทึกข้อมูล","ຍັງບໍ່ມີ Task ວາງແຜນ","No planned tasks for this day"])}</div>`;
@@ -2147,7 +2160,7 @@ function jobsPage(){
     ${deptSel}</div>`;
   app.innerHTML = pagehead(pk(["งานซ่อม — ติดตามแผน/ผลรายวัน","ວຽກສ້ອມແປງ — ຕິດຕາມແຜນ/ຜົນລາຍວັນ","Maintenance — daily plan vs actual"]),
     pk(["ไล่ดูทุก Task ที่วางแผนไว้ · ทำ/ไม่ทำ · ตามแผน/ไม่ตามแผน ครบทุกแผนก · คลิกเพื่อไปบันทึก","ເບິ່ງທຸກ Task ທີ່ວາງແຜນ · ຄົບທຸກໜ່ວຍ · ຄລິກໄປບັນທຶກ","Every planned task · done/not · on/off plan · all units · click to record"]))
-    + toggle + (JOBS_VIEW==="cal" ? `<div class="card">${jobsCalendarHtml()}</div>` : (dateBar + summary + execPanel + body));
+    + toggle + (JOBS_VIEW==="cal" ? `<div class="card">${jobsCalendarHtml()}</div>` : (dateBar + summary + execBtn + body));
 }
 
 /* ============ เจาะรายหน่วย ============ */
