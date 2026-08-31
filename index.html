@@ -526,6 +526,8 @@ svg text{font-family:inherit}
 .trk-right{flex:0 0 auto;text-align:right;display:flex;flex-direction:column;gap:5px;align-items:flex-end}
 .trk-pct{font-weight:800;font-size:13px;color:var(--ink)}
 .trk-inc{font-weight:800;font-size:12px;color:var(--good);background:var(--good-bg);border-radius:6px;padding:1px 7px}
+.trk-rank{flex:0 0 auto;min-width:22px;height:22px;border-radius:6px;background:var(--tint2);color:var(--mut);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:2px;font-variant-numeric:tabular-nums}
+.trk-item .tp-dot,.trk-item:first-child .trk-rank{}
 .trk-time{font-size:11.5px;color:var(--mut);margin-top:3px;font-weight:600}
 .sum-deptcard .trk-depthd{margin-bottom:12px}
 .sum-deptcard .tcard:last-child{margin-bottom:0}
@@ -734,7 +736,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r149";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r150";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1937,13 +1939,14 @@ function overview(){
   /* นับถอยหลังทีละวันจาก "วันนี้จริง" ถึงวันเปิดหีบ (31 ต.ค. 2569) — เปิดเว็บวันไหนเลขลดทุกวัน */
   const _n=new Date(), _today=new Date(_n.getFullYear(),_n.getMonth(),_n.getDate());
   const daysLeft=Math.max(0,Math.ceil((SEASON_END-_today)/86400000));
-  const compAll=complianceToday();
+  /* compliance รายวัน (ไม่ใช่รายสัปดาห์แล้ว) — วันนี้หน่วยไหนยังไม่กรอก/กรอกไม่ครบ */
+  const tISO=todayISO(), holToday=isHolidayDate(new Date(tISO));
+  const recToday={}; ENTRIES.forEach(e=>{ if(e.date===tISO && (isPlanNote(e)||isResultNote(e))){ const c=e.taskId.split("-")[0]; (recToday[c]=recToday[c]||new Set()).add(e.taskId); }});
+  const compAll = holToday? [] : DATA.flatMap(s=>s.units.filter(u=>!u.blank).map(u=>{ const active=activeTasksOf(u).length; const logged=recToday[u.code]?recToday[u.code].size:0; return {u,logged,active,state:logged===0?"none":(logged>=active?"full":"partial")}; }));
   const noneU=compAll.filter(x=>x.state==="none"), partU=compAll.filter(x=>x.state==="partial");
-  const dueTxt=pk(["update สัปดาห์นี้ เสาร์ "+fmtDate(weekSaturday(WNOW)),"ອັບເດດ ວັນເສົາ "+fmtDate(weekSaturday(WNOW)),"update Sat "+fmtDate(weekSaturday(WNOW))]);
-  const wkTxt=pk(["สัปดาห์ที่ "+WNOW+"/"+WEEKS,"ອາທິດທີ "+WNOW+"/"+WEEKS,"Week "+WNOW+"/"+WEEKS]);
   const compBanner = (noneU.length===0 && partU.length===0) ? "" :
-    `<div class="compbanner">📅 <b>${wkTxt}</b> · <b>${dueTxt}</b> ·
-     ${noneU.length?`<span class="cbnum num">${noneU.length}</span> ${pk(["ยังไม่บันทึกสัปดาห์นี้","ຍັງບໍ່ບັນທຶກ","not recorded"])}: <span class="cbunits">${noneU.map(x=>un(x.u.name)).join(" · ")}</span>`:""}
+    `<div class="compbanner">📅 <b>${pk(["วันนี้","ມື້ນີ້","Today"])} ${fmtDate(_today)}</b> ·
+     ${noneU.length?`<span class="cbnum num">${noneU.length}</span> ${pk(["ยังไม่บันทึกวันนี้","ຍັງບໍ່ບັນທຶກມື້ນີ້","not recorded today"])}: <span class="cbunits">${noneU.map(x=>un(x.u.name)).join(" · ")}</span>`:""}
      ${partU.length?`<span class="cbnum num" style="background:var(--warn)">${partU.length}</span> ${pk(["บันทึกไม่ครบ","ບັນທຶກບໍ່ຄົບ","partial"])}: <span class="cbunits">${partU.map(x=>un(x.u.name)+" ("+x.logged+"/"+x.active+")").join(" · ")}</span>`:""}
      <a onclick="go('entry')">${pk(["บันทึก ›","ບັນທຶກ ›","Record ›"])}</a></div>`;
   app.innerHTML = pagehead(pk(["ความคืบหน้าของงานซ่อม","ຄວາມຄືບໜ້າຂອງວຽກສ້ອມແປງ","Maintenance Progress"]),
@@ -2173,31 +2176,26 @@ function jobsPage(){
         : pk(["ยังไม่มี Task ที่วางแผนไว้ — ไปวางแผนที่หน้าบันทึกข้อมูล","ຍັງບໍ່ມີ Task ວາງແຜນ","No planned tasks yet"]));
     body=`<div class="card" style="text-align:center;padding:34px;color:var(--mut)">${msg}</div>`;
   } else {
-    body=Object.values(groups).map(g=>{
-      const items=g.items;
-      const col=g.sec?g.sec.color:"#2563EB";
-      return `<div class="card trk-deptcard">
-        <div class="trk-depthd"><span class="dot" style="background:${col}"></span>${un(g.u.name)} <span class="small" style="color:var(--mut);font-weight:500">· ${g.u.owner}</span></div>
-        ${items.map(r=>{
-          const t=r.x.t, j=r.x.j;
-          const planItems=r.plan?String(r.plan.note).replace(/^\[แผน\]\s*/,"").split(" | ").filter(Boolean):[];
-          const resTxt=r.res?esc2(String(r.res.note).replace(/^\[(ผล|ไม่ได้ทำ)\]\s*/,"")):"";
-          const pct=(r.res&&/^\[ผล\]/.test(r.res.note))?(+r.res.pct||0)/(t.wt||1)*100:null;
-          const dtTag=JOBS_SCOPE==="all"?`<span class="trk-date">${r.date.slice(8)}/${r.date.slice(5,7)}</span>`:"";
-          return `<div class="trk-item trk-${r.stt.cls}" tabindex="0" onclick="jobsOpenRecord('${r.x.u.code}','${j.id}')">
-            <span class="trk-dot2" style="background:${r.stt.cls==='good'?'var(--good)':r.stt.cls==='warn'?'var(--warn)':r.stt.cls==='crit'?'var(--crit)':'#94A3B8'}"></span>
-            <div class="trk-main">
-              <div class="trk-nm">${dtTag}${tr(t.name)} <span class="trk-job">· ${tr(j.name)}</span></div>
-              <div class="trk-plan">☀️ ${planItems.map(esc2).join(" · ")||"—"}</div>
-              ${resTxt?`<div class="trk-res">🌙 ${resTxt}</div>`:""}
-              ${(function(){const pT=entTime(r.plan),sT=r.res?entTime(r.res):0; if(!pT&&!sT) return ""; const late=r.res&&recOnTime(r.res)===false;
-                return `<div class="trk-time">🕒 ${pT?pk(["แผน","ແຜນ","plan"])+" "+fmtHM(pT):""}${sT?`${pT?" → ":""}${pk(["สรุป","ສະຫຼຸບ","done"])} ${fmtHM(sT)}`:""}${(pT&&sT&&sT>=pT)?` · ${fmtDur(sT-pT)}`:""}${late?` <span class="tc-late">${pk(["ย้อนหลัง","ຍ້ອນຫຼັງ","backfilled"])}</span>`:""}</div>`;})()}
-            </div>
-            <div class="trk-right"><span class="chip c-${r.stt.cls}">${r.stt.lb}</span>${r.inc>0.01?`<span class="trk-inc">▲ ${fmt1(r.inc)}%</span>`:""}${pct!=null?`<span class="trk-pct">${fmt1(pct)}%</span>`:""}</div>
-          </div>`;
-        }).join("")}
+    const flat=listRows.slice().sort((a,b)=> (b.inc-a.inc) || (a.date<b.date?1:-1) || (a.stt.rank-b.stt.rank));
+    body=`<div class="card">${flat.map((r,idx)=>{
+      const t=r.x.t, j=r.x.j, u=r.x.u, sec=DATA.find(s=>s.id===r.x.secId), col=sec?sec.color:"#2563EB";
+      const planItems=r.plan?String(r.plan.note).replace(/^\[แผน\]\s*/,"").split(" | ").filter(Boolean):[];
+      const resTxt=r.res?esc2(String(r.res.note).replace(/^\[(ผล|ไม่ได้ทำ)\]\s*/,"")):"";
+      const pct=(r.res&&/^\[ผล\]/.test(r.res.note))?(+r.res.pct||0)/(t.wt||1)*100:null;
+      const dtTag=JOBS_SCOPE==="all"?`<span class="trk-date">${r.date.slice(8)}/${r.date.slice(5,7)}</span>`:"";
+      return `<div class="trk-item trk-${r.stt.cls}" tabindex="0" onclick="jobsOpenRecord('${u.code}','${j.id}')">
+        <span class="trk-rank">${idx+1}</span>
+        <span class="trk-dot2" style="background:${r.stt.cls==='good'?'var(--good)':r.stt.cls==='warn'?'var(--warn)':r.stt.cls==='crit'?'var(--crit)':'#94A3B8'}"></span>
+        <div class="trk-main">
+          <div class="trk-nm">${dtTag}${tr(t.name)} <span class="trk-job">· ${tr(j.name)} · <span style="color:${col};font-weight:700">${un(u.name)}</span></span></div>
+          <div class="trk-plan">☀️ ${planItems.map(esc2).join(" · ")||"—"}</div>
+          ${resTxt?`<div class="trk-res">🌙 ${resTxt}</div>`:""}
+          ${(function(){const pT=entTime(r.plan),sT=r.res?entTime(r.res):0; if(!pT&&!sT) return ""; const late=r.res&&recOnTime(r.res)===false;
+            return `<div class="trk-time">🕒 ${pT?pk(["แผน","ແຜນ","plan"])+" "+fmtHM(pT):""}${sT?`${pT?" → ":""}${pk(["สรุป","ສະຫຼຸບ","done"])} ${fmtHM(sT)}`:""}${(pT&&sT&&sT>=pT)?` · ${fmtDur(sT-pT)}`:""}${late?` <span class="tc-late">${pk(["ย้อนหลัง","ຍ້ອນຫຼັງ","backfilled"])}</span>`:""}</div>`;})()}
+        </div>
+        <div class="trk-right"><span class="chip c-${r.stt.cls}">${r.stt.lb}</span>${r.inc>0.01?`<span class="trk-inc">▲ ${fmt1(r.inc)}%</span>`:""}${pct!=null?`<span class="trk-pct">${fmt1(pct)}%</span>`:""}</div>
       </div>`;
-    }).join("");
+    }).join("")}</div>`;
   }
   const deptSel=`<select class="jobs-deptsel" onchange="jobsSetDept(this.value)">
     <option value="">🏭 ${pk(["ทุกแผนก","ທຸກໜ່ວຍ","All units"])}</option>
