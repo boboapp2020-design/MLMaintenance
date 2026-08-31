@@ -660,7 +660,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r124";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r125";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1448,7 +1448,13 @@ DATA.forEach(s=>s.units.forEach(u=>u.jobs.forEach((j,ji)=>{
 /* รายการบันทึกค้าง/ทดสอบที่ต้องมองข้าม (taskId|วันที่) — ลบไม่ได้จาก Sheet จึงกรองฝั่งหน้าเว็บ
    EVP-J1-T14 วันที่ 2026-08-26 = รายการทดสอบค้าง (ไม่ใช่ผลจริงสัปดาห์ 19) ทำให้หม้อต้มขึ้นว่าบันทึกสัปดาห์ 19 ผิด */
 const IGNORE_ENTRIES = { "EVP-J1-T14|2026-08-26": 1 };
-function ignoredEntry(e){ return !!IGNORE_ENTRIES[String(e.taskId)+"|"+normDate(e.date)]; }
+/* แถวทดสอบที่ user เผลอบันทึกช่วงลองระบบ — กรองแบบเจาะจงเนื้อโน้ต (taskId|วันที่|note) เพื่อไม่บล็อกข้อมูลจริงที่กรอกวันเดียวกัน (ลบไม่ได้จาก Sheet) */
+const IGNORE_NOTES = {
+  "EVP-J2-T14|2026-08-30|[แผน] ปป": 1,
+  "EVP-J1-T14|2026-08-30|[แผน] เทส": 1,
+  "EVP-J1-T14|2026-08-30|[ผล] เทส [ไม่ตามแผน] — ของไม่มา (ทำไม่ได้)": 1
+};
+function ignoredEntry(e){ const k=String(e.taskId)+"|"+normDate(e.date); return !!IGNORE_ENTRIES[k] || !!IGNORE_NOTES[k+"|"+(e.note||"")]; }
 /* ---- ทำความสะอาดข้อมูล entry (กัน stored XSS: ใครก็ POST เข้า Apps Script ได้ ห้ามเชื่อ by/note/taskId แล้วเอาไป render ตรงๆ) ---- */
 function cleanStr(s){ return String(s==null?"":s).replace(/[<>"'`]/g,"").slice(0,300); }
 function sanEntry(e){ return {
