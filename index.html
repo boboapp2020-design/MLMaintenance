@@ -57,6 +57,8 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .nitem svg{flex:0 0 18px}
 .nitem:hover{background:rgba(255,255,255,.07);color:#FFFFFF}
 .nitem.active{background:linear-gradient(90deg,rgba(59,130,246,.42),rgba(59,130,246,.14));color:#FFFFFF;border-left-color:#4D8DFF}
+.nav-sep{display:flex;align-items:center;gap:9px;margin:13px 8px 5px;color:rgba(159,176,204,.7);font-size:10px;font-weight:800;letter-spacing:.6px;white-space:nowrap}
+.nav-sep::before,.nav-sep::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.16)}
 .sidefill{flex:1 1 0;min-height:0;position:relative;overflow:hidden}
 .sidefill img{position:absolute;left:0;right:0;bottom:0;top:0;width:100%;height:100%;object-fit:cover;object-position:center bottom;filter:brightness(.75) saturate(1.1)}
 .sidefill::before{content:"";position:absolute;left:0;right:0;top:0;height:70px;background:linear-gradient(to bottom,#0A1830,transparent);z-index:1}
@@ -72,6 +74,7 @@ body{margin:0;background:var(--bg);color:var(--ink);
   .layout{flex-direction:column}
   .side{position:static;height:auto;width:auto;flex:none;flex-direction:row;align-items:center;flex-wrap:wrap;padding-right:10px}
   .navi{flex-direction:row;flex-wrap:wrap;padding:6px}
+  .nav-sep{flex-basis:100%;margin:4px 8px}
   .nitem{border-left:none;padding:7px 10px}
   .sidefill,.adminchip{display:none}
   .langsw{padding:6px}
@@ -708,7 +711,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r134";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r135";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1820,7 +1823,10 @@ const NAV=[["over",["ภาพรวม","ພາບລວມ","Overview"],"grid"
  ["summary",["สรุปงานรายวัน","ສະຫຼຸບງານລາຍວັນ","Daily summary"],"check"],
  ["plan",["ตั้งแผนปีหน้า","ຕັ້ງແຜນປີໜ້າ","Next Plan"],"gear"]];
 function renderNav(){
-  navi.innerHTML=NAV.map(([id,t,ic])=>`<div class="nitem ${PAGE===id?'active':''}" tabindex="0" onclick="go('${id}')">${IC(ICONS[ic],18)}${pk(t)}</div>`).join("");
+  navi.innerHTML=NAV.map(([id,t,ic])=>{
+    const sep = id==="entry" ? `<div class="nav-sep"><span>${pk(["สำหรับผู้ปฏิบัติงาน","ສຳລັບຜູ້ປະຕິບັດ","For operators"])}</span></div>` : "";
+    return sep+`<div class="nitem ${PAGE===id?'active':''}" tabindex="0" onclick="go('${id}')">${IC(ICONS[ic],18)}${pk(t)}</div>`;
+  }).join("");
 }
 const FLAGS = {
   th:'<svg width="20" height="13" viewBox="0 0 24 16"><rect width="24" height="16" fill="#A51931"/><rect y="2.7" width="24" height="10.6" fill="#F4F5F8"/><rect y="5.3" width="24" height="5.4" fill="#2D2A4A"/></svg>',
