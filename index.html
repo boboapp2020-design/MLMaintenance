@@ -453,6 +453,8 @@ svg text{font-family:inherit}
 .pl-row .plln:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
 .pl-del{flex:0 0 auto;width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--crit);font-size:19px;line-height:1;cursor:pointer;font-weight:700}
 .pl-del:hover{background:var(--crit-bg);border-color:var(--crit)}
+.pl-add{flex:0 0 auto;width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--good);font-size:20px;line-height:1;cursor:pointer;font-weight:800}
+.pl-add:hover{background:var(--good-bg);border-color:var(--good)}
 .tc-add{display:inline-flex;align-items:center;gap:6px;background:var(--tint);color:var(--blue);border:1px dashed #9DBBF5;border-radius:9px;padding:7px 14px;font:inherit;font-size:13px;font-weight:800;cursor:pointer}
 .tc-add:hover{background:var(--blue-soft)}
 .tc-ol{margin:0 0 4px;padding-left:22px;font-size:13.5px;line-height:1.75;color:var(--ink)}
@@ -729,7 +731,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r145";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r146";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2442,7 +2444,8 @@ function fmtDur(ms){ let m=Math.max(0,Math.round(ms/60000)); const h=Math.floor(
 function recISO(ms){ const d=new Date(ms); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 /* กรอกภายในวันนั้นไหม: เวลาที่กดยืนยัน (mh) อยู่วันเดียวกับวันที่ของงาน (e.date) = ตรงเวลา · เกินวัน = ย้อนหลัง */
 function recOnTime(e){ const t=entTime(e); if(!t) return null; return recISO(t)===e.date; }
-function plLineRow(v){ return `<div class="pl-row"><input class="plln" value="${esc2(v)}" placeholder="${pk(["พิมพ์แผนงาน 1 ข้อ","ພິມແຜນ 1 ຂໍ້","one plan item"])}"><button class="pl-del" title="${pk(["ลบ","ລຶບ","remove"])}" onclick="dpDelPlanLine(this)">×</button></div>`; }
+function plLineRow(v){ return `<div class="pl-row"><input class="plln" value="${esc2(v)}" placeholder="${pk(["พิมพ์แผนงาน 1 ข้อ","ພິມແຜນ 1 ຂໍ້","one plan item"])}"><button class="pl-add" title="${pk(["เพิ่มบรรทัด","ເພີ່ມ","add line"])}" onclick="dpAddPlanLineBtn(this)">+</button><button class="pl-del" title="${pk(["ลบ","ລຶບ","remove"])}" onclick="dpDelPlanLine(this)">×</button></div>`; }
+function dpAddPlanLineBtn(btn){ const box=btn.closest(".tc-lines"); if(!box) return; box.insertAdjacentHTML("beforeend",plLineRow("")); const ins=box.querySelectorAll(".plln"); ins[ins.length-1].focus(); }
 function taskCardHtml(t,ti){
   const tid=t.id, m=tmeta(tid), pe=planForToday(tid), re=todayResult(tid);
   const cur=t.act*100, items=planItemsOf(tid);
@@ -2468,7 +2471,6 @@ function taskCardHtml(t,ti){
     const lines=(items.length?items:[""]).map(plLineRow).join("");
     const right=`<div class="tc-lb">${pk(["แผนงาน","ແຜນງານ","Work plan"])}</div>
       <div id="pl_${ti}" class="tc-lines">${lines}</div>
-      <button class="tc-add" onclick="dpAddPlanLine(${ti})">＋ ${pk(["เพิ่มแผนงาน","ເພີ່ມ","add item"])}</button>
       <div class="tc-byrow"><label class="tc-lb">${pk(["ผู้บันทึก","ຜູ້ບັນທຶກ","Recorded by"])}</label><input id="by_${ti}" class="tc-byin" value="${esc2(m.by||"")}" placeholder="${pk(["ชื่อผู้บันทึก","ຊື່ຜູ້ບັນທຶກ","name"])}"></div>`;
     const acts=`<button class="btn btn-o btnsm" onclick="dpClearPlan(${ti})">${pk(["ล้าง","ລ້າງ","Clear"])}</button>
       <button class="btn btn-p btnsm" onclick="dpConfirmPlan(${ti},'${tid}')">${pk(["ยืนยัน","ຢືນຢັນ","Confirm"])}</button>`;
