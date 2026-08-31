@@ -736,7 +736,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r150";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r151";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2479,7 +2479,7 @@ function taskCardHtml(t,ti){
     const lines=(items.length?items:[""]).map(plLineRow).join("");
     const right=`<div class="tc-lb">${pk(["แผนงาน","ແຜນງານ","Work plan"])}</div>
       <div id="pl_${ti}" class="tc-lines">${lines}</div>
-      <div class="tc-byrow"><label class="tc-lb">${pk(["ผู้บันทึก","ຜູ້ບັນທຶກ","Recorded by"])}</label><input id="by_${ti}" class="tc-byin" value="${esc2(m.by||"")}" placeholder="${pk(["ชื่อผู้บันทึก","ຊື່ຜູ້ບັນທຶກ","name"])}"></div>`;
+      <div class="tc-byrow"><label class="tc-lb">${pk(["ผู้รับผิดชอบงาน","ຜູ້ຮັບຜິດຊອບ","Responsible"])}</label><input id="by_${ti}" class="tc-byin" value="${esc2(m.by||"")}" placeholder="${pk(["ชื่อผู้รับผิดชอบ","ຊື່ຜູ້ຮັບຜິດຊອບ","name"])}"></div>`;
     const acts=`<button class="btn btnsm tc-skip" onclick="dpSkipPlan(${ti},'${tid}')">✖ ${pk(["ไม่ทำงานนี้","ບໍ່ເຮັດ","Skip"])}</button>
       <button class="btn btn-o btnsm" onclick="dpClearPlan(${ti})">${pk(["ล้าง","ລ້າງ","Clear"])}</button>
       <button class="btn btn-p btnsm" onclick="dpConfirmPlan(${ti},'${tid}')">${pk(["ยืนยัน","ຢືນຢັນ","Confirm"])}</button>`;
@@ -2528,7 +2528,7 @@ function taskCardHtml(t,ti){
       <div class="tc-pctrow"><label class="tc-lb">${pk(["คิดเป็น %","ຄິດເປັນ %","Progress %"])}</label>
         <input id="sp_${ti}" class="sp-in" type="number" min="0" max="100" step="0.5" value="${fmt1(startPct).replace(",","")}">
         <span class="small tc-hint">${pk(["ล้อจาก % ตอนเริ่ม","ອ້າງອີງ % ເລີ່ມ","from start %"])} ${fmt1(cur)}%</span></div>
-      <div class="tc-byrow"><label class="tc-lb">${pk(["ผู้บันทึก","ຜູ້ບັນທຶກ","Recorded by"])}</label><input id="by_${ti}" class="tc-byin" value="${esc2(m.by||"")}" placeholder="${pk(["ชื่อผู้บันทึก","ຊື່ຜູ້ບັນທຶກ","name"])}"></div>`;
+      <div class="tc-byrow"><label class="tc-lb">${pk(["ผู้รับผิดชอบงาน","ຜູ້ຮັບຜິດຊອບ","Responsible"])}</label><input id="by_${ti}" class="tc-byin" value="${esc2(m.by||"")}" placeholder="${pk(["ชื่อผู้รับผิดชอบ","ຊື່ຜູ້ຮັບຜິດຊອບ","name"])}"></div>`;
     const acts=`<button class="btn btn-o btnsm" onclick="dpClearSummary(${ti})">${pk(["ล้าง","ລ້າງ","Clear"])}</button>
       <button class="btn btn-p btnsm" onclick="dpConfirmSummary(${ti},'${tid}')">${pk(["ยืนยัน","ຢືนຢัน","Confirm"])}</button>`;
     return wrap("s-summary",right,acts,` id="sum_${ti}"`);
@@ -2877,7 +2877,7 @@ function openTaskForm(tid){
     <div class="formgrid">
       <div class="fld"><label>📅 ${pk(["วันที่บันทึก","ວັນທີ","Date"])}</label><input id="tfDate" type="date" value="${dateISO(new Date(Math.min(weekSaturday(WNOW).getTime(), Date.now())))}" max="${todayISO()}"></div>
       <div class="fld"><label>⚖️ ${pk(["แต้มสะสมที่ทำได้","ແຕ້ມສະສົມທີ່ເຮັດໄດ້","Points earned (cum.)"])} <span class="num">(0–${wt})</span></label><input id="tfPct" type="number" min="${ALLOW_DECREASE?0:fl}" max="${wt}" step="0.01" value="${ALLOW_DECREASE?prefill:Math.max(fl,prefill)}" oninput="tfPctHint(this.value,${wt})"><div id="tfPctHint" class="small num"></div></div>
-      <div class="fld"><label>${pk(["ผู้บันทึก","ຜູ້ບັນທຶກ","By"])}</label><input id="tfBy" type="text"></div>
+      <div class="fld"><label>${pk(["ผู้รับผิดชอบ","ຜູ້ຮັບຜິດຊອບ","Owner"])}</label><input id="tfBy" type="text"></div>
     </div>
     <div class="fld" style="margin-bottom:12px"><label>${pk(["หมายเหตุ","ໝາຍເຫດ","Note"])}</label><input id="tfNote" type="text"></div>
     <div class="modalbtns">
@@ -3005,7 +3005,7 @@ function _unused_oldEntry(){
     <h2>${pk(["รายการที่บันทึกไว้","ລາຍການທີ່ບັນທຶກໄວ້","Saved records"])} <span class="thin">· ${ENTRIES.length}</span></h2>
     ${ENTRIES.length===0 ? `<div class="small" style="padding:8px 0">${pk(["ยังไม่มีการบันทึก — dashboard แสดงข้อมูลจำลอง","ຍັງບໍ່ມີການບັນທຶກ — dashboard ສະແດງຂໍ້ມູນຈຳລອງ","No records yet — dashboard shows mock data"])}</div>` : `
     <div class="scrollx"><table>
-      <tr><th>${pk(["วันที่","ວັນທີ","Date"])}</th><th>Task ID</th><th>${pk(["หน่วยงาน / Task","ໜ່ວຍງານ / Task","Unit / Task"])}</th><th class="r">%</th><th class="r">${pk(["แรง/เวลา","ແຮງ/ເວລາ","mh/time"])}</th><th>${pk(["ผู้บันทึก","ຜູ້ບັນທຶກ","By"])}</th><th></th></tr>
+      <tr><th>${pk(["วันที่","ວັນທີ","Date"])}</th><th>Task ID</th><th>${pk(["หน่วยงาน / Task","ໜ່ວຍງານ / Task","Unit / Task"])}</th><th class="r">%</th><th class="r">${pk(["แรง/เวลา","ແຮງ/ເວລາ","mh/time"])}</th><th>${pk(["ผู้รับผิดชอบ","ຜູ້ຮັບຜິດຊອບ","Owner"])}</th><th></th></tr>
       ${ENTRIES.slice().reverse().map((e,ri)=>{const x=TASK_INDEX[e.taskId];
         return `<tr><td class="num small">${e.date}</td><td class="num"><b>${e.taskId}</b></td>
         <td class="small">${x?un(x.u.name)+" · "+tr(x.t.name):"?"}</td>
