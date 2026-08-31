@@ -693,7 +693,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r128";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r129";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2007,12 +2007,14 @@ function jobsSetDept(c){ JOBS_DEPT=c||""; jobsPage(); }
 function jobsPickDay(ds){ JOBS_DATE=ds; JOBS_VIEW="day"; jobsPage(); }
 function jobsShiftMonth(delta){ const p=JOBS_DATE.split("-").map(Number); const dt=new Date(p[0],p[1]-1+delta,1);
   JOBS_DATE=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-01"; jobsPage(); }
-/* จำนวนวันทำงานติดกัน (ข้ามวันหยุด) ที่หน่วยยังไม่กรอก นับย้อนจากวันที่เลือก · cap 30+ */
+/* วันแรกที่เริ่มใช้ระบบบันทึกรายวัน — นับ "จำนวนวันไม่กรอก" ตั้งแต่วันนี้เป็นต้นไป (ไม่นับย้อนก่อนหน้า) */
+const DAILY_TRACK_START="2026-08-31";
+/* จำนวนวันทำงานติดกัน (ข้ามวันหยุด) ที่หน่วยยังไม่กรอก นับย้อนจากวันที่เลือกถึงวันเริ่มระบบ · cap 30+ */
 function missStreak(recSet, uptoISO){
   let miss=0; const p=uptoISO.split("-").map(Number); let dt=new Date(p[0],p[1]-1,p[2]);
   for(let i=0;i<240 && miss<30;i++){
     const iso=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");
-    if(iso<"2026-04-20") break;
+    if(iso<DAILY_TRACK_START) break;
     if(!isHolidayDate(dt)){ if(recSet[iso]) break; miss++; }
     dt.setDate(dt.getDate()-1);
   }
