@@ -691,7 +691,7 @@ img,svg,table{max-width:100%}
 <div class="modal-ov" id="execModal" onclick="if(event.target===this)closeExecModal()">
   <div class="modal-box" style="max-width:900px">
     <button class="modal-close" onclick="closeExecModal()" aria-label="close">✕</button>
-    <h3>📊 มุมมองผู้บริหาร</h3>
+    <h3>📊 สรุปการติดตาม</h3>
     <div id="execModalBody"></div>
   </div>
 </div>
@@ -711,7 +711,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r135";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r136";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2125,7 +2125,7 @@ function jobsPage(){
         ${undoneReasons.length?`<ul class="exec-rlist">${undoneReasons.slice(0,6).map(x=>`<li><b>${un(x.u.name)}</b> · ${x.name} — <span style="color:var(--crit)">${esc2(x.txt)}</span></li>`).join("")}${undoneReasons.length>6?`<li style="color:var(--mut)">… +${undoneReasons.length-6}</li>`:""}</ul>`:`<div class="small" style="color:var(--mut);margin-top:6px">${pk(["ไม่มีงานที่ระบุว่าไม่ได้ทำ","ບໍ່ມີ","no not-done items"])}</div>`}
       </div>
     </div>`;
-  const execBtn=`<button class="exec-open" onclick="openExecModal()">📊 ${pk(["มุมมองผู้บริหาร","ມຸມມองຜູ້ບໍລິຫານ","Executive view"])}${(!holD&&notRec.length)?` <span class="exec-openbadge">${notRec.length} ${pk(["ยังไม่กรอก","ຍັງບໍ່ປ້ອນ","not recorded"])}</span>`:""}</button>`;
+  const execBtn=`<button class="exec-open" onclick="openExecModal()">📊 ${pk(["สรุปการติดตาม","ສະຫຼຸບການຕິດຕາມ","Tracking summary"])}${(!holD&&notRec.length)?` <span class="exec-openbadge">${notRec.length} ${pk(["ยังไม่กรอก","ຍັງບໍ່ປ້ອນ","not recorded"])}</span>`:""}</button>`;
   let body;
   if(!rows.length){
     body=`<div class="card" style="text-align:center;padding:34px;color:var(--mut)">📭 ${pk(["ยังไม่มี Task ที่วางแผนไว้ในวันนี้ — ไปวางแผนได้ที่หน้าบันทึกข้อมูล","ຍັງບໍ່ມີ Task ວາງແຜນ","No planned tasks for this day"])}</div>`;
