@@ -505,6 +505,7 @@ svg text{font-family:inherit}
 .trk-item:hover{box-shadow:0 6px 18px rgba(30,42,58,.12);transform:translateY(-1px)}
 .trk-item.trk-good{border-left-color:var(--good)}.trk-item.trk-warn{border-left-color:var(--warn)}.trk-item.trk-crit{border-left-color:var(--crit)}.trk-item.trk-mut{border-left-color:#94A3B8}
 .trk-ic{font-size:18px;line-height:1.35;flex:0 0 auto}
+.trk-dot2{width:11px;height:11px;border-radius:50%;flex:0 0 auto;margin-top:4px}
 .trk-main{flex:1;min-width:0}
 .trk-nm{font-weight:800;font-size:14px;color:var(--ink)}
 .trk-job{font-weight:500;font-size:12px;color:var(--mut)}
@@ -720,7 +721,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r142";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r143";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2152,7 +2153,7 @@ function jobsPage(){
           const resTxt=r.res?esc2(String(r.res.note).replace(/^\[(ผล|ไม่ได้ทำ)\]\s*/,"")):"";
           const pct=(r.res&&/^\[ผล\]/.test(r.res.note))?(+r.res.pct||0)/(t.wt||1)*100:null;
           return `<div class="trk-item trk-${r.stt.cls}" tabindex="0" onclick="jobsOpenRecord('${r.x.u.code}','${j.id}')">
-            <span class="trk-ic">${r.stt.ic}</span>
+            <span class="trk-dot2" style="background:${r.stt.cls==='good'?'var(--good)':r.stt.cls==='warn'?'var(--warn)':r.stt.cls==='crit'?'var(--crit)':'#94A3B8'}"></span>
             <div class="trk-main">
               <div class="trk-nm">${tr(t.name)} <span class="trk-job">· ${tr(j.name)}</span></div>
               <div class="trk-plan">☀️ ${planItems.map(esc2).join(" · ")||"—"}</div>
