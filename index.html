@@ -718,7 +718,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r140";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r141";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2695,8 +2695,7 @@ function entryPickerPage(){
       const st = u.blank ? "blank" : sun ? "off" : (deptRecordedToday(u.code)>0 ? "full" : "crit");
       const ic="";   /* วงสถานะเป็นจุดสี ไม่ใช้อิโมจิ */
       const upct = u.blank ? null : +(agg(unitTasks(u),REPORT_WK).act).toFixed(1);
-      return `<div class="deptcard2" tabindex="0" onclick="setDept('${u.code}')"><div class="dc2-top">
-        <div class="dc2-ic" style="background:${s.color}1f;color:${s.color}">${unitBub(u.name,26)}</div>
+      return `<div class="deptcard2" tabindex="0" onclick="setDept('${u.code}')" style="border-left:4px solid ${s.color}"><div class="dc2-top">
         <div class="dc2-nm">${un(u.name)}<span>${u.owner}</span></div>
         ${upct==null?"":`<div class="dc2-pct" style="color:${s.color}">${fmt1(upct)}%<span>${pk(["คืบหน้า","ຄืบໜ້າ","done"])}</span></div>`}
         <div class="dc2-st st-${st==="off"?"blank":st}" title="${st==="full"?pk(["บันทึกวันนี้แล้ว","ບັນທຶກມື້ນີ້ແລ້ວ","recorded today"]):st==="off"?pk(["วันหยุด ไม่ต้องบันทึก","ວັນພັກ","day off"]):st==="blank"?pk(["รอนำเข้าแผนงานจริง","ລໍຖ້ານຳເຂົ້າ","awaiting data"]):pk(["ยังไม่บันทึกวันนี้","ຍັງບໍ່ບັນທຶກມື້ນີ້","not recorded today"])}">${ic}</div></div><div class="dc2-bar">${upct==null?"":`<div style="width:${Math.min(100,upct)}%;background:${s.color}"></div>`}</div></div>`;}).join("");
