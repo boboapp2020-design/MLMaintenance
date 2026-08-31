@@ -736,7 +736,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r151";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r152";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -1531,7 +1531,8 @@ const IGNORE_NOTES = {
   "EVP-J1-T14|2026-08-30|[ผล] เทส [ไม่ตามแผน] — ของไม่มา (ทำไม่ได้)": 1,
   "MEC-J1-T1|2026-08-31|[แผน] 70": 1,
   "MEC-J1-T2|2026-08-31|[แผน] 1. เติมน้ำ | 2.เตินสารเคมี": 1,
-  "MEC-J1-T2|2026-08-31|[ผล] 1. เติมน้ำ [ไม่ได้ทำ] — ไม่ว่าง | 2.เตินสารเคมี [ตามแผน] — เสร็จแล้ว": 1
+  "MEC-J1-T2|2026-08-31|[ผล] 1. เติมน้ำ [ไม่ได้ทำ] — ไม่ว่าง | 2.เตินสารเคมี [ตามแผน] — เสร็จแล้ว": 1,
+  "EVP-J1-T14|2026-08-31|[แผน] Test": 1
 };
 function ignoredEntry(e){ const k=String(e.taskId)+"|"+normDate(e.date); return !!IGNORE_ENTRIES[k] || !!IGNORE_NOTES[k+"|"+(e.note||"")]; }
 /* ---- ทำความสะอาดข้อมูล entry (กัน stored XSS: ใครก็ POST เข้า Apps Script ได้ ห้ามเชื่อ by/note/taskId แล้วเอาไป render ตรงๆ) ---- */
