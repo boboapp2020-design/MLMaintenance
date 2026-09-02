@@ -736,7 +736,7 @@ img,svg,table{max-width:100%}
 </div>
 
 <script>
-const BUILD = "build 2026-08-27 r154";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
+const BUILD = "build 2026-08-27 r155";   // เลขเวอร์ชัน แสดงท้ายหน้า ใช้เช็คว่าเครื่องโหลดตัวล่าสุดหรือยัง
 /* ============ i18n ============ */
 let LANG = "th";
 try{ const l=localStorage.getItem("idash_lang"); if(["th","lo","en"].includes(l)) LANG=l; }catch(e){}
@@ -2449,6 +2449,8 @@ function planItemsOf(tid){ const pe=planForToday(tid); return pe?String(pe.note)
 function esc2(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 /* สี % ไล่จากแดง(0) → เหลือง(50) → เขียว(100) */
 function pctColor(p){ const v=Math.max(0,Math.min(100,+p||0)); return `hsl(${Math.round(v*1.2)},72%,40%)`; }
+/* คำนวณ % สดขณะพิมพ์แรง (คน-วัน) = (แรงสะสมก่อนวันนี้ + แรงวันนี้) ÷ แรงแผน */
+function dpCalcPct(ti,base,planned){ const el=document.getElementById("md_"+ti), out=document.getElementById("mdpct_"+ti); if(!el||!out) return; const md=parseFloat(el.value)||0; const p=Math.min(100, planned>0?(base+md)/planned*100:0); out.textContent=fmt1(p)+"%"; out.style.color=pctColor(p); }
 /* เวลายืนยัน (เก็บ epoch ไว้ใน mh · >1e12 = เป็น timestamp ไม่ใช่ค่าแรงเก่า) */
 function entTime(e){ const v=e&&+e.mh; return (v&&v>1e12)?v:0; }
 function fmtHM(ms){ const d=new Date(ms); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
@@ -2519,7 +2521,10 @@ function taskCardHtml(t,ti){
   if(state==="summary"){
     const base=items.length?items:["(งานนี้)"];
     const src=(m.lines&&m.lines.length===base.length)?m.lines:base.map(()=>({st:"ontrack",result:"",reason:""}));
-    const startPct=(m.pct!=null?m.pct:cur);
+    const plannedMd=Math.round((+t.mh||0)*100)/100;                               /* แรงที่วางแผน (คน-วัน) */
+    const baseMd=(m.baseMd!=null?m.baseMd:Math.round(t.act*plannedMd*100)/100);   /* แรงที่ทำไปแล้ว (สะสมก่อนวันนี้) */
+    const defMd=(m.md!=null?m.md:0);                                              /* แรงที่ลงวันนี้ (prefill ตอนแก้ไข) */
+    const liveP=Math.min(100, plannedMd>0?(baseMd+defMd)/plannedMd*100:0);
     const rows=base.map((li,i)=>{
       const L=src[i]||{st:"ontrack",result:"",reason:""};
       const opts=Object.keys(SUM_ST).map(k=>`<option value="${k}" ${L.st===k?"selected":""}>${pk(SUM_ST[k])}</option>`).join("");
@@ -2530,9 +2535,9 @@ function taskCardHtml(t,ti){
     }).join("");
     const right=`<div class="sg-head"><span>${pk(["แผนงาน","ແຜນ","plan"])}</span><span>${pk(["สถานะ","ສະຖານະ","status"])}</span><span>${pk(["สรุปงาน / เหตุผล","ສະຫຼຸບ / ເຫດຜົນ","result / reason"])}</span></div>
       <div class="sg-rows">${rows}</div>
-      <div class="tc-pctrow"><label class="tc-lb">${pk(["คิดเป็น %","ຄິດເປັນ %","Progress %"])}</label>
-        <input id="sp_${ti}" class="sp-in" type="number" min="0" max="100" step="0.5" value="${fmt1(startPct).replace(",","")}">
-        <span class="small tc-hint">${pk(["ล้อจาก % ตอนเริ่ม","ອ້າງອີງ % ເລີ່ມ","from start %"])} ${fmt1(cur)}%</span></div>
+      <div class="tc-pctrow"><label class="tc-lb">${pk(["แรงที่ใช้วันนี้ (คน-วัน)","ແຮງທີ່ໃຊ້ມື້ນີ້","Man-days used today"])}</label>
+        <input id="md_${ti}" class="sp-in" type="number" min="0" step="0.5" value="${defMd}" oninput="dpCalcPct(${ti},${baseMd},${plannedMd})">
+        <span class="small tc-hint">${pk(["แผน","ແຜນ","plan"])} ${fmt1(plannedMd)} · ${pk(["ทำแล้ว","ເຮັດແລ້ວ","done"])} ${fmt1(baseMd)} → <b id="mdpct_${ti}" style="color:${pctColor(liveP)}">${fmt1(liveP)}%</b></span></div>
       <div class="tc-byrow"><label class="tc-lb">${pk(["ผู้รับผิดชอบงาน","ຜູ້ຮັບຜິດຊອບ","Responsible"])}</label><input id="by_${ti}" class="tc-byin" value="${esc2(m.by||"")}" placeholder="${pk(["ชื่อผู้รับผิดชอบ","ຊື່ຜູ້ຮັບຜິດຊອບ","name"])}"></div>`;
     const acts=`<button class="btn btn-o btnsm" onclick="dpClearSummary(${ti})">${pk(["ล้าง","ລ້າງ","Clear"])}</button>
       <button class="btn btn-p btnsm" onclick="dpConfirmSummary(${ti},'${tid}')">${pk(["ยืนยัน","ຢືนຢัน","Confirm"])}</button>`;
@@ -2598,7 +2603,7 @@ function dpDeletePlan(ti,tid){
 }
 function dpStartSummary(tid){ DAILY_SUM=tid; DAILY_EDIT=""; dpRerender(); }
 function dpEditSummary(tid){ const m=tmeta(tid); if(!canEditTs(m.sumTs)){ dpRerender(); return; } DAILY_SUM=tid; dpRerender(); }
-function dpClearSummary(ti){ const c=document.getElementById("sum_"+ti); if(!c) return; c.querySelectorAll(".sumst").forEach(s=>s.value="ontrack"); c.querySelectorAll(".sumres,.sumrsn").forEach(i=>i.value=""); }
+function dpClearSummary(ti){ const c=document.getElementById("sum_"+ti); if(!c) return; c.querySelectorAll(".sumst").forEach(s=>s.value="ontrack"); c.querySelectorAll(".sumres,.sumrsn").forEach(i=>i.value=""); const md=document.getElementById("md_"+ti); if(md){ md.value=0; md.dispatchEvent(new Event("input")); } }
 function dpConfirmSummary(ti,tid){
   const x=TASK_INDEX[tid]; if(!x) return;
   const c=document.getElementById("sum_"+ti); if(!c) return;
@@ -2607,18 +2612,22 @@ function dpConfirmSummary(ti,tid){
   const lines=base.map((li,i)=>({st:(sts[i]?sts[i].value:"ontrack"), result:(res[i]?res[i].value.trim():""), reason:""}));
   for(const L of lines){ if(L.st!=="ontrack" && !L.result){ alert(pk(["งานที่ไม่ตามแผน/ไม่ได้ทำ ต้องใส่สรุป/เหตุผล","ຕ້ອງໃສ່ສະຫຼຸບ/ເຫດຜົນ","Result / reason required for off-plan / not-done"])); return; } }
   const allUndone=lines.every(L=>L.st==="undone");
-  const v=parseFloat(document.getElementById("sp_"+ti).value);
-  if(isNaN(v)||v<0||v>100){ alert(pk(["กรอก % ระหว่าง 0–100","ປ້ອນ 0–100","Enter 0–100"])); return; }
+  const md=parseFloat(document.getElementById("md_"+ti).value);
+  if(isNaN(md)||md<0){ alert(pk(["กรอกแรงที่ใช้ (คน-วัน) ตั้งแต่ 0 ขึ้นไป","ປ້ອນແຮງ ≥ 0","Enter man-days ≥ 0"])); return; }
+  const plannedMd=+x.t.mh||0;
+  const mMeta=tmeta(tid);
+  const baseMd=(mMeta.baseMd!=null)?mMeta.baseMd:Math.round(x.t.act*plannedMd*100)/100;   /* แรงสะสมก่อนวันนี้ */
   const cur=x.t.act*100;
-  if(lines.some(L=>L.st==="ontrack") && !(v>cur+0.01)){ alert(pk(["งานที่ทำ \"ตามแผน\" ต้องมีความคืบหน้าเพิ่มขึ้น — ใส่ % ให้มากกว่า "+fmt1(cur)+"%","ວຽກ \"ຕາມແຜນ\" ຕ້ອງ % ເພີ່ມຂຶ້ນ ຫຼາຍກວ່າ "+fmt1(cur)+"%","On-plan work must increase % above "+fmt1(cur)+"%"])); return; }
-  if(!allUndone && v<cur-0.01 && !confirm(pk(["⚠️ กำลังปรับลดจาก "+fmt1(cur)+"% → "+fmt1(v)+"% ยืนยัน?","⚠️ ຫຼຸດ ຢືนຢัน?","⚠️ Decrease "+fmt1(cur)+"% → "+fmt1(v)+"%?"]))) return;
+  const v=plannedMd>0? Math.min(100,(baseMd+md)/plannedMd*100) : cur;   /* % = แรงสะสม ÷ แรงแผน */
+  if(lines.some(L=>L.st==="ontrack") && !(md>0)){ alert(pk(["งานที่ทำ \"ตามแผน\" ต้องลงแรงมากกว่า 0 คน-วัน","ວຽກ \"ຕາມແຜນ\" ຕ້ອງລົງແຮງ > 0","On-plan work needs man-days > 0"])); return; }
+  if(!allUndone && v<cur-0.01 && !confirm(pk(["⚠️ ผลรวมจะลดจาก "+fmt1(cur)+"% → "+fmt1(v)+"% ยืนยัน?","⚠️ ຫຼຸດ?","⚠️ Decrease "+fmt1(cur)+"% → "+fmt1(v)+"%?"]))) return;
   const composed=base.map((li,i)=>{ const L=lines[i]; return li+" ["+pk(SUM_ST[L.st])+"]"+(L.result?" — "+L.result:"")+(L.reason?" ("+L.reason+")":""); }).join(" | ");
   const prefix=allUndone?"[ไม่ได้ทำ]":"[ผล]";
   const pts=allUndone?taskCurPts(tid):Math.round(v*x.t.wt)/100;
   const byEl=document.getElementById("by_"+ti)||document.getElementById("dpBy"); const by=byEl?byEl.value.trim():"";
   const entry=sanEntry({date:DAILY_DATE,taskId:tid,pct:pts,mh:Date.now(),by,note:prefix+" "+composed});  /* mh = epoch เวลาสรุปงาน */
   ENTRIES.push(entry); saveEntries(ENTRIES); applyEntries(); pushToSheet(entry);
-  const k=tmetaKey(tid); TMETA[k]=Object.assign({},TMETA[k],{lines, pct:allUndone?cur:v, by}); if(!TMETA[k].sumTs) TMETA[k].sumTs=Date.now(); saveTMeta();
+  const k=tmetaKey(tid); TMETA[k]=Object.assign({},TMETA[k],{lines, pct:allUndone?cur:v, by, md, baseMd}); if(!TMETA[k].sumTs) TMETA[k].sumTs=Date.now(); saveTMeta();
   DAILY_SUM=""; dpRerender(); dpToast((allUndone?"❌ ":"✅ ")+pk(["สรุปงานแล้ว","ສະຫຼຸບແລ້ວ","Summarized"]));
 }
 /* ===== หน้าสรุปงานรายวัน (เมนูแยก) — โชว์เฉพาะงานที่วางแผนไว้ แบ่งตามแผนก · สรุปงานได้ในตัว ===== */
